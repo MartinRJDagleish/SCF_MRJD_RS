@@ -1,7 +1,94 @@
-// use array2d::{Array2D}; # does not work as intended
+// pub mod molecule;
+
 use ndarray::{Array2, Array3, Array4};
-// use nalgebra::{Vector3, Matrix3};
 use std::fs;
+// use array2d::{Array2D}; # does not work as intended
+// use nalgebra::{Vector3, Matrix3};
+// use std::io;
+
+// trait Molecule_type {
+//     fn new(geomfile: String, charge: i32) -> Self;
+// }
+// struct Molecule {
+//     // charge 
+//     charge: i32,
+//     // number of atoms
+//     no_atoms: usize,
+//     // cartesian coordinates (geometry of molecule)
+//     geom: Array2<f64>,
+//     // atomic numbers
+//     Z_vals: Vec<i32>,
+//     // point_group
+//     // point_group: String,
+// }
+
+// impl Molecule_type for Molecule { 
+    
+//     // fn new (&mut self) -> Molecule {
+//     fn new (geomfile: String, charge: i32) -> Molecule {
+//         Molecule {
+//             charge: 0i32,
+//             no_atoms: 1usize,
+//             geom: Array2::zeros((self.no_atoms, 3)),
+//             Z_vals: Vec::<i32>::new(),
+//         }
+//     }
+
+    // fn new (geomfile: String, charge: i32) -> Molecule {
+    //     //* Show contents of file
+    //     let contents: String = fs::read_to_string(geomfile).expect("Failed to read geomfile!");
+
+    //     //* Read no of atoms first for array size
+    //     let no_atoms: usize = contents.lines().nth(0).unwrap().parse().unwrap();
+    //     println!("No of atoms: {}", no_atoms);
+
+    //     let num_cart_coords: usize = 3;
+    //     let mut Z_vals: Vec<i32> = vec![0; no_atoms];
+    //     let mut geom: Array2<f64> = Array2::zeros((no_atoms, num_cart_coords));
+
+    //     for (line_idx, line) in contents.lines().skip(1).enumerate() {
+    //         let line_split : Vec<&str> = line.split_whitespace().collect();
+
+    //         Z_vals[line_idx] = line_split[0].parse().unwrap();
+
+    //         for cart_coord in 0..3 {
+    //             geom[(line_idx, cart_coord)] = line_split[cart_coord + 1].parse().unwrap();
+    //         }
+    //         // line_split.next();
+
+    //     }
+
+        //* Step 2: Bond lengths
+
+        // let mut bond_lengths: Array2<f64> = Array2::zeros((no_atoms, no_atoms));
+
+        // for i in 0..no_atoms {
+        //     for j in 0..i {
+        //         if i == j {
+        //             bond_lengths[(i, j)] = 0.0;
+        //         } else {
+        //             let mut bond_length: f64 = 0.0;
+        //             for k in 0..3 {
+        //                 bond_length += (geom[(i, k)] - geom[(j, k)]).powi(2);
+        //             }
+        //             bond_lengths[(i, j)] = bond_length.sqrt();
+        //         }
+        //     }
+        // }
+    // }
+
+
+    // fn print_geom(geom: &Array2<f64>) -> Result<&str, _> {
+    //     println!("Geometry of molecule:");
+    //     for i in 0..geom.shape()[0] {
+    //         for j in 0..geom.shape()[1] {
+    //             print!("{:10.6} ", geom[(i, j)]);
+    //         }
+    //         println!("");
+    //     }
+    //     Ok("Done")
+    // }
+    
 
 fn main() {
     //* Step 1: Read the coord data from input
@@ -81,8 +168,9 @@ fn main() {
                         (geom[(j, cart_coord)] - geom[(k, cart_coord)]) / bond_length_buff_jk;
 
                     bond_angle += -unit_vec_ij[cart_coord] * unit_vec_jk[cart_coord];
-                    bond_angles[(i, j, k)] = bond_angle.acos() * (180.0 / std::f64::consts::PI);
                 }
+
+                bond_angles[(i, j, k)] = bond_angle.acos() * (180.0 / std::f64::consts::PI);
             }
         }
     }
@@ -119,6 +207,9 @@ fn main() {
                                 - geom[(i, cart_coord)])
                                 / bond_length_buff_ki;
                         }
+                        println!("{:?}", unit_vec_kj);
+                        println!("{:?}", unit_vec_kl);
+                        println!("{:?}", unit_vec_ki);
 
                         //* Cross product
                         let cross_prod: Vec<f64> = calc_vec_cros_prod(&unit_vec_kj, &unit_vec_kl);
@@ -148,7 +239,7 @@ fn main() {
             }
         }
     }
-    println!("{:?}", oop_angles);
+    // println!("{:?}", oop_angles);
 }
 
 fn calc_bond_length(geom: &Array2<f64>, idx1: usize, idx2: usize) -> f64 {
