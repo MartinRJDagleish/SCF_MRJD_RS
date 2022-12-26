@@ -1,4 +1,4 @@
-use ndarray::{Array2};
+use ndarray::Array2;
 use std::fs;
 // use array2d::{Array2D}; # does not work as intended
 // use nalgebra::{Vector3, Matrix3};
@@ -159,36 +159,41 @@ impl Molecule {
         }
 
         let mut cross_prod_1: Vec<f64> = Molecule::calc_vec_cros_prod(&unit_ij, &unit_jk);
-        let cross_prod_1_norm_factor: f64 = Molecule::calc_vec_norm(&cross_prod_1);
-        cross_prod_1 = cross_prod_1
-            .iter()
-            .map(|x| x / cross_prod_1_norm_factor)
-            .collect();
 
         let mut cross_prod_2: Vec<f64> = Molecule::calc_vec_cros_prod(&unit_jk, &unit_kl);
-        let cross_prod_2_norm_factor: f64 = Molecule::calc_vec_norm(&cross_prod_2);
-        cross_prod_2 = cross_prod_2
-            .iter()
-            .map(|x| x / cross_prod_2_norm_factor)
-            .collect();
 
         let numerator: f64 = Molecule::calc_scalar_prod(&cross_prod_1, &cross_prod_2);
         let denom: f64 = Molecule::calc_bond_angle(&self.geom, i, j, k).sin()
             * Molecule::calc_bond_angle(&self.geom, j, k, l).sin();
 
+        println!("Numerator: {}", numerator);
+        println!("Denominator: {}", denom);
         let mut dihedral_angle: f64 = numerator / denom;
 
-        // if dihedral_angle < -1.0 {
-        //     dihedral_angle = -1.0f64.acos();
-        // } else if dihedral_angle > 1.0 {
-        //     dihedral_angle = 1.0f64.acos();
-        // } else {
-        //     dihedral_angle = dihedral_angle.acos();
-        // }
+        if dihedral_angle < -1.0 {
+            dihedral_angle = -1.0f64.acos();
+        } else if dihedral_angle > 1.0 {
+            dihedral_angle = 1.0f64.acos();
+        } else {
+            dihedral_angle = dihedral_angle.acos();
+        }
 
-        return dihedral_angle.to_degrees();
+        //* Compute the sign of the torsion angle
+        let cross_prod_1_norm_factor: f64 = Molecule::calc_vec_norm(&cross_prod_1);
+        cross_prod_1 = cross_prod_1
+            .iter()
+            .map(|x| x / cross_prod_1_norm_factor)
+            .collect();
+        let cross_prod_2_norm_factor: f64 = Molecule::calc_vec_norm(&cross_prod_2);
+        cross_prod_2 = cross_prod_2
+            .iter()
+            .map(|x| x / cross_prod_2_norm_factor)
+            .collect();
+        let numerator: f64 = Molecule::calc_scalar_prod(&cross_prod_1, &cross_prod_2);
+        let sign = if numerator > 1.0 { 1.0 } else { -1.0 };
+
+        return (sign * dihedral_angle).to_degrees();
     }
-
 }
 
 fn main() {
@@ -284,4 +289,6 @@ fn main() {
             }
         }
     }
+    // TODO: Torsion is definitely wrong, but I don't know why. OOP might also be wrong… 
+    // TODO: Implement the center of mass calculation 
 }
