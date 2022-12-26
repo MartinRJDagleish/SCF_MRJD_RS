@@ -1,4 +1,4 @@
-use ndarray::{Array2, Array3, Array4};
+use ndarray::{Array2};
 use std::fs;
 // use array2d::{Array2D}; # does not work as intended
 // use nalgebra::{Vector3, Matrix3};
@@ -50,6 +50,14 @@ impl Molecule {
             geom,
             Z_vals,
         }
+    }
+
+    fn calc_vec_norm(vec1: &Vec<f64>) -> f64 {
+        let mut vec_norm: f64 = 0.0;
+        for cart_coord in 0..3 {
+            vec_norm += vec1[cart_coord].powi(2);
+        }
+        return vec_norm.sqrt();
     }
 
     fn calc_vec_cros_prod(vec1: &Vec<f64>, vec2: &Vec<f64>) -> Vec<f64> {
@@ -150,8 +158,19 @@ impl Molecule {
                 (self.geom[(k, cart_coord)] - self.geom[(l, cart_coord)]) / bond_dist_kl;
         }
 
-        let cross_prod_1: Vec<f64> = Molecule::calc_vec_cros_prod(&unit_ij, &unit_jk);
-        let cross_prod_2: Vec<f64> = Molecule::calc_vec_cros_prod(&unit_jk, &unit_kl);
+        let mut cross_prod_1: Vec<f64> = Molecule::calc_vec_cros_prod(&unit_ij, &unit_jk);
+        let cross_prod_1_norm_factor: f64 = Molecule::calc_vec_norm(&cross_prod_1);
+        cross_prod_1 = cross_prod_1
+            .iter()
+            .map(|x| x / cross_prod_1_norm_factor)
+            .collect();
+
+        let mut cross_prod_2: Vec<f64> = Molecule::calc_vec_cros_prod(&unit_jk, &unit_kl);
+        let cross_prod_2_norm_factor: f64 = Molecule::calc_vec_norm(&cross_prod_2);
+        cross_prod_2 = cross_prod_2
+            .iter()
+            .map(|x| x / cross_prod_2_norm_factor)
+            .collect();
 
         let numerator: f64 = Molecule::calc_scalar_prod(&cross_prod_1, &cross_prod_2);
         let denom: f64 = Molecule::calc_bond_angle(&self.geom, i, j, k).sin()
@@ -159,64 +178,17 @@ impl Molecule {
 
         let mut dihedral_angle: f64 = numerator / denom;
 
-        if dihedral_angle < -1.0 {
-            dihedral_angle = -1.0f64.acos();
-        } else if dihedral_angle > 1.0 {
-            dihedral_angle = 1.0f64.acos();
-        } else {
-            dihedral_angle = dihedral_angle.acos();
-        }
+        // if dihedral_angle < -1.0 {
+        //     dihedral_angle = -1.0f64.acos();
+        // } else if dihedral_angle > 1.0 {
+        //     dihedral_angle = 1.0f64.acos();
+        // } else {
+        //     dihedral_angle = dihedral_angle.acos();
+        // }
 
         return dihedral_angle.to_degrees();
     }
 
-    // fn calc_oop_angle(geom: &Array2<f64>, idx1: usize, idx2: usize, idx3: usize, idx4: usize) -> f64 {
-    //     let mut oop_angle: f64 = 0.0;
-    //     let bond_length_buff_ij: f64 = Molecule::calc_bond_length(&geom, idx1, idx2);
-    //     let bond_length_buff_jk: f64 = Molecule::calc_bond_length(&geom, idx2, idx3);
-    //     let bond_length_buff_kl: f64 = Molecule::calc_bond_length(&geom, idx3, idx4);
-
-    //     let mut unit_ij: Vec<f64> = vec![0.0; 3];
-    //     let mut unit_jk: Vec<f64> = vec![0.0; 3];
-    //     let mut unit_kl: Vec<f64> = vec![0.0; 3];
-
-    //     for cart_coord in 0..3 {
-    //         unit_ij[cart_coord] =
-    //             (geom[(idx1, cart_coord)] - geom[(idx2, cart_coord)]) / bond_length_buff_ij;
-    //         unit_jk[cart_coord] =
-    //             (geom[(idx2, cart_coord)] - geom[(idx3, cart_coord)]) / bond_length_buff_jk;
-    //         unit_kl[cart_coord] =
-    //             (geom[(idx3, cart_coord)] - geom[(idx4, cart_coord)]) / bond_length_buff_kl;
-    //     }
-
-    //     let mut vec_cross_prod: Vec<f64> = Molecule::calc_vec_cros_prod(&unit_ij, &unit_jk);
-
-    //     return oop_angle
-    // }
-
-    fn print_geom(&self) {
-        todo!()
-    }
-
-    // fn print_geom(&self) -> Result<&str, _> {
-    //     println!("Geometry of molecule:");
-    //     for i in 0..self.geom.shape()[0] {
-    //         for j in 0..self.geom.shape()[1] {
-    //             print!("{:10.6} ", self.geom[(i, j)]);
-    //         }
-    //         println!("");
-    //     }
-    //     Ok("Done")
-    // }
-
-    // fn print_Z_vals(&self) -> Result<&str, _> {
-    //     println!("Z values of atoms:");
-    //     for i in 0..self.Z_vals.len() {
-    //         print!("{:10} ", self.Z_vals[i]);
-    //     }
-    //     println!("");
-    //     Ok("Done")
-    // }
 }
 
 fn main() {
@@ -265,7 +237,7 @@ fn main() {
     }
 
     //* Step 4: OOP angles
-
+    println!("\nOut-of-plane angles (in degrees):\n");
     for i in 0..mol.no_atoms {
         for j in 0..mol.no_atoms {
             for k in 0..mol.no_atoms {
@@ -293,18 +265,15 @@ fn main() {
     }
 
     // * Step 5: Torsion / dihedral angles
-
+    println!("\nTorsion angles (in degrees):\n");
     for i in 0..mol.no_atoms {
-        for j in 0..mol.no_atoms {
-            for k in 0..mol.no_atoms {
-                for l in 0..mol.no_atoms {
+        for j in 0..i {
+            for k in 0..j {
+                for l in 0..k {
                     let bond_dist_ij: f64 = Molecule::calc_bond_length(&mol.geom, i, j);
                     let bond_dist_jk: f64 = Molecule::calc_bond_length(&mol.geom, j, k);
                     let bond_dist_kl: f64 = Molecule::calc_bond_length(&mol.geom, k, l);
-                        && bond_dist_ij < 4.0
-                        && bond_dist_jk < 4.0
-                        && bond_dist_kl < 4.0
-                    {
+                    if bond_dist_ij < 4.0 && bond_dist_jk < 4.0 && bond_dist_kl < 4.0 {
                         let dihedral_angle: f64 = Molecule::calc_dihedral_angle(&mol, i, j, k, l);
                         println!(
                             "Dihedral angle for {}-{}-{}-{} is: {:.5}",
