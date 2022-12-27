@@ -78,18 +78,19 @@ impl Molecule {
         return scalar_prod;
     }
 
-    fn calc_bond_length(geom: &Array2<f64>, idx1: usize, idx2: usize) -> f64 {
+    fn calc_bond_length(&self, geom: &Array2<f64>, idx1: usize, idx2: usize) -> f64 {
         let mut bond_length: f64 = 0.0;
         for cart_coord in 0..3 {
-            bond_length += (geom[(idx1, cart_coord)] - geom[(idx2, cart_coord)]).powi(2);
+            bond_length +=
+                (&self.geom[(idx1, cart_coord)] - &self.geom[(idx2, cart_coord)]).powi(2);
         }
         return bond_length.sqrt();
     }
 
-    fn calc_bond_angle(geom: &Array2<f64>, idx1: usize, idx2: usize, idx3: usize) -> f64 {
+    fn calc_bond_angle(&self, geom: &Array2<f64>, idx1: usize, idx2: usize, idx3: usize) -> f64 {
         let mut bond_angle: f64 = 0.0;
-        let bond_length_buff_ij: f64 = Molecule::calc_bond_length(&geom, idx1, idx2);
-        let bond_length_buff_jk: f64 = Molecule::calc_bond_length(&geom, idx2, idx3);
+        let bond_length_buff_ij: f64 = self.calc_bond_length(&self.geom, idx1, idx2);
+        let bond_length_buff_jk: f64 = self.calc_bond_length(&self.geom, idx2, idx3);
 
         let mut unit_ij: Vec<f64> = vec![0.0; 3];
         let mut unit_jk: Vec<f64> = vec![0.0; 3];
@@ -107,9 +108,9 @@ impl Molecule {
     }
 
     fn calc_oop_angle(&self, i: usize, j: usize, k: usize, l: usize) -> f64 {
-        let bond_dist_jk: f64 = Molecule::calc_bond_length(&self.geom, j, k);
-        let bond_dist_kl: f64 = Molecule::calc_bond_length(&self.geom, k, l);
-        let bond_dist_ik: f64 = Molecule::calc_bond_length(&self.geom, i, k);
+        let bond_dist_jk: f64 = self.calc_bond_length(&self.geom, j, k);
+        let bond_dist_kl: f64 = self.calc_bond_length(&self.geom, k, j);
+        let bond_dist_ik: f64 = self.calc_bond_length(&self.geom, i, k);
 
         let mut unit_kj: Vec<f64> = vec![0.0; 3];
         let mut unit_kl: Vec<f64> = vec![0.0; 3];
@@ -127,7 +128,7 @@ impl Molecule {
         let cross_prod: Vec<f64> = Molecule::calc_vec_cros_prod(&unit_kj, &unit_kl);
 
         let mut oop_angle: f64 = (Molecule::calc_scalar_prod(&cross_prod, &unit_ki))
-            / Molecule::calc_bond_angle(&self.geom, j, k, l).sin();
+            / self.calc_bond_angle(&self.geom, j, k, l).sin();
 
         if oop_angle < -1.0 {
             oop_angle = -1.0f64.asin();
@@ -141,9 +142,9 @@ impl Molecule {
     }
 
     fn calc_dihedral_angle(&self, i: usize, j: usize, k: usize, l: usize) -> f64 {
-        let bond_dist_ij: f64 = Molecule::calc_bond_length(&self.geom, i, j);
-        let bond_dist_jk: f64 = Molecule::calc_bond_length(&self.geom, j, k);
-        let bond_dist_kl: f64 = Molecule::calc_bond_length(&self.geom, k, l);
+        let bond_dist_ij: f64 = self.calc_bond_length(&self.geom, i, j);
+        let bond_dist_jk: f64 = self.calc_bond_length(&self.geom, j, k);
+        let bond_dist_kl: f64 = self.calc_bond_length(&self.geom, k, l);
 
         let mut unit_ij: Vec<f64> = vec![0.0; 3];
         let mut unit_jk: Vec<f64> = vec![0.0; 3];
@@ -163,8 +164,8 @@ impl Molecule {
         let mut cross_prod_2: Vec<f64> = Molecule::calc_vec_cros_prod(&unit_jk, &unit_kl);
 
         let numerator: f64 = Molecule::calc_scalar_prod(&cross_prod_1, &cross_prod_2);
-        let denom: f64 = Molecule::calc_bond_angle(&self.geom, i, j, k).sin()
-            * Molecule::calc_bond_angle(&self.geom, j, k, l).sin();
+        let denom: f64 = self.calc_bond_angle(&self.geom, i, j, k).sin()
+            * self.calc_bond_angle(&self.geom, j, k, l).sin();
 
         println!("Numerator: {}", numerator);
         println!("Denominator: {}", denom);
@@ -194,6 +195,20 @@ impl Molecule {
 
         return (sign * dihedral_angle).to_degrees();
     }
+
+    /// Returns the geom of this [`Molecule`].
+    fn print_geom(&self) {
+        println!("Printing geometry of molecule:\n");
+        for i in 0..self.no_atoms {
+            println!(
+                "{}\t{:.4}\t{:.4}\t{:.4}",
+                self.Z_vals[i],
+                self.geom[(i, 0)],
+                self.geom[(i, 1)],
+                self.geom[(i, 2)]
+            );
+        }
+    }
 }
 
 fn main() {
@@ -204,19 +219,20 @@ fn main() {
 
     //* Step 1: Read file into buffer
     println!("Starting the OOP way:");
-    println!("test?!?");
     let mol: Molecule = Molecule::new("inp/geom.xyz", 0);
     // let mol: Molecule = Molecule::new("QM_Programm/inp/geom.xyz", 0);
 
-    println!("Z values of atoms:\n{:?}\n", mol.Z_vals);
-    println!("Geometry of molecule:\n{:?}\n", mol.geom);
+    // println!("Z values of atoms:\n{:?}\n", mol.Z_vals);
+    // println!("Geometry of molecule:\n{:?}\n", mol.geom);
+    //* Fancy print of geometry of file (check for valid input)
+    mol.print_geom();
 
     //* Step 2: Bond lengths
     println!("Interatomic distances (in bohr):\n");
     for i in 0..mol.no_atoms {
         for j in 0..i {
             if i != j {
-                let bond_length: f64 = Molecule::calc_bond_length(&mol.geom, i, j);
+                let bond_length: f64 = mol.calc_bond_length(&mol.geom, i, j);
 
                 println!("Atom {}-{} is: {:.5}", i, j, bond_length);
             } else {
@@ -230,11 +246,10 @@ fn main() {
     for i in 0..mol.no_atoms {
         for j in 0..i {
             for k in 0..j {
-                if Molecule::calc_bond_length(&mol.geom, i, j) < 4.0
-                    && Molecule::calc_bond_length(&mol.geom, j, k) < 4.0
+                if mol.calc_bond_length(&mol.geom, i, j) < 4.0
+                    && mol.calc_bond_length(&mol.geom, j, k) < 4.0
                 {
-                    let bond_angle: f64 = Molecule::calc_bond_angle(&mol.geom, i, j, k);
-
+                    let bond_angle: f64 = mol.calc_bond_angle(&mol.geom, i, j, k);
                     println!("Angle for {}-{}-{} is: {:.5}", i, j, k, bond_angle);
                 }
             }
@@ -247,9 +262,9 @@ fn main() {
         for j in 0..mol.no_atoms {
             for k in 0..mol.no_atoms {
                 for l in 0..mol.no_atoms {
-                    let bond_dist_jk: f64 = Molecule::calc_bond_length(&mol.geom, j, k);
-                    let bond_dist_kl: f64 = Molecule::calc_bond_length(&mol.geom, k, l);
-                    let bond_dist_ik: f64 = Molecule::calc_bond_length(&mol.geom, i, k);
+                    let bond_dist_jk: f64 = mol.calc_bond_length(&mol.geom, j, k);
+                    let bond_dist_kl: f64 = mol.calc_bond_length(&mol.geom, k, l);
+                    let bond_dist_ik: f64 = mol.calc_bond_length(&mol.geom, i, k);
                     if i != j
                         && i != k
                         && i != l
@@ -275,9 +290,9 @@ fn main() {
         for j in 0..i {
             for k in 0..j {
                 for l in 0..k {
-                    let bond_dist_ij: f64 = Molecule::calc_bond_length(&mol.geom, i, j);
-                    let bond_dist_jk: f64 = Molecule::calc_bond_length(&mol.geom, j, k);
-                    let bond_dist_kl: f64 = Molecule::calc_bond_length(&mol.geom, k, l);
+                    let bond_dist_ij: f64 = mol.calc_bond_length(&mol.geom, i, j);
+                    let bond_dist_jk: f64 = mol.calc_bond_length(&mol.geom, j, k);
+                    let bond_dist_kl: f64 = mol.calc_bond_length(&mol.geom, k, l);
                     if bond_dist_ij < 4.0 && bond_dist_jk < 4.0 && bond_dist_kl < 4.0 {
                         let dihedral_angle: f64 = Molecule::calc_dihedral_angle(&mol, i, j, k, l);
                         println!(
@@ -289,6 +304,6 @@ fn main() {
             }
         }
     }
-    // TODO: Torsion is definitely wrong, but I don't know why. OOP might also be wrong… 
-    // TODO: Implement the center of mass calculation 
+    // TODO: Torsion is definitely wrong, but I don't know why. OOP might also be wrong…
+    // TODO: Implement the center of mass calculation
 }
