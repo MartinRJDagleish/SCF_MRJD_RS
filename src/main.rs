@@ -1,5 +1,5 @@
 use ndarray::Array2;
-use std::{fs, collections::HashMap};
+use std::{collections::HashMap, fs}; 
 // use array2d::{Array2D}; # does not work as intended
 // use nalgebra::{Vector3, Matrix3};
 // use std::io;
@@ -171,6 +171,7 @@ impl Molecule {
     }
 
     fn calc_dihedral_angle(&self, idx1: usize, idx2: usize, idx3: usize, idx4: usize) -> f64 {
+        //! Version1 just from math formula (Crawford)
         // let bond_dist_ij: f64 = self.calc_r_ij(i, j);
         // let bond_dist_jk: f64 = self.calc_r_ij(j, k);
         // let bond_dist_kl: f64 = self.calc_r_ij(k, l);
@@ -224,31 +225,60 @@ impl Molecule {
 
         // return (sign * dihedral_angle).to_degrees();
 
-        // Version 2 of dihedral angle calculation
-        let unit_21: Vec<f64> = self.calc_e_ij(idx2, idx1);
-        let unit_23: Vec<f64> = self.calc_e_ij(idx2, idx3);
-        let unit_32: Vec<f64> = self.calc_e_ij(idx3, idx2);
-        let unit_34: Vec<f64> = self.calc_e_ij(idx3, idx4);
+        //! Version 2 of dihedral angle calculation -> using the TMP python as refence
+        // let unit_21: Vec<f64> = self.calc_e_ij(idx2, idx1);
+        // let unit_23: Vec<f64> = self.calc_e_ij(idx2, idx3);
+        // let unit_32: Vec<f64> = self.calc_e_ij(idx3, idx2);
+        // let unit_34: Vec<f64> = self.calc_e_ij(idx3, idx4);
 
-        let x_prod_u_21_u_23: Vec<f64> = Molecule::calc_unit_vec_cross_prod(&unit_21, &unit_23);
-        let x_prod_u_32_u_34: Vec<f64> = Molecule::calc_unit_vec_cross_prod(&unit_32, &unit_34);
+        // let x_prod_u_21_u_23: Vec<f64> = Molecule::calc_unit_vec_cross_prod(&unit_21, &unit_23);
+        // let x_prod_u_32_u_34: Vec<f64> = Molecule::calc_unit_vec_cross_prod(&unit_32, &unit_34);
 
-        let torsion_angle: f64 = Molecule::calc_scalar_prod(&x_prod_u_21_u_23, &x_prod_u_32_u_34);
-        let mut sign_test_scalar_prod: f64 =
-            Molecule::calc_scalar_prod(&x_prod_u_21_u_23, &unit_34);
+        // let torsion_angle: f64 = Molecule::calc_scalar_prod(&x_prod_u_21_u_23, &x_prod_u_32_u_34);
+        // let mut sign_test_scalar_prod: f64 =
+        //     Molecule::calc_scalar_prod(&x_prod_u_21_u_23, &unit_34);
 
-        if sign_test_scalar_prod < 0.0 {
-            sign_test_scalar_prod = 1.0;
-        } else if sign_test_scalar_prod > 0.0 {
-            sign_test_scalar_prod = -1.0;
+        // if sign_test_scalar_prod < 0.0 {
+        //     sign_test_scalar_prod = 1.0;
+        // } else if sign_test_scalar_prod > 0.0 {
+        //     sign_test_scalar_prod = -1.0;
+        // }
+
+        // return (sign_test_scalar_prod * torsion_angle.acos()).to_degrees();
+        //! Version 3 of dihedral angle calculation -> using my C++ code as reference
+        let e_ij: Vec<f64> = self.calc_e_ij(idx1, idx2);
+        let e_jk: Vec<f64> = self.calc_e_ij(idx2, idx3);
+        let e_kl: Vec<f64> = self.calc_e_ij(idx3, idx4);
+
+        let x_prod_e_ij_e_jk: Vec<f64> = Molecule::calc_unit_vec_cross_prod(&e_ij, &e_jk);
+        println!("Cross product 1: {:?}", x_prod_e_ij_e_jk);
+        let x_prod_e_jk_e_kl: Vec<f64> = Molecule::calc_unit_vec_cross_prod(&e_jk, &e_kl);
+        println!("Cross product 2: {:?}", x_prod_e_jk_e_kl);
+
+        
+        let dot_prod: f64 = Molecule::calc_scalar_prod(&x_prod_e_ij_e_jk, &x_prod_e_jk_e_kl);
+        println!("Dot product: {}", dot_prod);
+        
+        let numerator: f64 = dot_prod;
+        let denom: f64 = self.calc_bond_angle(idx1, idx2, idx3).sin()
+            * self.calc_bond_angle(idx2, idx3, idx4).sin();
+
+        let mut tau: f64 = 0.0;
+        let mut cos_tau: f64 = numerator / denom;
+        println!("Cos tau: {}", cos_tau);
+
+        if cos_tau > 1.0 {
+            tau = 1.0f64.acos();
+        } else if cos_tau < -1.0 {
+            tau = std::f64::consts::PI;
+        } else {
+            tau = cos_tau.acos();
         }
-
-        return (sign_test_scalar_prod * torsion_angle.acos()).to_degrees();
+        return tau.to_degrees();
     }
 
-    // fn get_mass_of_atom(&self, atm_no: usize) -> f64 {
-    //     // todo!();
-    //     unimplemented!()
+    // fn get_mass_of_atom(&self, Z_val: usize) -> f64 {
+    //     return mass_map[&Z_val];
     // }
 
     /// Returns the geom of this [`Molecule`].
@@ -364,11 +394,11 @@ fn main() {
                     let bond_dist_jk: f64 = mol.calc_r_ij(j, k);
                     let bond_dist_kl: f64 = mol.calc_r_ij(k, l);
                     if bond_dist_ij < 4.0 && bond_dist_jk < 4.0 && bond_dist_kl < 4.0 {
-                    let dihedral_angle: f64 = mol.calc_dihedral_angle(i, j, k, l);
-                    println!(
-                        "Dihedral angle for {}-{}-{}-{} is: {:.5}",
-                        i, j, k, l, dihedral_angle
-                    );
+                        let dihedral_angle: f64 = mol.calc_dihedral_angle(i, j, k, l);
+                        println!(
+                            "Dihedral angle for {}-{}-{}-{} is: {:.5}",
+                            i, j, k, l, dihedral_angle
+                        );
                     }
                 }
             }
