@@ -1,4 +1,5 @@
-use ndarray::Array2;
+use ndarray::{Array1, Array2};
+use ndarray_linalg::{eigh, EigValsh, Eigh};
 use std::{collections::HashMap, fs};
 // use array2d::{Array2D}; # does not work as intended
 // use nalgebra::{Vector3, Matrix3};
@@ -379,7 +380,8 @@ impl Molecule {
                         inertia_tensor[(i, j)] += mass_Z_val
                             * (self.geom[(idx, i1)].powi(2) + self.geom[(idx, i2)].powi(2));
                     } else {
-                        inertia_tensor[(i, j)] -= mass_Z_val * self.geom[(idx, i)] * self.geom[(idx, j)];
+                        inertia_tensor[(i, j)] -=
+                            mass_Z_val * self.geom[(idx, i)] * self.geom[(idx, j)];
                     }
                 }
             }
@@ -496,6 +498,11 @@ fn main() {
 
     //* Step 7: Inertia tensor
     println!("\nPrinting the moment of inertia tensor:");
-    println!("Inertia tensor: \n{:?}", mol.calc_inertia_tensor());
+    let mut inertia_tensor: Array2<f64> = mol.calc_inertia_tensor();
+    println!("Inertia tensor: \n{:?}", inertia_tensor);
 
+    //* Step 7.1 : Get eigenvalues and eigenvectors of inertia tensor
+    let (eigenvals, eigenvecs): (Array1<f64>, Array2<f64>) = inertia_tensor
+        .eigh(ndarray_linalg::UPLO::Upper)
+        .unwrap();
 }
