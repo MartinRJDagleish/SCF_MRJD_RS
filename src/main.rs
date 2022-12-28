@@ -13,7 +13,9 @@ struct Molecule {
     // cartesian coordinates (geometry of molecule)
     geom: Array2<f64>,
     // atomic numbers
-    Z_vals: Vec<i32>,
+    Z_vals: Vec<usize>,
+    // HashMap of atomic masses
+    mass_map: HashMap<usize, f64>,
     // point_group
     // point_group: String,
 }
@@ -31,7 +33,7 @@ impl Molecule {
         let no_atoms: usize = geomfile_contents.lines().nth(0).unwrap().parse().unwrap();
         println!("No of atoms: {}", no_atoms);
 
-        let mut Z_vals: Vec<i32> = vec![0; no_atoms];
+        let mut Z_vals: Vec<usize> = vec![0; no_atoms];
         let mut geom: Array2<f64> = Array2::zeros((no_atoms, 3));
 
         for (line_idx, line) in geomfile_contents.lines().skip(1).enumerate() {
@@ -44,11 +46,43 @@ impl Molecule {
             }
         }
 
+        // Main hashmap for masses
+        let mut mass_map: HashMap<usize, f64> = HashMap::new();
+
+        let masses_path: &str = "inp/masses.csv";
+        let massses_content: String =
+            fs::read_to_string(masses_path).expect("Failed to read geomfile!");
+
+        for (Z_val, line) in massses_content.lines().enumerate() {
+            if Z_val == 0 {
+                continue;
+            }
+            let line_vec: Vec<&str> = line.split(',').collect();
+            let mass: f64 = line_vec[0].parse().unwrap();
+            // println!("Mass of atom with Z value {}: {}", Z_val, mass);
+            mass_map.insert(Z_val, mass);
+        }
+
         Molecule {
             charge,
             no_atoms,
             geom,
             Z_vals,
+            mass_map,
+        }
+    }
+
+    /// Returns the geom of this [`Molecule`].
+    fn print_geom(&self) {
+        // println!("Printing geometry of molecule:\n");
+        for i in 0..self.no_atoms {
+            println!(
+                "{}\t{:.4}\t{:.4}\t{:.4}",
+                self.Z_vals[i],
+                self.geom[(i, 0)],
+                self.geom[(i, 1)],
+                self.geom[(i, 2)]
+            );
         }
     }
 
@@ -91,7 +125,7 @@ impl Molecule {
 
     fn calc_unit_vec_cross_prod(vec1: &Vec<f64>, vec2: &Vec<f64>) -> Vec<f64> {
         let mut vec_cros_prod: Vec<f64> = vec![0.0; 3];
-        let cos_v1_v2: f64 = Molecule::calc_scalar_prod(&vec1, &vec2);
+        let cos_v1_v2: f64 = Self::calc_scalar_prod(&vec1, &vec2);
         let sin_v1_v2: f64 = (1.0f64 - cos_v1_v2.powi(2)).sqrt();
 
         vec_cros_prod[0] = (vec1[1] * vec2[2] - vec1[2] * vec2[1]) / sin_v1_v2;
@@ -112,7 +146,7 @@ impl Molecule {
     fn calc_bond_angle(&self, idx1: usize, idx2: usize, idx3: usize) -> f64 {
         let unit_21: Vec<f64> = self.calc_e_ij(idx2, idx1);
         let unit_23: Vec<f64> = self.calc_e_ij(idx2, idx3);
-        let bond_angle: f64 = Molecule::calc_scalar_prod(&unit_21, &unit_23);
+        let bond_angle: f64 = Self::calc_scalar_prod(&unit_21, &unit_23);
         return bond_angle.acos().to_degrees();
     }
 
@@ -138,13 +172,13 @@ impl Molecule {
         // // println!("unit_kj: {:?}", unit_kj);
         // // println!("unit_kl: {:?}", unit_kl);
         // // println!("unit_ki: {:?}", unit_ki);
-        // let cross_prod: Vec<f64> = Molecule::calc_unit_vec_cross_prod(&unit_kj, &unit_kl);
+        // let cross_prod: Vec<f64> = Self::calc_unit_vec_cross_prod(&unit_kj, &unit_kl);
         // // println!("unit_kj: {:?}", unit_kj);
         // // println!("unit_kl: {:?}", unit_kl);
         // // println!("unit_ki: {:?}", unit_ki);
         // // println!("cross_prod: {:?}", cross_prod);
 
-        // let mut oop_angle: f64 = (Molecule::calc_scalar_prod(&cross_prod, &unit_ki))
+        // let mut oop_angle: f64 = (Self::calc_scalar_prod(&cross_prod, &unit_ki))
         //     / self.calc_bond_angle(idx2, idx3, idx4).sin();
 
         // if oop_angle < -1.0 {
@@ -163,16 +197,16 @@ impl Molecule {
         let unit_ki: Vec<f64> = self.calc_e_ij(idx3, idx1);
 
         //* Working, but nicer below
-        // let mut x_prod_kj_kl: Vec<f64> = Molecule::calc_vec_cross_prod(&unit_kj, &unit_kl);
+        // let mut x_prod_kj_kl: Vec<f64> = Self::calc_vec_cross_prod(&unit_kj, &unit_kl);
         // let sin_phi_jkl = self.calc_bond_angle(idx2, idx3, idx4).to_radians().sin();
         // x_prod_kj_kl = x_prod_kj_kl
         //     .iter()
         //     .map(|x| x / sin_phi_jkl)
         //     .collect();
 
-        let x_prod_kj_kl_norm = Molecule::calc_unit_vec_cross_prod(&unit_kj, &unit_kl);
+        let x_prod_kj_kl_norm = Self::calc_unit_vec_cross_prod(&unit_kj, &unit_kl);
 
-        let oop_angle: f64 = Molecule::calc_scalar_prod(&x_prod_kj_kl_norm, &unit_ki);
+        let oop_angle: f64 = Self::calc_scalar_prod(&x_prod_kj_kl_norm, &unit_ki);
 
         if oop_angle < -1.0 {
             return -1.0f64.asin().to_degrees();
@@ -202,11 +236,11 @@ impl Molecule {
         //         (&self.geom[(k, cart_coord)] - &self.geom[(l, cart_coord)]) / bond_dist_kl;
         // }
 
-        // let mut cross_prod_1: Vec<f64> = Molecule::calc_vec_cross_prod(&unit_ij, &unit_jk);
+        // let mut cross_prod_1: Vec<f64> = Self::calc_vec_cross_prod(&unit_ij, &unit_jk);
 
-        // let mut cross_prod_2: Vec<f64> = Molecule::calc_vec_cross_prod(&unit_jk, &unit_kl);
+        // let mut cross_prod_2: Vec<f64> = Self::calc_vec_cross_prod(&unit_jk, &unit_kl);
 
-        // let numerator: f64 = Molecule::calc_scalar_prod(&cross_prod_1, &cross_prod_2);
+        // let numerator: f64 = Self::calc_scalar_prod(&cross_prod_1, &cross_prod_2);
         // let denom: f64 = self.calc_bond_angle(i, j, k).sin()
         //     * self.calc_bond_angle(j, k, l).sin();
 
@@ -223,17 +257,17 @@ impl Molecule {
         // }
 
         // //* Compute the sign of the torsion angle
-        // let cross_prod_1_norm_factor: f64 = Molecule::calc_vec_norm(&cross_prod_1);
+        // let cross_prod_1_norm_factor: f64 = Self::calc_vec_norm(&cross_prod_1);
         // cross_prod_1 = cross_prod_1
         //     .iter()
         //     .map(|x| x / cross_prod_1_norm_factor)
         //     .collect();
-        // let cross_prod_2_norm_factor: f64 = Molecule::calc_vec_norm(&cross_prod_2);
+        // let cross_prod_2_norm_factor: f64 = Self::calc_vec_norm(&cross_prod_2);
         // cross_prod_2 = cross_prod_2
         //     .iter()
         //     .map(|x| x / cross_prod_2_norm_factor)
         //     .collect();
-        // let numerator: f64 = Molecule::calc_scalar_prod(&cross_prod_1, &cross_prod_2);
+        // let numerator: f64 = Self::calc_scalar_prod(&cross_prod_1, &cross_prod_2);
         // let sign = if numerator > 1.0 { 1.0 } else { -1.0 };
 
         // return (sign * dihedral_angle).to_degrees();
@@ -244,12 +278,12 @@ impl Molecule {
         // let unit_32: Vec<f64> = self.calc_e_ij(idx3, idx2);
         // let unit_34: Vec<f64> = self.calc_e_ij(idx3, idx4);
 
-        // let x_prod_u_21_u_23: Vec<f64> = Molecule::calc_unit_vec_cross_prod(&unit_21, &unit_23);
-        // let x_prod_u_32_u_34: Vec<f64> = Molecule::calc_unit_vec_cross_prod(&unit_32, &unit_34);
+        // let x_prod_u_21_u_23: Vec<f64> = Self::calc_unit_vec_cross_prod(&unit_21, &unit_23);
+        // let x_prod_u_32_u_34: Vec<f64> = Self::calc_unit_vec_cross_prod(&unit_32, &unit_34);
 
-        // let torsion_angle: f64 = Molecule::calc_scalar_prod(&x_prod_u_21_u_23, &x_prod_u_32_u_34);
+        // let torsion_angle: f64 = Self::calc_scalar_prod(&x_prod_u_21_u_23, &x_prod_u_32_u_34);
         // let mut sign_test_scalar_prod: f64 =
-        //     Molecule::calc_scalar_prod(&x_prod_u_21_u_23, &unit_34);
+        //     Self::calc_scalar_prod(&x_prod_u_21_u_23, &unit_34);
 
         // if sign_test_scalar_prod < 0.0 {
         //     sign_test_scalar_prod = 1.0;
@@ -263,10 +297,10 @@ impl Molecule {
         let e_jk: Vec<f64> = self.calc_e_ij(idx2, idx3);
         let e_kl: Vec<f64> = self.calc_e_ij(idx3, idx4);
 
-        let x_prod_e_ij_e_jk: Vec<f64> = Molecule::calc_unit_vec_cross_prod(&e_ij, &e_jk);
-        let x_prod_e_jk_e_kl: Vec<f64> = Molecule::calc_unit_vec_cross_prod(&e_jk, &e_kl);
+        let x_prod_e_ij_e_jk: Vec<f64> = Self::calc_unit_vec_cross_prod(&e_ij, &e_jk);
+        let x_prod_e_jk_e_kl: Vec<f64> = Self::calc_unit_vec_cross_prod(&e_jk, &e_kl);
 
-        let cos_tors_angle: f64 = Molecule::calc_scalar_prod(&x_prod_e_ij_e_jk, &x_prod_e_jk_e_kl);
+        let cos_tors_angle: f64 = Self::calc_scalar_prod(&x_prod_e_ij_e_jk, &x_prod_e_jk_e_kl);
 
         if cos_tors_angle > 1.0 {
             return 0.0;
@@ -294,43 +328,68 @@ impl Molecule {
         // return tau.to_degrees();
     }
 
-    // fn get_mass_of_atom(&self, Z_val: usize) -> f64 {
-    //     return mass_map[&Z_val];
-    // }
+    fn get_mass_Z_val(&self, Z_val: &usize) -> f64 {
+        return self.mass_map.get(Z_val).unwrap().clone();
+    }
 
-    /// Returns the geom of this [`Molecule`].
-    fn print_geom(&self) {
-        println!("Printing geometry of molecule:\n");
-        for i in 0..self.no_atoms {
-            println!(
-                "{}\t{:.4}\t{:.4}\t{:.4}",
-                self.Z_vals[i],
-                self.geom[(i, 0)],
-                self.geom[(i, 1)],
-                self.geom[(i, 2)]
-            );
+    fn calc_center_mass(&self) -> Vec<f64> {
+        let mut total_mass: f64 = 0.0;
+        let mut center_mass_vec: Vec<f64> = vec![0.0; 3];
+
+        for (idx, Z_val) in self.Z_vals.iter().enumerate() {
+            let mass_Z_val: f64 = self.get_mass_Z_val(Z_val);
+            total_mass += mass_Z_val;
+
+            for cart_coord in 0..3 {
+                center_mass_vec[cart_coord] += mass_Z_val * self.geom[(idx, cart_coord)];
+            }
         }
+
+        center_mass_vec = center_mass_vec.iter().map(|x| x / total_mass).collect();
+        return center_mass_vec;
+    }
+
+    fn translate_mol_to_center_mass(&mut self) {
+        let center_mass_vec: Vec<f64> = self.calc_center_mass();
+
+        for (idx, Z_val) in self.Z_vals.iter().enumerate() {
+            for cart_coord in 0..3 {
+                self.geom[(idx, cart_coord)] -= center_mass_vec[cart_coord];
+            }
+        }
+    }
+
+    fn other_two(n: usize) -> Vec<usize> {
+        let arr: [usize; 3] = [0, 1, 2];
+        arr.iter()
+            .filter(|&x| *x != n)
+            .map(|x| *x)
+            .collect::<Vec<usize>>()
+    }
+
+    fn calc_inertia_tensor(&self) -> Array2<f64> {
+        let mut inertia_tensor: Array2<f64> = Array2::<f64>::zeros((3, 3));
+
+        for i in 0..3 {
+            for j in 0..3 {
+                for (idx, Z_val) in self.Z_vals.iter().enumerate() {
+                    let mass_Z_val: f64 = self.get_mass_Z_val(Z_val);
+                    if i == j {
+                        let (i1, i2) = (Self::other_two(i)[0], Self::other_two(i)[1]);
+                        inertia_tensor[(i, j)] += mass_Z_val
+                            * (self.geom[(idx, i1)].powi(2) + self.geom[(idx, i2)].powi(2));
+                    } else {
+                        inertia_tensor[(i, j)] -= mass_Z_val * self.geom[(idx, i)] * self.geom[(idx, j)];
+                    }
+                }
+            }
+        }
+
+        return inertia_tensor;
     }
 }
 
 fn main() {
-    // Main hashmap for masses
-    let mut mass_map: HashMap<usize, f64> = HashMap::new();
-
-    let masses_path: &str = "inp/masses.csv";
-    let massses_content: String =
-        fs::read_to_string(masses_path).expect("Failed to read geomfile!");
-
-    for (Z_val, line) in massses_content.lines().enumerate() {
-        if Z_val == 0 {
-            continue;
-        }
-        let line_vec: Vec<&str> = line.split(',').collect();
-        let mass: f64 = line_vec[0].parse().unwrap();
-        // println!("Mass of atom with Z value {}: {}", Z_val, mass);
-        mass_map.insert(Z_val, mass);
-    }
-
     //*******************************************************************
     //*                         OOP WAY
     //*******************************************************************
@@ -338,7 +397,7 @@ fn main() {
 
     //* Step 1: Read file into buffer
     println!("Starting the OOP way:");
-    let mol: Molecule = Molecule::new("inp/geom.xyz", 0);
+    let mut mol: Molecule = Molecule::new("inp/geom.xyz", 0);
     // let mol: Molecule = Molecule::new("QM_Programm/inp/geom.xyz", 0);
 
     // println!("Z values of atoms:\n{:?}\n", mol.Z_vals);
@@ -424,6 +483,19 @@ fn main() {
     // TODO: Implement the center of mass calculation
 
     //* Step 6: Center of mass
-    
+    println!("\nCenter of mass: {:?}", mol.calc_center_mass());
+
+    //* Step 6.5: Translate molecule such that center of mass is in middle of coordinate system
+    println!("\nTranslate molecule such that center of mass is in middle of coordinate system");
+    println!("Before translation:");
+    mol.print_geom();
+
+    println!("After translation:");
+    mol.translate_mol_to_center_mass();
+    mol.print_geom();
+
+    //* Step 7: Inertia tensor
+    println!("\nPrinting the moment of inertia tensor:");
+    println!("Inertia tensor: \n{:?}", mol.calc_inertia_tensor());
 
 }
