@@ -1,5 +1,5 @@
 use ndarray::Array2;
-use std::{collections::HashMap, fs}; 
+use std::{collections::HashMap, fs};
 // use array2d::{Array2D}; # does not work as intended
 // use nalgebra::{Vector3, Matrix3};
 // use std::io;
@@ -94,9 +94,9 @@ impl Molecule {
         let cos_v1_v2: f64 = Molecule::calc_scalar_prod(&vec1, &vec2);
         let sin_v1_v2: f64 = (1.0f64 - cos_v1_v2.powi(2)).sqrt();
 
-        vec_cros_prod[0] = vec1[1] * vec2[2] - vec1[2] * vec2[1] / sin_v1_v2;
-        vec_cros_prod[1] = vec1[2] * vec2[0] - vec1[0] * vec2[2] / sin_v1_v2;
-        vec_cros_prod[2] = vec1[0] * vec2[1] - vec1[1] * vec2[0] / sin_v1_v2;
+        vec_cros_prod[0] = (vec1[1] * vec2[2] - vec1[2] * vec2[1]) / sin_v1_v2;
+        vec_cros_prod[1] = (vec1[2] * vec2[0] - vec1[0] * vec2[2]) / sin_v1_v2;
+        vec_cros_prod[2] = (vec1[0] * vec2[1] - vec1[1] * vec2[0]) / sin_v1_v2;
 
         return vec_cros_prod;
     }
@@ -117,57 +117,70 @@ impl Molecule {
     }
 
     fn calc_oop_angle(&self, idx1: usize, idx2: usize, idx3: usize, idx4: usize) -> f64 {
-        // Version 1 -> wrong?
-        let bond_dist_jk: f64 = self.calc_r_ij(idx2, idx3);
-        let bond_dist_kl: f64 = self.calc_r_ij(idx3, idx2);
-        let bond_dist_ik: f64 = self.calc_r_ij(idx1, idx3);
+        // // Version 1 -> wrong?
+        // let bond_dist_jk: f64 = self.calc_r_ij(idx2, idx3);
+        // let bond_dist_kl: f64 = self.calc_r_ij(idx3, idx2);
+        // let bond_dist_ik: f64 = self.calc_r_ij(idx1, idx3);
 
-        let mut unit_kj: Vec<f64> = vec![0.0; 3];
-        let mut unit_kl: Vec<f64> = vec![0.0; 3];
-        let mut unit_ki: Vec<f64> = vec![0.0; 3];
+        // let mut unit_kj: Vec<f64> = vec![0.0; 3];
+        // let mut unit_kl: Vec<f64> = vec![0.0; 3];
+        // let mut unit_ki: Vec<f64> = vec![0.0; 3];
 
-        for cart_coord in 0..3 {
-            unit_kj[cart_coord] =
-                (&self.geom[(idx2, cart_coord)] - &self.geom[(idx3, cart_coord)]) / bond_dist_jk;
-            unit_kl[cart_coord] =
-                (&self.geom[(idx4, cart_coord)] - &self.geom[(idx3, cart_coord)]) / bond_dist_kl;
-            unit_ki[cart_coord] =
-                (&self.geom[(idx1, cart_coord)] - &self.geom[(idx3, cart_coord)]) / bond_dist_ik;
-        }
-
-        let cross_prod: Vec<f64> = Molecule::calc_vec_cross_prod(&unit_kj, &unit_kl);
-
-        let mut oop_angle: f64 = (Molecule::calc_scalar_prod(&cross_prod, &unit_ki))
-            / self.calc_bond_angle(idx2, idx3, idx4).sin();
-
-        if oop_angle < -1.0 {
-            oop_angle = -1.0f64.asin();
-        } else if oop_angle > 1.0 {
-            oop_angle = 1.0f64.asin();
-        } else {
-            oop_angle = oop_angle.asin();
-        }
-
-        return oop_angle.to_degrees();
-        // Version 2 -> correct?
-        // let unit_21: Vec<f64> = self.calc_e_ij(idx2, idx1);
-        // let unit_23: Vec<f64> = self.calc_e_ij(idx2, idx3);
-        // let unit_32: Vec<f64> = self.calc_e_ij(idx3, idx2);
-        // let unit_34: Vec<f64> = self.calc_e_ij(idx3, idx4);
-
-        // let cross_prod_u_21_u_23: Vec<f64> = Molecule::calc_vec_cross_prod(&unit_21, &unit_23);
-        // let cross_prod_u_32_u_34: Vec<f64> = Molecule::calc_vec_cross_prod(&unit_32, &unit_34);
-
-        // let oop_angle: f64 = Molecule::calc_scalar_prod(&cross_prod_u_21_u_23, &cross_prod_u_32_u_34);
-        // let mut sign_test_scalar_prod: f64 = Molecule::calc_scalar_prod(&cross_prod_u_21_u_23, &unit_34);
-
-        // if sign_test_scalar_prod < 0.0 {
-        //     sign_test_scalar_prod = 1.0;
-        // } else if sign_test_scalar_prod > 0.0 {
-        //     sign_test_scalar_prod = -1.0;
+        // for cart_coord in 0..3 {
+        //     unit_kj[cart_coord] =
+        //         (&self.geom[(idx2, cart_coord)] - &self.geom[(idx3, cart_coord)]) / bond_dist_jk;
+        //     unit_kl[cart_coord] =
+        //         (&self.geom[(idx4, cart_coord)] - &self.geom[(idx3, cart_coord)]) / bond_dist_kl;
+        //     unit_ki[cart_coord] =
+        //         (&self.geom[(idx1, cart_coord)] - &self.geom[(idx3, cart_coord)]) / bond_dist_ik;
         // }
 
-        // return (sign_test_scalar_prod * oop_angle.acos()).to_degrees();
+        // // println!("unit_kj: {:?}", unit_kj);
+        // // println!("unit_kl: {:?}", unit_kl);
+        // // println!("unit_ki: {:?}", unit_ki);
+        // let cross_prod: Vec<f64> = Molecule::calc_unit_vec_cross_prod(&unit_kj, &unit_kl);
+        // // println!("unit_kj: {:?}", unit_kj);
+        // // println!("unit_kl: {:?}", unit_kl);
+        // // println!("unit_ki: {:?}", unit_ki);
+        // // println!("cross_prod: {:?}", cross_prod);
+
+        // let mut oop_angle: f64 = (Molecule::calc_scalar_prod(&cross_prod, &unit_ki))
+        //     / self.calc_bond_angle(idx2, idx3, idx4).sin();
+
+        // if oop_angle < -1.0 {
+        //     oop_angle = -1.0f64.asin();
+        // } else if oop_angle > 1.0 {
+        //     oop_angle = 1.0f64.asin();
+        // } else {
+        //     oop_angle = oop_angle.asin();
+        // }
+
+        // return oop_angle.to_degrees();
+
+        //! Version 2 -> correct
+        let unit_kj: Vec<f64> = self.calc_e_ij(idx3, idx2);
+        let unit_kl: Vec<f64> = self.calc_e_ij(idx3, idx4);
+        let unit_ki: Vec<f64> = self.calc_e_ij(idx3, idx1);
+
+        //* Working, but nicer below
+        // let mut x_prod_kj_kl: Vec<f64> = Molecule::calc_vec_cross_prod(&unit_kj, &unit_kl);
+        // let sin_phi_jkl = self.calc_bond_angle(idx2, idx3, idx4).to_radians().sin();
+        // x_prod_kj_kl = x_prod_kj_kl
+        //     .iter()
+        //     .map(|x| x / sin_phi_jkl)
+        //     .collect();
+
+        let x_prod_kj_kl_norm = Molecule::calc_unit_vec_cross_prod(&unit_kj, &unit_kl);
+
+        let oop_angle: f64 = Molecule::calc_scalar_prod(&x_prod_kj_kl_norm, &unit_ki);
+
+        if oop_angle < -1.0 {
+            return -1.0f64.asin().to_degrees();
+        } else if oop_angle > 1.0 {
+            return 1.0f64.asin().to_degrees();
+        } else {
+            return oop_angle.asin().to_degrees();
+        }
     }
 
     fn calc_dihedral_angle(&self, idx1: usize, idx2: usize, idx3: usize, idx4: usize) -> f64 {
@@ -245,36 +258,40 @@ impl Molecule {
         // }
 
         // return (sign_test_scalar_prod * torsion_angle.acos()).to_degrees();
-        //! Version 3 of dihedral angle calculation -> using my C++ code as reference
+        //! Version 4 working now!!! -> EITHER calc_unit_vec_cross_prod OR calc_vec_cross_prod and div by sines
         let e_ij: Vec<f64> = self.calc_e_ij(idx1, idx2);
         let e_jk: Vec<f64> = self.calc_e_ij(idx2, idx3);
         let e_kl: Vec<f64> = self.calc_e_ij(idx3, idx4);
 
         let x_prod_e_ij_e_jk: Vec<f64> = Molecule::calc_unit_vec_cross_prod(&e_ij, &e_jk);
-        println!("Cross product 1: {:?}", x_prod_e_ij_e_jk);
         let x_prod_e_jk_e_kl: Vec<f64> = Molecule::calc_unit_vec_cross_prod(&e_jk, &e_kl);
-        println!("Cross product 2: {:?}", x_prod_e_jk_e_kl);
 
-        
-        let dot_prod: f64 = Molecule::calc_scalar_prod(&x_prod_e_ij_e_jk, &x_prod_e_jk_e_kl);
-        println!("Dot product: {}", dot_prod);
-        
-        let numerator: f64 = dot_prod;
-        let denom: f64 = self.calc_bond_angle(idx1, idx2, idx3).sin()
-            * self.calc_bond_angle(idx2, idx3, idx4).sin();
+        let cos_tors_angle: f64 = Molecule::calc_scalar_prod(&x_prod_e_ij_e_jk, &x_prod_e_jk_e_kl);
 
-        let mut tau: f64 = 0.0;
-        let mut cos_tau: f64 = numerator / denom;
-        println!("Cos tau: {}", cos_tau);
-
-        if cos_tau > 1.0 {
-            tau = 1.0f64.acos();
-        } else if cos_tau < -1.0 {
-            tau = std::f64::consts::PI;
+        if cos_tors_angle > 1.0 {
+            return 0.0;
+        } else if cos_tors_angle < -1.0 {
+            return 180.0;
         } else {
-            tau = cos_tau.acos();
+            return cos_tors_angle.acos().to_degrees();
         }
-        return tau.to_degrees();
+
+        // let numerator: f64 = dot_prod;
+        // let denom: f64 = self.calc_bond_angle(idx1, idx2, idx3).sin()
+        //     * self.calc_bond_angle(idx2, idx3, idx4).sin();
+
+        // let mut tau: f64 = 0.0;
+        // let mut cos_tau: f64 = numerator / denom;
+        // println!("Cos tau: {}", cos_tau);
+
+        // if cos_tau > 1.0 {
+        //     tau = 1.0f64.acos();
+        // } else if cos_tau < -1.0 {
+        //     tau = std::f64::consts::PI;
+        // } else {
+        //     tau = cos_tau.acos();
+        // }
+        // return tau.to_degrees();
     }
 
     // fn get_mass_of_atom(&self, Z_val: usize) -> f64 {
@@ -404,6 +421,9 @@ fn main() {
             }
         }
     }
-    // TODO: Torsion is definitely wrong, but I don't know why. OOP might also be wrong…
     // TODO: Implement the center of mass calculation
+
+    //* Step 6: Center of mass
+    
+
 }
