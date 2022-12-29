@@ -20,28 +20,27 @@ struct Molecule {
     Z_vals: Vec<usize>,
     // HashMap of atomic masses
     mass_map: HashMap<usize, f64>,
-    hessian: Array2<f64>,
     // point_group
     // point_group: String,
 }
 
 impl Molecule {
-    fn new(geom_file: &str, hessian_file: &str, charge: i32) -> Molecule {
+    fn new(geomfile: &str, charge: i32) -> Molecule {
         //* Step 1: Read the coord data from input
-        println!("In file {}", geom_file);
+        println!("In file {}", geomfile);
 
         //* Show contents of file
-        let geom_file_contents: String =
-            fs::read_to_string(geom_file).expect("Failed to read geom file!");
+        let geomfile_contents: String =
+            fs::read_to_string(geomfile).expect("Failed to read geomfile!");
 
         //* Read no of atoms first for array size
-        let no_atoms: usize = geom_file_contents.lines().nth(0).unwrap().parse().unwrap();
+        let no_atoms: usize = geomfile_contents.lines().nth(0).unwrap().parse().unwrap();
         println!("No of atoms: {}", no_atoms);
 
         let mut Z_vals: Vec<usize> = vec![0; no_atoms];
         let mut geom: Array2<f64> = Array2::zeros((no_atoms, 3));
 
-        for (line_idx, line) in geom_file_contents.lines().skip(1).enumerate() {
+        for (line_idx, line) in geomfile_contents.lines().skip(1).enumerate() {
             let line_split: Vec<&str> = line.split_whitespace().collect();
 
             Z_vals[line_idx] = line_split[0].parse().unwrap();
@@ -68,53 +67,12 @@ impl Molecule {
             mass_map.insert(Z_val, mass);
         }
 
-        //* Show contents of file
-        let hessian_contents: String =
-            fs::read_to_string(hessian_file).expect("Failed to read hessian file!");
-
-        // Parse the data from the string into a Vec of Vec<f64>.
-        let hess_data: Vec<Vec<f64>> = hessian_contents
-            .lines()
-            .skip(1)
-            .map(|line| line
-                .split_whitespace()
-                .map(|s| s.parse().unwrap())
-                .collect())
-            .collect();
-
-        // // Create an Array2 from the data.
-        // let hessian_matr: Array2<f64> = Array2::from_shape_vec(
-        //     (hess_data.len(), hess_data[0].len()), 
-        //     hess_data).unwrap();
-
-        let hess_data: Vec<f64> = hess_data.into_iter().flatten().collect();
-
-        let hessian: Array2<f64> = Array2::from_shape_vec(
-            (3 * no_atoms, 3 * no_atoms),
-            hess_data
-        ).unwrap();
-        
-
-
-
-        // let hessian: Array2<f64> = Array2::from_shape_vec(
-        //     (3 * no_atoms, 3 * no_atoms),
-        //     hessian_contents
-        //         .skip(1)
-        //         .split_whitespace()
-        //         .map(|x| x.parse().unwrap())
-        //         .collect()
-        //         .unwarp(),
-        // )
-        // .unwrap();
-
         Molecule {
             charge,
             no_atoms,
             geom,
             Z_vals,
             mass_map,
-            hessian,
         }
     }
 
@@ -448,166 +406,167 @@ fn main() {
 
     //* Step 1: Read file into buffer
     println!("Starting the OOP way:");
-    let mut mol: Molecule = Molecule::new("inp/geom.xyz", "inp/Project2/h2o.hess", 0);
+    let mut mol: Molecule = Molecule::new("inp/allene_bohr.xyz", 0);
+    // let mol: Molecule = Molecule::new("QM_Programm/inp/geom.xyz", 0);
 
     // println!("Z values of atoms:\n{:?}\n", mol.Z_vals);
     // println!("Geometry of molecule:\n{:?}\n", mol.geom);
-    // //* Fancy print of geometry of file (check for valid input)
-    // mol.print_geom();
+    //* Fancy print of geometry of file (check for valid input)
+    mol.print_geom();
 
-    // //* Step 2: Bond lengths
-    // println!("\nInteratomic distances (in bohr):\n");
-    // for i in 0..mol.no_atoms {
-    //     for j in 0..i {
-    //         if i != j {
-    //             let bond_length: f64 = mol.calc_r_ij(i, j);
+    //* Step 2: Bond lengths
+    println!("\nInteratomic distances (in bohr):\n");
+    for i in 0..mol.no_atoms {
+        for j in 0..i {
+            if i != j {
+                let bond_length: f64 = mol.calc_r_ij(i, j);
 
-    //             println!("Atom {}-{} is: {:.5}", i, j, bond_length);
-    //         } else {
-    //             continue;
-    //         }
-    //     }
-    // }
+                println!("Atom {}-{} is: {:.5}", i, j, bond_length);
+            } else {
+                continue;
+            }
+        }
+    }
 
-    // //* Step 3: Bond angles
-    // println!("\nBond angles (in degrees):\n");
-    // for i in 0..mol.no_atoms {
-    //     for j in 0..i {
-    //         for k in 0..j {
-    //             if mol.calc_r_ij(i, j) < 4.0 && mol.calc_r_ij(j, k) < 4.0 {
-    //                 let bond_angle: f64 = mol.calc_bond_angle(i, j, k);
-    //                 println!("Angle for {}-{}-{} is: {:.5}", i, j, k, bond_angle);
-    //             }
-    //         }
-    //     }
-    // }
+    //* Step 3: Bond angles
+    println!("\nBond angles (in degrees):\n");
+    for i in 0..mol.no_atoms {
+        for j in 0..i {
+            for k in 0..j {
+                if mol.calc_r_ij(i, j) < 4.0 && mol.calc_r_ij(j, k) < 4.0 {
+                    let bond_angle: f64 = mol.calc_bond_angle(i, j, k);
+                    println!("Angle for {}-{}-{} is: {:.5}", i, j, k, bond_angle);
+                }
+            }
+        }
+    }
 
-    // //* Step 4: OOP angles
-    // println!("\nOut-of-plane angles (in degrees):\n");
-    // for i in 0..mol.no_atoms {
-    //     for j in 0..mol.no_atoms {
-    //         for k in 0..mol.no_atoms {
-    //             for l in 0..mol.no_atoms {
-    //                 let bond_dist_jk: f64 = mol.calc_r_ij(j, k);
-    //                 let bond_dist_kl: f64 = mol.calc_r_ij(k, l);
-    //                 let bond_dist_ik: f64 = mol.calc_r_ij(i, k);
-    //                 if i != j
-    //                     && i != k
-    //                     && i != l
-    //                     && j != k
-    //                     && k != l
-    //                     && j != l
-    //                     && bond_dist_jk < 4.0
-    //                     && bond_dist_kl < 4.0
-    //                     && bond_dist_ik < 4.0
-    //                 {
-    //                     let oop_angle: f64 = mol.calc_oop_angle(i, j, k, l);
+    //* Step 4: OOP angles
+    println!("\nOut-of-plane angles (in degrees):\n");
+    for i in 0..mol.no_atoms {
+        for j in 0..mol.no_atoms {
+            for k in 0..mol.no_atoms {
+                for l in 0..mol.no_atoms {
+                    let bond_dist_jk: f64 = mol.calc_r_ij(j, k);
+                    let bond_dist_kl: f64 = mol.calc_r_ij(k, l);
+                    let bond_dist_ik: f64 = mol.calc_r_ij(i, k);
+                    if i != j
+                        && i != k
+                        && i != l
+                        && j != k
+                        && k != l
+                        && j != l
+                        && bond_dist_jk < 4.0
+                        && bond_dist_kl < 4.0
+                        && bond_dist_ik < 4.0
+                    {
+                        let oop_angle: f64 = mol.calc_oop_angle(i, j, k, l);
 
-    //                     println!("OOP angle for {}-{}-{}-{} is: {:.5}", i, j, k, l, oop_angle);
-    //                 }
-    //             }
-    //         }
-    //     }
-    // }
+                        println!("OOP angle for {}-{}-{}-{} is: {:.5}", i, j, k, l, oop_angle);
+                    }
+                }
+            }
+        }
+    }
 
-    // // * Step 5: Torsion / dihedral angles
-    // println!("\nTorsion angles (in degrees):\n");
-    // for i in 0..mol.no_atoms {
-    //     for j in 0..i {
-    //         for k in 0..j {
-    //             for l in 0..k {
-    //                 let bond_dist_ij: f64 = mol.calc_r_ij(i, j);
-    //                 let bond_dist_jk: f64 = mol.calc_r_ij(j, k);
-    //                 let bond_dist_kl: f64 = mol.calc_r_ij(k, l);
-    //                 if bond_dist_ij < 4.0 && bond_dist_jk < 4.0 && bond_dist_kl < 4.0 {
-    //                     let dihedral_angle: f64 = mol.calc_dihedral_angle(i, j, k, l);
-    //                     println!(
-    //                         "Dihedral angle for {}-{}-{}-{} is: {:.5}",
-    //                         i, j, k, l, dihedral_angle
-    //                     );
-    //                 }
-    //             }
-    //         }
-    //     }
-    // }
+    // * Step 5: Torsion / dihedral angles
+    println!("\nTorsion angles (in degrees):\n");
+    for i in 0..mol.no_atoms {
+        for j in 0..i {
+            for k in 0..j {
+                for l in 0..k {
+                    let bond_dist_ij: f64 = mol.calc_r_ij(i, j);
+                    let bond_dist_jk: f64 = mol.calc_r_ij(j, k);
+                    let bond_dist_kl: f64 = mol.calc_r_ij(k, l);
+                    if bond_dist_ij < 4.0 && bond_dist_jk < 4.0 && bond_dist_kl < 4.0 {
+                        let dihedral_angle: f64 = mol.calc_dihedral_angle(i, j, k, l);
+                        println!(
+                            "Dihedral angle for {}-{}-{}-{} is: {:.5}",
+                            i, j, k, l, dihedral_angle
+                        );
+                    }
+                }
+            }
+        }
+    }
+    // TODO: Implement the center of mass calculation
 
-    // //* Step 6: Center of mass
-    // println!("\nCenter of mass: {:?}", mol.calc_center_mass());
+    //* Step 6: Center of mass
+    println!("\nCenter of mass: {:?}", mol.calc_center_mass());
 
-    // //* Step 6.5: Translate molecule such that center of mass is in middle of coordinate system
-    // println!("\nTranslate molecule such that center of mass is in middle of coordinate system");
-    // println!("Before translation:");
-    // mol.print_geom();
+    //* Step 6.5: Translate molecule such that center of mass is in middle of coordinate system
+    println!("\nTranslate molecule such that center of mass is in middle of coordinate system");
+    println!("Before translation:");
+    mol.print_geom();
 
-    // println!("After translation:");
-    // mol.translate_mol_to_center_mass();
-    // mol.print_geom();
+    println!("After translation:");
+    mol.translate_mol_to_center_mass();
+    mol.print_geom();
 
-    // //* Step 7: Inertia tensor
-    // println!("\nPrinting the moment of inertia tensor:");
-    // let mut inertia_tensor: Array2<f64> = mol.calc_inertia_tensor();
-    // println!("Inertia tensor: \n{:?}", inertia_tensor);
+    //* Step 7: Inertia tensor
+    println!("\nPrinting the moment of inertia tensor:");
+    let mut inertia_tensor: Array2<f64> = mol.calc_inertia_tensor();
+    println!("Inertia tensor: \n{:?}", inertia_tensor);
 
-    // //* Step 7.1 : Get eigenvalues and eigenvectors of inertia tensor
-    // let eigenvals: Array1<f64> = inertia_tensor
-    //     .eigvalsh(ndarray_linalg::UPLO::Upper)
-    //     .unwrap();
+    //* Step 7.1 : Get eigenvalues and eigenvectors of inertia tensor
+    let eigenvals: Array1<f64> = inertia_tensor
+        .eigvalsh(ndarray_linalg::UPLO::Upper)
+        .unwrap();
 
-    // println!(
-    //     "Principal moments of inertia (amu * bohr^2): \n{:?}\n",
-    //     &eigenvals
-    // );
-    // println!(
-    //     "Principal moments of inertia (amu * Angstrom^2): \n{:?}\n",
-    //     &eigenvals * (1.0e10 * physical_constants::BOHR_RADIUS).powi(2) //* prefactor but not exponent for conversion
-    // );
-    // println!(
-    //     "Principal moments of inertia (g * cm^2): \n{:?}\n",
-    //     &eigenvals
-    //         * physical_constants::ATOMIC_MASS_CONSTANT
-    //         * (100. * physical_constants::BOHR_RADIUS).powi(2)
-    // );
+    println!(
+        "Principal moments of inertia (amu * bohr^2): \n{:?}\n",
+        &eigenvals
+    );
+    println!(
+        "Principal moments of inertia (amu * Angstrom^2): \n{:?}\n",
+        &eigenvals * (1.0e10 * physical_constants::BOHR_RADIUS).powi(2) //* prefactor but not exponent for conversion
+    );
+    println!(
+        "Principal moments of inertia (g * cm^2): \n{:?}\n",
+        &eigenvals
+            * physical_constants::ATOMIC_MASS_CONSTANT
+            * (100. * physical_constants::BOHR_RADIUS).powi(2)
+    );
 
-    // //* Step 8: Rotational constants
-    // let conv_factor_recip_cm: f64 = 1.0
-    //     / (100.0
-    //         * physical_constants::ATOMIC_MASS_CONSTANT
-    //         * physical_constants::BOHR_RADIUS.powi(2));
-    // // println!("\nConversion factor: {}\n", conv_factor_recip_cm);
-    // let rot_const_A_per_cm: f64 =
-    //     conv_factor_recip_cm * (h / (8.0 * PI.powi(2) * c * &eigenvals[0]));
-    // let rot_const_B_per_cm: f64 =
-    //     conv_factor_recip_cm * (h / (8.0 * PI.powi(2) * c * &eigenvals[1]));
-    // let rot_const_C_per_cm: f64 =
-    //     conv_factor_recip_cm * (h / (8.0 * PI.powi(2) * c * &eigenvals[2]));
-    // println!(
-    //     "Rotational constants (cm^-1): \nA: {:.4}\nB: {:.4}\nC: {:.4}\n",
-    //     &rot_const_A_per_cm, &rot_const_B_per_cm, &rot_const_C_per_cm
-    // );
+    //* Step 8: Rotational constants
+    let conv_factor_recip_cm: f64 = 1.0
+        / (100.0
+            * physical_constants::ATOMIC_MASS_CONSTANT
+            * physical_constants::BOHR_RADIUS.powi(2));
+    // println!("\nConversion factor: {}\n", conv_factor_recip_cm);
+    let rot_const_A_per_cm: f64 =
+        conv_factor_recip_cm * (h / (8.0 * PI.powi(2) * c * &eigenvals[0]));
+    let rot_const_B_per_cm: f64 =
+        conv_factor_recip_cm * (h / (8.0 * PI.powi(2) * c * &eigenvals[1]));
+    let rot_const_C_per_cm: f64 =
+        conv_factor_recip_cm * (h / (8.0 * PI.powi(2) * c * &eigenvals[2]));
+    println!(
+        "Rotational constants (cm^-1): \nA: {:.4}\nB: {:.4}\nC: {:.4}\n",
+        &rot_const_A_per_cm, &rot_const_B_per_cm, &rot_const_C_per_cm
+    );
 
-    // //* Step 8.1: Classify the type of rotor for molecule
-    // println!("Classifying the type of rotor for molecule...");
-    // if mol.no_atoms == 2 {
-    //     println!("Molecule is linear and diatomic!");
-    // } else if &eigenvals[0] < &1.0e-4 {
-    //     println!("Molecule is linear!");
-    // } else if (&eigenvals[0] - &eigenvals[1]).abs() < 1.0e-4
-    //     && (&eigenvals[1] - &eigenvals[2]).abs() < 1.0e-4
-    // {
-    //     println!("Molecule is symmetric top!");
-    // } else if (&eigenvals[0] - &eigenvals[1]).abs() < 1.0e-4
-    //     && (&eigenvals[1] - &eigenvals[2]).abs() > 1.0e-4
-    // {
-    //     println!("Molecule is oblate symmetric top!")
-    // } else if (&eigenvals[0] - &eigenvals[1]).abs() > 1.0e-4
-    //     && (&eigenvals[1] - &eigenvals[2]).abs() < 1.0e-4
-    // {
-    //     println!("Molecule is a prolate symmetric top!")
-    // } else {
-    //     println!("Molecule is an asymmetric top!");
-    // }
+    //* Step 8.1: Classify the type of rotor for molecule
+    println!("Classifying the type of rotor for molecule...");
+    if mol.no_atoms == 2 {
+        println!("Molecule is linear and diatomic!");
+    } else if &eigenvals[0] < &1.0e-4 {
+        println!("Molecule is linear!");
+    } else if (&eigenvals[0] - &eigenvals[1]).abs() < 1.0e-4
+        && (&eigenvals[1] - &eigenvals[2]).abs() < 1.0e-4
+    {
+        println!("Molecule is symmetric top!");
+    } else if (&eigenvals[0] - &eigenvals[1]).abs() < 1.0e-4
+        && (&eigenvals[1] - &eigenvals[2]).abs() > 1.0e-4
+    {
+        println!("Molecule is oblate symmetric top!")
+    } else if (&eigenvals[0] - &eigenvals[1]).abs() > 1.0e-4
+        && (&eigenvals[1] - &eigenvals[2]).abs() < 1.0e-4
+    {
+        println!("Molecule is a prolate symmetric top!")
+    } else {
+        println!("Molecule is an asymmetric top!");
+    }
 
-    //* Project 2: read coordinate data DONE -> read hessian
 
     println!("\n***********************");
     println!("RUN ENDED SUCCESSFULLY!");
