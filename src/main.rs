@@ -1,5 +1,8 @@
+use ndarray::prelude::*;
 use ndarray::{Array1, Array2};
-use ndarray_linalg::{eigh, EigValsh, Eigh};
+use ndarray_linalg::{EigValsh, Scalar};
+use physical_constants;
+use std::f64::consts::PI;
 use std::{collections::HashMap, fs};
 // use array2d::{Array2D}; # does not work as intended
 // use nalgebra::{Vector3, Matrix3};
@@ -392,6 +395,10 @@ impl Molecule {
 }
 
 fn main() {
+    //* Natural constants
+    let h: f64 = physical_constants::PLANCK_CONSTANT;
+    // let h_bar: f64 = physical_constants::REDUCED_PLANCK_CONSTANT;
+    let c: f64 = physical_constants::SPEED_OF_LIGHT_IN_VACUUM;
     //*******************************************************************
     //*                         OOP WAY
     //*******************************************************************
@@ -399,7 +406,7 @@ fn main() {
 
     //* Step 1: Read file into buffer
     println!("Starting the OOP way:");
-    let mut mol: Molecule = Molecule::new("inp/geom.xyz", 0);
+    let mut mol: Molecule = Molecule::new("inp/allene_bohr.xyz", 0);
     // let mol: Molecule = Molecule::new("QM_Programm/inp/geom.xyz", 0);
 
     // println!("Z values of atoms:\n{:?}\n", mol.Z_vals);
@@ -408,7 +415,7 @@ fn main() {
     mol.print_geom();
 
     //* Step 2: Bond lengths
-    println!("Interatomic distances (in bohr):\n");
+    println!("\nInteratomic distances (in bohr):\n");
     for i in 0..mol.no_atoms {
         for j in 0..i {
             if i != j {
@@ -502,7 +509,66 @@ fn main() {
     println!("Inertia tensor: \n{:?}", inertia_tensor);
 
     //* Step 7.1 : Get eigenvalues and eigenvectors of inertia tensor
-    let (eigenvals, eigenvecs): (Array1<f64>, Array2<f64>) = inertia_tensor
-        .eigh(ndarray_linalg::UPLO::Upper)
+    let eigenvals: Array1<f64> = inertia_tensor
+        .eigvalsh(ndarray_linalg::UPLO::Upper)
         .unwrap();
+
+    println!(
+        "Principal moments of inertia (amu * bohr^2): \n{:?}\n",
+        &eigenvals
+    );
+    println!(
+        "Principal moments of inertia (amu * Angstrom^2): \n{:?}\n",
+        &eigenvals * (1.0e10 * physical_constants::BOHR_RADIUS).powi(2) //* prefactor but not exponent for conversion
+    );
+    println!(
+        "Principal moments of inertia (g * cm^2): \n{:?}\n",
+        &eigenvals
+            * physical_constants::ATOMIC_MASS_CONSTANT
+            * (100. * physical_constants::BOHR_RADIUS).powi(2)
+    );
+
+    //* Step 8: Rotational constants
+    let conv_factor_recip_cm: f64 = 1.0
+        / (100.0
+            * physical_constants::ATOMIC_MASS_CONSTANT
+            * physical_constants::BOHR_RADIUS.powi(2));
+    // println!("\nConversion factor: {}\n", conv_factor_recip_cm);
+    let rot_const_A_per_cm: f64 =
+        conv_factor_recip_cm * (h / (8.0 * PI.powi(2) * c * &eigenvals[0]));
+    let rot_const_B_per_cm: f64 =
+        conv_factor_recip_cm * (h / (8.0 * PI.powi(2) * c * &eigenvals[1]));
+    let rot_const_C_per_cm: f64 =
+        conv_factor_recip_cm * (h / (8.0 * PI.powi(2) * c * &eigenvals[2]));
+    println!(
+        "Rotational constants (cm^-1): \nA: {:.4}\nB: {:.4}\nC: {:.4}\n",
+        &rot_const_A_per_cm, &rot_const_B_per_cm, &rot_const_C_per_cm
+    );
+
+    //* Step 8.1: Classify the type of rotor for molecule
+    println!("Classifying the type of rotor for molecule...");
+    if mol.no_atoms == 2 {
+        println!("Molecule is linear and diatomic!");
+    } else if &eigenvals[0] < &1.0e-4 {
+        println!("Molecule is linear!");
+    } else if (&eigenvals[0] - &eigenvals[1]).abs() < 1.0e-4
+        && (&eigenvals[1] - &eigenvals[2]).abs() < 1.0e-4
+    {
+        println!("Molecule is symmetric top!");
+    } else if (&eigenvals[0] - &eigenvals[1]).abs() < 1.0e-4
+        && (&eigenvals[1] - &eigenvals[2]).abs() > 1.0e-4
+    {
+        println!("Molecule is oblate symmetric top!")
+    } else if (&eigenvals[0] - &eigenvals[1]).abs() > 1.0e-4
+        && (&eigenvals[1] - &eigenvals[2]).abs() < 1.0e-4
+    {
+        println!("Molecule is a prolate symmetric top!")
+    } else {
+        println!("Molecule is an asymmetric top!");
+    }
+
+
+    println!("***********************");
+    println!("RUN ENDED SUCCESSFULLY!");
+    println!("***********************");
 }
