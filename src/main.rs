@@ -1,12 +1,9 @@
 use ndarray::prelude::*;
-use ndarray::{Array1, Array2};
 use ndarray_linalg::{EigValsh, Scalar};
 use physical_constants;
 use std::f64::consts::PI;
+use std::io::{BufRead, BufReader};
 use std::{collections::HashMap, fs};
-// use array2d::{Array2D}; # does not work as intended
-// use nalgebra::{Vector3, Matrix3};
-// use std::io;
 
 // * Version 2 of trying to implement an OOP approach
 struct Molecule {
@@ -51,7 +48,7 @@ impl Molecule {
             }
         }
 
-        // Main hashmap for masses
+        //* Main hashmap for masses
         let mut mass_map: HashMap<usize, f64> = HashMap::new();
 
         let masses_path: &str = "inp/masses.csv";
@@ -68,45 +65,33 @@ impl Molecule {
             mass_map.insert(Z_val, mass);
         }
 
-        //* Show contents of file
-        let hessian_contents: String =
-            fs::read_to_string(hessian_file).expect("Failed to read hessian file!");
+        //* READING THE HESSIAN
+        let hess_file = fs::File::open(hessian_file).unwrap();
+        let hess_reader = BufReader::new(hess_file);
 
-        // Parse the data from the string into a Vec of Vec<f64>.
-        let hess_data: Vec<Vec<f64>> = hessian_contents
-            .lines()
-            .skip(1)
-            .map(|line| line
+        let mut hessian: Vec<Vec<f64>> = Vec::new();
+        let mut line_iter = hess_reader.lines();
+
+        let hess_no_atoms: usize = line_iter.next().unwrap().unwrap().trim().parse().unwrap();
+        println!("No of atoms in hessian: {}", hess_no_atoms);
+        if no_atoms != hess_no_atoms {
+            panic!("Number of atoms in geom file and hessian file are not the same!");
+        }
+
+        for line in line_iter {
+            let line = line.unwrap();
+            let values: Vec<f64> = line
                 .split_whitespace()
                 .map(|s| s.parse().unwrap())
-                .collect())
-            .collect();
+                .collect();
+            hessian.push(values);
+        }
 
-        // // Create an Array2 from the data.
-        // let hessian_matr: Array2<f64> = Array2::from_shape_vec(
-        //     (hess_data.len(), hess_data[0].len()), 
-        //     hess_data).unwrap();
-
-        let hess_data: Vec<f64> = hess_data.into_iter().flatten().collect();
-
-        let hessian: Array2<f64> = Array2::from_shape_vec(
-            (3 * no_atoms, 3 * no_atoms),
-            hess_data
-        ).unwrap();
-        
-
-
-
-        // let hessian: Array2<f64> = Array2::from_shape_vec(
-        //     (3 * no_atoms, 3 * no_atoms),
-        //     hessian_contents
-        //         .skip(1)
-        //         .split_whitespace()
-        //         .map(|x| x.parse().unwrap())
-        //         .collect()
-        //         .unwarp(),
-        // )
-        // .unwrap();
+        let mut hessian: Array2<f64> = Array2::from_shape_vec(
+            (3 * hess_no_atoms, 3 * hess_no_atoms),
+            hessian.into_iter().flatten().collect(),
+        )
+        .unwrap();
 
         Molecule {
             charge,
@@ -434,6 +419,30 @@ impl Molecule {
 
         return inertia_tensor;
     }
+
+    fn mass_weight_hessian(&mut self) {
+
+        for i in 0..self.no_atoms * 3 {
+            for j in 0..self.no_atoms * 3 {
+                self.hessian[(i, j)] = self.hessian[(i, j)]
+                    / (self.get_mass_Z_val(&self.Z_vals[i / 3]) //* this uses integer div by default
+                    * self.get_mass_Z_val(&self.Z_vals[j / 3])).sqrt();
+            }
+        }
+    }
+
+    fn calc_hess_eigenvals(&self) -> Array1<f64> {
+        let mut hess_eigenvals: Array1<f64> = self
+            .hessian
+            .eigvalsh(ndarray_linalg::UPLO::Upper)
+            .unwrap(); //* these values are in atomic units
+
+        //* Conversion to cm^-1
+        let conv: f64 = 0.0;
+        hess_eigenvals = conv * hess_eigenvals;
+        return hess_eigenvals;
+    }
+
 }
 
 fn main() {
@@ -448,7 +457,7 @@ fn main() {
 
     //* Step 1: Read file into buffer
     println!("Starting the OOP way:");
-    let mut mol: Molecule = Molecule::new("inp/geom.xyz", "inp/Project2/h2o.hess", 0);
+    let mut mol: Molecule = Molecule::new("inp/Project2/h2o.xyz", "inp/Project2/h2o.hess", 0);
 
     // println!("Z values of atoms:\n{:?}\n", mol.Z_vals);
     // println!("Geometry of molecule:\n{:?}\n", mol.geom);
@@ -608,7 +617,20 @@ fn main() {
     // }
 
     //* Project 2: read coordinate data DONE -> read hessian
+    //* Step 1: Read coordinates (see above in Molecule struct) */
+    //* Step 2: Read the cartessian hessian data
+    println!("Reading the hessian data...");
+    println!("{:?}", mol.hessian);
 
+    //* Step 3: Mass-weight the hessian matrix
+    mol.mass_weight_hessian();
+    println!("Mass-weighted hessian matrix: \n{:?}", mol.hessian);
+
+    //* Step 4: Calculate eigenvalues of the hessian matrix
+    println!("Calculating eigenvalues of the hessian matrix...");
+    println!("Eigenvalues: \n{:?}", mol.calc_hess_eigenvals());
+
+    ///////////////////////////////////////////////////
     println!("\n***********************");
     println!("RUN ENDED SUCCESSFULLY!");
     println!("***********************");
