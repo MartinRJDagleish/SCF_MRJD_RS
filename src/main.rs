@@ -421,28 +421,25 @@ impl Molecule {
     }
 
     fn mass_weight_hessian(&mut self) {
-
         for i in 0..self.no_atoms * 3 {
             for j in 0..self.no_atoms * 3 {
                 self.hessian[(i, j)] = self.hessian[(i, j)]
                     / (self.get_mass_Z_val(&self.Z_vals[i / 3]) //* this uses integer div by default
-                    * self.get_mass_Z_val(&self.Z_vals[j / 3])).sqrt();
+                    * self.get_mass_Z_val(&self.Z_vals[j / 3]))
+                    .sqrt();
             }
         }
     }
 
     fn calc_hess_eigenvals(&self) -> Array1<f64> {
-        let mut hess_eigenvals: Array1<f64> = self
-            .hessian
-            .eigvalsh(ndarray_linalg::UPLO::Upper)
-            .unwrap(); //* these values are in atomic units
+        let mut hess_eigenvals: Array1<f64> =
+            self.hessian.eigvalsh(ndarray_linalg::UPLO::Upper).unwrap(); //* these values are in atomic units
 
         //* Conversion to cm^-1
-        let conv: f64 = 0.0;
-        hess_eigenvals = conv * hess_eigenvals;
+        // let conv: f64 = 0.0;
+        // hess_eigenvals = conv * hess_eigenvals;
         return hess_eigenvals;
     }
-
 }
 
 fn main() {
@@ -629,6 +626,14 @@ fn main() {
     //* Step 4: Calculate eigenvalues of the hessian matrix
     println!("Calculating eigenvalues of the hessian matrix...");
     println!("Eigenvalues: \n{:?}", mol.calc_hess_eigenvals());
+    let conv_test: f64 = (physical_constants::HARTREE_ENERGY
+        / (physical_constants::BOHR_RADIUS.powi(2) * physical_constants::ATOMIC_MASS_CONSTANT))
+        .sqrt() * 3.335641e-11f64 * 1.0 / (2.0 * PI);
+        // / (100.0 * c * PI);
+    println!(
+        "Test:\n {:?}",
+        mol.calc_hess_eigenvals().mapv(|x| conv_test * x)
+    );
 
     ///////////////////////////////////////////////////
     println!("\n***********************");
