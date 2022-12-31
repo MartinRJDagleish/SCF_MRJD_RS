@@ -452,10 +452,7 @@ fn main() {
     //*******************************************************************
     //* OOP way:
 
-    //* Step 1: Read file into buffer
-    println!("Starting the OOP way:");
-    let mut mol: Molecule =
-        Molecule::new("inp/Project2/h2o.xyz", "inp/Project2/h2o.hess", 0);
+    let mut mol: Molecule = Molecule::new("inp/Project3/h2o.xyz", "inp/Project2/h2o.hess", 0);
 
     // println!("Z values of atoms:\n{:?}\n", mol.Z_vals);
     // println!("Geometry of molecule:\n{:?}\n", mol.geom);
@@ -617,24 +614,83 @@ fn main() {
     //* Project 2: read coordinate data DONE -> read hessian
     //* Step 1: Read coordinates (see above in Molecule struct) */
     //* Step 2: Read the cartessian hessian data
-    println!("\n\nReading the hessian data...");
-    println!("{:1.5}\n", mol.hessian);
+    // println!("\n\nReading the hessian data...");
+    // println!("{:1.5}\n", mol.hessian);
 
-    //* Step 3: Mass-weight the hessian matrix
-    mol.mass_weight_hessian();
-    println!("Mass-weighted hessian matrix: \n{:1.5}\n", mol.hessian);
+    // //* Step 3: Mass-weight the hessian matrix
+    // mol.mass_weight_hessian();
+    // println!("Mass-weighted hessian matrix: \n{:1.5}\n", mol.hessian);
 
-    //* Step 4: Calculate eigenvalues of the hessian matrix
-    println!("\n\nCalculating eigenvalues of the hessian matrix...\n");
-    println!("Eigenvalues: \n{:1.5}\n", mol.calc_hess_eigenvals());
-    let conv_hess_to_waveno: f64 = (physical_constants::HARTREE_ENERGY
-        / (physical_constants::BOHR_RADIUS.powi(2) * physical_constants::ATOMIC_MASS_CONSTANT))
-        .sqrt()
-        * (2.0 * PI * 100.0 * c).recip(); //* recip is ^-1, but "faster"
-    let harm_vib_freqs: Array1<f64> = mol
-        .calc_hess_eigenvals()
-        .mapv(|x| conv_hess_to_waveno * x.sqrt());
-    println!("Harmonic vibrational frequencies:\n{:1.2}\n", harm_vib_freqs);
+    // //* Step 4: Calculate eigenvalues of the hessian matrix
+    // println!("\n\nCalculating eigenvalues of the hessian matrix...\n");
+    // println!("Eigenvalues: \n{:1.5}\n", mol.calc_hess_eigenvals());
+    // let conv_hess_to_waveno: f64 = (physical_constants::HARTREE_ENERGY
+    //     / (physical_constants::BOHR_RADIUS.powi(2) * physical_constants::ATOMIC_MASS_CONSTANT))
+    //     .sqrt()
+    //     * (2.0 * PI * 100.0 * c).recip(); //* recip is ^-1, but "faster"
+    // let harm_vib_freqs: Array1<f64> = mol
+    //     .calc_hess_eigenvals()
+    //     .mapv(|x| conv_hess_to_waveno * x.sqrt());
+    // println!("Harmonic vibrational frequencies:\n{:1.2}\n", harm_vib_freqs);
+
+    //* Project 3: SCF (with data provided)
+    // ! THIS IS A QUICK FIX AND NOT A GOOD SOLUTION
+    let no_basis_funcs: usize = 7;
+    //* Step 1: Read Nuclear Repulsion Energy (enuc) from file
+    let e_nuc_val: f64 = fs::read_to_string("inp/Project3/STO-3G/enuc.dat")
+        .expect("Failed to open enuc data!")
+        .parse()
+        .expect("Failed to parse enuc data file!");
+    println!("Nuclear Repulsion Energy: {}\n", e_nuc_val);
+
+    //* Step 2.1: Read the overlap matrix
+    let mut S_matr: Array2<f64> = Array2::zeros((no_basis_funcs, no_basis_funcs));
+    let S_matr_file_contents =
+        fs::read_to_string("inp/Project3/STO-3G/s.dat").expect("Failed to open S matrix data!");
+
+    for line in S_matr_file_contents.lines() {
+        let mut line_split: Vec<&str> = line.trim().split_whitespace().collect();
+        let row: usize = line_split[0].parse::<usize>().unwrap() - 1;
+        let col: usize = line_split[1].parse::<usize>().unwrap() - 1;
+        let val: f64 = line_split[2].parse().unwrap();
+        S_matr[(row, col)] = val;
+        S_matr[(col, row)] = val;
+    }
+    println!("Overlap matrix S:\n{:1.5}\n", S_matr);
+
+    //* Step 2.2: Read the kinetic energy matrix
+    let mut T_matr: Array2<f64> = Array2::zeros((no_basis_funcs, no_basis_funcs));
+    let T_matr_file_contents =
+        fs::read_to_string("inp/Project3/STO-3G/t.dat").expect("Failed to open T matrix data!");
+
+    for line in T_matr_file_contents.lines() {
+        let mut line_split: Vec<&str> = line.trim().split_whitespace().collect();
+        let row: usize = line_split[0].parse::<usize>().unwrap() - 1;
+        let col: usize = line_split[1].parse::<usize>().unwrap() - 1;
+        let val: f64 = line_split[2].parse().unwrap();
+        T_matr[(row, col)] = val;
+        T_matr[(col, row)] = val;
+    }
+    println!("Kinetic energy matrix T:\n{:1.5}\n", T_matr);
+
+    //* Step 2.3: Read the nuclear attraction matrix
+    let mut V_matr: Array2<f64> = Array2::zeros((no_basis_funcs, no_basis_funcs));
+    let V_matr_file_contents =
+        fs::read_to_string("inp/Project3/STO-3G/v.dat").expect("Failed to open V matrix data!");
+
+    for line in V_matr_file_contents.lines() {
+        let mut line_split: Vec<&str> = line.trim().split_whitespace().collect();
+        let row: usize = line_split[0].parse::<usize>().unwrap() - 1;
+        let col: usize = line_split[1].parse::<usize>().unwrap() - 1;
+        let val: f64 = line_split[2].parse().unwrap();
+        V_matr[(row, col)] = val;
+        V_matr[(col, row)] = val;
+    }
+    println!("Nuclear attraction:\n{:1.5}\n", V_matr);
+
+    //* Step 2.4: Form core Hamiltonian H_core = T + V
+    let mut H_matr: Array2<f64> = &T_matr + &V_matr;
+    println!("Core Hamiltonian:\n{:1.5}\n", H_matr);
 
     ///////////////////////////////////////////////////
     println!("\n***********************");
