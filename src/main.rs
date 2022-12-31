@@ -694,9 +694,6 @@ fn main() {
     println!("Core Hamiltonian:\n{:1.5}\n", H_matr);
 
     //* Step 3: Read the 2-electron integrals -> ERI tensor
-    let mut ERI_array: Array1<f64> =
-        Array1::zeros(no_basis_funcs * (no_basis_funcs + 1) * (no_basis_funcs + 2));
-
     let (mut i, mut j, mut k, mut l) = (0, 0, 0, 0);
     let (mut ij, mut kl, mut ijkl) = (0, 0, 0);
 
@@ -707,7 +704,10 @@ fn main() {
     // for i in 0..=100 {
     //     sums.push(sum_up_to(i));
     // }
-    
+
+    //* 2nd try but with using a vec!
+    let mut ERI_vec: Vec<f64> = Vec::new();
+
     for line in ERI_file_contents.lines() {
         let mut line_split: Vec<&str> = line.trim().split_whitespace().collect();
         let i: usize = line_split[0].parse::<usize>().unwrap() - 1;
@@ -715,31 +715,14 @@ fn main() {
         let k: usize = line_split[2].parse::<usize>().unwrap() - 1;
         let l: usize = line_split[3].parse::<usize>().unwrap() - 1;
         let val: f64 = line_split[4].parse().unwrap();
-        ERI_array[calc_ijkl_idx(i, j, k, l)] = val;
+        let idx: usize = calc_ijkl_idx(i, j, k, l);
+        if ERI_vec.len() < idx {
+            ERI_vec.resize(idx, 0.0);
+        }
+        ERI_vec.insert(calc_ijkl_idx(i, j, k, l), val);
     }
-    println!("Nuclear attraction:\n{:1.5}\n", ERI_array);
-
-    // //* For testing */
-    // let mut set: HashSet<usize> = HashSet::new();
-
-    // for i in 0..7{
-    //     for j in 0..7{
-    //         for k in 0..7{
-    //             for l in 0..7{
-    //                 ij = if i > j {calc_cmp_idx(i,j)} else {calc_cmp_idx(j,i)};
-    //                 kl = if k > l {calc_cmp_idx(k,l)} else {calc_cmp_idx(l,k)};
-
-    //                 ijkl = if ij > kl {calc_cmp_idx(ij,kl)} else {calc_cmp_idx(kl,ij)};
-    //                 set.insert(ijkl);
-    //                 // println!("{} {} {} {} {} {} {}", i, j, k, l, ij, kl, ijkl);
-    //             }
-    //         }
-    //     }
-    // }
-    // println!("Set: {:?}", set);
-    // let mut my_vec: Vec<usize> = set.into_iter().collect();
-    // my_vec.sort();
-    // println!("{:?}", my_vec);
+    let ERI_array: Array1<f64> = Array1::from_vec(ERI_vec);
+    println!("Electron-electron repulsion array:\n{:1.5}\n", &ERI_array);
 
     ///////////////////////////////////////////////////
     println!("\n***********************");
@@ -748,9 +731,21 @@ fn main() {
 }
 
 fn calc_ijkl_idx(i: usize, j: usize, k: usize, l: usize) -> usize {
-    let ij: usize = if i > j { calc_cmp_idx(i, j) } else { calc_cmp_idx(j, i) };
-    let kl: usize = if k > l { calc_cmp_idx(k, l) } else { calc_cmp_idx(l, k) };
-    let ijkl: usize = if ij > kl { calc_cmp_idx(ij, kl) } else { calc_cmp_idx(kl, ij) }; 
+    let ij: usize = if i > j {
+        calc_cmp_idx(i, j)
+    } else {
+        calc_cmp_idx(j, i)
+    };
+    let kl: usize = if k > l {
+        calc_cmp_idx(k, l)
+    } else {
+        calc_cmp_idx(l, k)
+    };
+    let ijkl: usize = if ij > kl {
+        calc_cmp_idx(ij, kl)
+    } else {
+        calc_cmp_idx(kl, ij)
+    };
     ijkl
 }
 
