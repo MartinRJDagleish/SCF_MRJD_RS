@@ -1,5 +1,5 @@
 use ndarray::prelude::*;
-use ndarray_linalg::{EigValsh, Scalar};
+use ndarray_linalg::{EigValsh, Scalar, SymmetricSqrt};
 use physical_constants;
 use std::collections::HashSet;
 use std::f64::consts::PI;
@@ -723,6 +723,15 @@ fn main() {
     }
     let ERI_array: Array1<f64> = Array1::from_vec(ERI_vec);
     println!("Electron-electron repulsion array:\n{:1.5}\n", &ERI_array);
+
+
+    //* Step 4: Build the orthogonalization matrix
+    let mut S_matr_inv_sqrt: Array2<f64> = S_matr
+        .ssqrt(ndarray_linalg::UPLO::Upper)
+        .unwrap();
+
+    println!("S^-1/2:\n{:1.5}\n", S_matr_inv_sqrt);
+
 
     ///////////////////////////////////////////////////
     println!("\n***********************");
