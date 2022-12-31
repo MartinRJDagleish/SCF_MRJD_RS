@@ -1,6 +1,7 @@
 use ndarray::prelude::*;
 use ndarray_linalg::{EigValsh, Scalar};
 use physical_constants;
+use std::collections::HashSet;
 use std::f64::consts::PI;
 use std::io::{BufRead, BufReader};
 use std::{collections::HashMap, fs};
@@ -692,8 +693,72 @@ fn main() {
     let mut H_matr: Array2<f64> = &T_matr + &V_matr;
     println!("Core Hamiltonian:\n{:1.5}\n", H_matr);
 
+    //* Step 3: Read the 2-electron integrals -> ERI tensor
+    let mut ERI_array: Array1<f64> =
+        Array1::zeros(no_basis_funcs * (no_basis_funcs + 1) * (no_basis_funcs + 2));
+
+    let (mut i, mut j, mut k, mut l) = (0, 0, 0, 0);
+    let (mut ij, mut kl, mut ijkl) = (0, 0, 0);
+
+    let ERI_file_contents =
+        fs::read_to_string("inp/Project3/STO-3G/eri.dat").expect("Failed to open ERI matrix data!");
+
+    // let mut sums = Vec::new();
+    // for i in 0..=100 {
+    //     sums.push(sum_up_to(i));
+    // }
+    
+    for line in ERI_file_contents.lines() {
+        let mut line_split: Vec<&str> = line.trim().split_whitespace().collect();
+        let i: usize = line_split[0].parse::<usize>().unwrap() - 1;
+        let j: usize = line_split[1].parse::<usize>().unwrap() - 1;
+        let k: usize = line_split[2].parse::<usize>().unwrap() - 1;
+        let l: usize = line_split[3].parse::<usize>().unwrap() - 1;
+        let val: f64 = line_split[4].parse().unwrap();
+        ERI_array[calc_ijkl_idx(i, j, k, l)] = val;
+    }
+    println!("Nuclear attraction:\n{:1.5}\n", ERI_array);
+
+    // //* For testing */
+    // let mut set: HashSet<usize> = HashSet::new();
+
+    // for i in 0..7{
+    //     for j in 0..7{
+    //         for k in 0..7{
+    //             for l in 0..7{
+    //                 ij = if i > j {calc_cmp_idx(i,j)} else {calc_cmp_idx(j,i)};
+    //                 kl = if k > l {calc_cmp_idx(k,l)} else {calc_cmp_idx(l,k)};
+
+    //                 ijkl = if ij > kl {calc_cmp_idx(ij,kl)} else {calc_cmp_idx(kl,ij)};
+    //                 set.insert(ijkl);
+    //                 // println!("{} {} {} {} {} {} {}", i, j, k, l, ij, kl, ijkl);
+    //             }
+    //         }
+    //     }
+    // }
+    // println!("Set: {:?}", set);
+    // let mut my_vec: Vec<usize> = set.into_iter().collect();
+    // my_vec.sort();
+    // println!("{:?}", my_vec);
+
     ///////////////////////////////////////////////////
     println!("\n***********************");
     println!("RUN ENDED SUCCESSFULLY!");
     println!("***********************");
+}
+
+fn calc_ijkl_idx(i: usize, j: usize, k: usize, l: usize) -> usize {
+    let ij: usize = if i > j { calc_cmp_idx(i, j) } else { calc_cmp_idx(j, i) };
+    let kl: usize = if k > l { calc_cmp_idx(k, l) } else { calc_cmp_idx(l, k) };
+    let ijkl: usize = if ij > kl { calc_cmp_idx(ij, kl) } else { calc_cmp_idx(kl, ij) }; 
+    ijkl
+}
+
+fn calc_cmp_idx(idx1: usize, idx2: usize) -> usize {
+    let idx1idx2: usize = (idx1 * (idx1 + 1)) / 2 + idx2;
+    idx1idx2
+}
+
+fn sum_up_to(i: i32) -> i32 {
+    i * (i + 1) / 2
 }
