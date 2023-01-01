@@ -8,7 +8,8 @@ use std::{collections::HashMap, fs};
 
 
 mod molecule;
-use crate::molecule::Molecule;
+// use crate::molecule::Molecule;
+use crate::molecule::molecule::Molecule;
 
 fn main() {
     //* Natural constants
@@ -283,9 +284,11 @@ fn main() {
         let l: usize = line_split[3].parse::<usize>().unwrap() - 1;
         let val: f64 = line_split[4].parse().unwrap();
         let idx: usize = calc_ijkl_idx(i, j, k, l);
+        
         if ERI_vec.len() < idx {
             ERI_vec.resize(idx, 0.0);
         }
+
         ERI_vec.insert(calc_ijkl_idx(i, j, k, l), val);
     }
     let ERI_array: Array1<f64> = Array1::from_vec(ERI_vec);
