@@ -1,5 +1,5 @@
 [package]
-name = "QM_Programm"
+name = "SCF_MRJD_RS"
 version = "0.1.0"
 edition = "2021" # Rust edition to use
 

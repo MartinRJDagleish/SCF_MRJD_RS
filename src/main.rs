@@ -8,8 +8,7 @@ use std::{collections::HashMap, fs};
 
 
 mod molecule;
-// use crate::molecule::Molecule;
-use crate::molecule::molecule::Molecule;
+use crate::molecule::Molecule;
 
 fn main() {
     //* Natural constants
