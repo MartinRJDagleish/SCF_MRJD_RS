@@ -8,21 +8,23 @@ use std::{collections::HashMap, fs};
 
 pub struct Molecule {
     // charge
-    charge: i32,
+    pub charge: i32,
     // number of atoms
-    no_atoms: usize,
+    pub no_atoms: usize,
     // cartesian coordinates (geometry of molecule)
-    geom: Array2<f64>,
+    pub geom: Array2<f64>,
     // atomic numbers
-    Z_vals: Vec<usize>,
+    pub Z_vals: Vec<usize>,
     // HashMap of atomic masses
     // mass_map: HashMap<usize, f64>,
     // Array of atmoic masses
-    mass_array: [f64; 119],
-    hessian: Array2<f64>,
+    pub mass_array: [f64; 119],
+    pub hessian: Array2<f64>,
     // point_group
     // point_group: String,
 }
+
+mod geom;
 
 impl Molecule {
     pub fn new(geom_file: &str, hessian_file: &str, charge: i32) -> Molecule {
@@ -67,7 +69,7 @@ impl Molecule {
         //     mass_map.insert(Z_val, mass);
         // }
         //* Array instead of hashamp for masses -> no file reading necessary
-        // ! SOURCE: https://iupac.qmul.ac.uk/AtWt/ -> cleaned with OpenRefine 
+        // ! SOURCE: https://iupac.qmul.ac.uk/AtWt/ -> cleaned with OpenRefine
         let mass_array = [
             0.0,
             1.008,
@@ -229,15 +231,34 @@ impl Molecule {
     }
 
     /// Returns the geom of this [`Molecule`].
-    pub fn print_geom(&self) {
+    pub fn print_geom_input(&self) {
         // println!("Printing geometry of molecule:\n");
         for i in 0..self.no_atoms {
+            // println!(
+            //     "{}\t{:.6}\t{:.6}\t{:.6}",
+            //     &self.Z_vals[i],
+            //     &self.geom[(i, 0)],
+            //     &self.geom[(i, 1)],
+            //     &self.geom[(i, 2)],
+            // );
+            //* New print
             println!(
-                "{}\t{:.4}\t{:.4}\t{:.4}",
-                self.Z_vals[i],
-                self.geom[(i, 0)],
-                self.geom[(i, 1)],
-                self.geom[(i, 2)]
+                "{:<5} {:^10.6} {:^10.6} {:^10.6}",
+                &self.Z_vals[i],
+                &self.geom[(i, 0)],
+                &self.geom[(i, 1)],
+                &self.geom[(i, 2)],
+            );
+        }
+    }
+
+    pub fn print_geom(&self) {
+        for i in 0..self.no_atoms {
+            println!(
+                "{:^10.6} {:^10.6} {:^10.6}",
+                &self.geom[(i, 0)],
+                &self.geom[(i, 1)],
+                &self.geom[(i, 2)],
             );
         }
     }
@@ -484,14 +505,11 @@ impl Molecule {
         // return tau.to_degrees();
     }
 
+
     pub fn get_mass_Z_val(&self, Z_val: &usize) -> f64 {
         // return self.mass_map.get(Z_val).unwrap().clone();
         //* new impl with mass_array
-        return self
-            .mass_array
-            .get(*Z_val)
-            .unwrap()
-            .clone();
+        return self.mass_array.get(*Z_val).unwrap().clone();
     }
 
     pub fn calc_center_mass(&self) -> Vec<f64> {
