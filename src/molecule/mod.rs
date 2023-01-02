@@ -16,13 +16,15 @@ pub struct Molecule {
     // atomic numbers
     Z_vals: Vec<usize>,
     // HashMap of atomic masses
-    mass_map: HashMap<usize, f64>,
+    // mass_map: HashMap<usize, f64>,
+    // Array of atmoic masses
+    mass_array: [f64; 119],
     hessian: Array2<f64>,
     // point_group
     // point_group: String,
 }
 
-pub impl Molecule {
+impl Molecule {
     pub fn new(geom_file: &str, hessian_file: &str, charge: i32) -> Molecule {
         //* Step 1: Read the coord data from input
         println!("In file {}", geom_file);
@@ -49,21 +51,144 @@ pub impl Molecule {
         }
 
         //* Main hashmap for masses
-        let mut mass_map: HashMap<usize, f64> = HashMap::new();
+        // let mut mass_map: HashMap<usize, f64> = HashMap::new();
 
-        let masses_path: &str = "inp/masses.csv";
-        let massses_content: String =
-            fs::read_to_string(masses_path).expect("Failed to read geomfile!");
+        // let masses_path: &str = "inp/masses.csv";
+        // let massses_content: String =
+        //     fs::read_to_string(masses_path).expect("Failed to read geomfile!");
 
-        for (Z_val, line) in massses_content.lines().enumerate() {
-            if Z_val == 0 {
-                continue;
-            }
-            let line_vec: Vec<&str> = line.split(',').collect();
-            let mass: f64 = line_vec[0].parse().unwrap();
-            // println!("Mass of atom with Z value {}: {}", Z_val, mass);
-            mass_map.insert(Z_val, mass);
-        }
+        // for (Z_val, line) in massses_content.lines().enumerate() {
+        //     if Z_val == 0 {
+        //         continue;
+        //     }
+        //     let line_vec: Vec<&str> = line.split(',').collect();
+        //     let mass: f64 = line_vec[0].parse().unwrap();
+        //     // println!("Mass of atom with Z value {}: {}", Z_val, mass);
+        //     mass_map.insert(Z_val, mass);
+        // }
+        //* Array instead of hashamp for masses -> no file reading necessary
+        // ! SOURCE: https://iupac.qmul.ac.uk/AtWt/ -> cleaned with OpenRefine 
+        let mass_array = [
+            0.0,
+            1.008,
+            4.002602,
+            6.94,
+            9.0121831,
+            10.81,
+            12.011,
+            14.007,
+            15.999,
+            18.998403163,
+            20.1797,
+            22.98976928,
+            24.305,
+            26.9815384,
+            28.085,
+            30.973761998,
+            32.06,
+            35.45,
+            39.95,
+            39.0983,
+            40.078,
+            44.955907,
+            47.867,
+            50.9415,
+            51.9961,
+            54.938043,
+            55.845,
+            58.933194,
+            58.6934,
+            63.546,
+            65.38,
+            69.723,
+            72.630,
+            74.921595,
+            78.971,
+            79.904,
+            83.798,
+            85.4678,
+            87.62,
+            88.905838,
+            91.224,
+            92.90637,
+            95.95,
+            97.0,
+            101.07,
+            102.90549,
+            106.42,
+            107.8682,
+            112.414,
+            114.818,
+            118.710,
+            121.760,
+            127.60,
+            126.90447,
+            131.293,
+            132.90545196,
+            137.327,
+            138.90547,
+            140.116,
+            140.90766,
+            144.242,
+            145.0,
+            150.36,
+            151.964,
+            157.25,
+            158.925354,
+            162.500,
+            164.930329,
+            167.259,
+            168.934219,
+            173.045,
+            174.9668,
+            178.486,
+            180.94788,
+            183.84,
+            186.207,
+            190.23,
+            192.217,
+            195.084,
+            196.966570,
+            200.592,
+            204.38,
+            207.2,
+            208.98040,
+            209.0,
+            210.0,
+            222.0,
+            223.0,
+            226.0,
+            227.0,
+            232.0377,
+            231.03588,
+            238.02891,
+            237.0,
+            244.0,
+            243.0,
+            247.0,
+            247.0,
+            251.0,
+            252.0,
+            257.0,
+            258.0,
+            259.0,
+            262.0,
+            267.0,
+            270.0,
+            269.0,
+            270.0,
+            270.0,
+            278.0,
+            281.0,
+            281.0,
+            285.0,
+            286.0,
+            289.0,
+            289.0,
+            293.0,
+            293.0,
+            294.0,
+        ];
 
         //* READING THE HESSIAN
         let hess_file = fs::File::open(hessian_file).unwrap();
@@ -98,7 +223,7 @@ pub impl Molecule {
             no_atoms,
             geom,
             Z_vals,
-            mass_map,
+            mass_array,
             hessian,
         }
     }
@@ -360,7 +485,13 @@ pub impl Molecule {
     }
 
     pub fn get_mass_Z_val(&self, Z_val: &usize) -> f64 {
-        return self.mass_map.get(Z_val).unwrap().clone();
+        // return self.mass_map.get(Z_val).unwrap().clone();
+        //* new impl with mass_array
+        return self
+            .mass_array
+            .get(*Z_val)
+            .unwrap()
+            .clone();
     }
 
     pub fn calc_center_mass(&self) -> Vec<f64> {
