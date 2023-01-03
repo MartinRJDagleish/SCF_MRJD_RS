@@ -57,6 +57,7 @@ fn main() {
     let run_project2: bool = false;
     let run_project3: bool = false;
 
+
     if run_project1 {
         println!("Project 1 implementation:\n");
         // println!("Z values of atoms:\n{:?}\n", &mol.Z_vals);
