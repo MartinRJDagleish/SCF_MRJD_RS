@@ -1,3 +1,5 @@
+use ndarray::Array1;
+
 use super::Molecule;
 
 impl Molecule {
@@ -277,9 +279,9 @@ impl Molecule {
         // return tau.to_degrees();
     }
 
-    pub fn calc_center_mass(&self) -> Vec<f64> {
+    pub fn calc_center_mass(&self) -> Array1<f64> {
         let mut total_mass: f64 = 0.0;
-        let mut center_mass_vec: Vec<f64> = vec![0.0; 3];
+        let mut center_mass_vec: Array1<f64> = Array1::zeros(3);
 
         for (idx, Z_val) in self.Z_vals.iter().enumerate() {
             let mass_Z_val: f64 = self.get_mass_Z_val(Z_val);
@@ -295,7 +297,7 @@ impl Molecule {
     }
 
     pub fn translate_mol_to_center_mass(&mut self) {
-        let center_mass_vec: Vec<f64> = self.calc_center_mass();
+        let center_mass_vec: Array1<f64> = self.calc_center_mass();
 
         for (idx, Z_val) in self.Z_vals.iter().enumerate() {
             for cart_coord in 0..3 {

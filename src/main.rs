@@ -1,5 +1,5 @@
 use ndarray::prelude::*;
-use ndarray_linalg::{EigValsh, SymmetricSqrt};
+use ndarray_linalg::{EigValsh, Inverse, SymmetricSqrt};
 use std::f64::consts::PI;
 use std::fs;
 // use physical_constants;
@@ -11,8 +11,8 @@ use crate::molecule::Molecule;
 mod molecule;
 
 fn main() {
-    
-    let output_beginning_string: String = String::from(r#"
+    let output_beginning_string: String = String::from(
+        r#"
     _____/\\\\\\\\\\\___________/\\\\\\\\\___/\\\\\\\\\\\\\\\_                                
      ___/\\\/////////\\\______/\\\////////___\/\\\///////////__                               
       __\//\\\______\///_____/\\\/____________\/\\\_____________                              
@@ -40,7 +40,8 @@ fn main() {
            ____________\/\\\_____\//\\\____/\\\______\//\\\__                                 
             ____________\/\\\______\//\\\__\///\\\\\\\\\\\/___                                
              ____________\///________\///_____\///////////_____  
-        "#);
+        "#,
+    );
     println!("{}", output_beginning_string);
 
     //* Natural constants
@@ -54,12 +55,11 @@ fn main() {
     let mut mol: Molecule = Molecule::new("inp/Project3/h2o.xyz", "inp/Project2/h2o.hess", 0);
 
     let run_project1: bool = true;
-    let run_project2: bool = false;
-    let run_project3: bool = false;
-
+    let run_project2: bool = true;
+    let run_project3: bool = true;
 
     if run_project1 {
-        println!("Project 1 implementation:\n");
+        println!("\nProject 1 implementation:\n");
         // println!("Z values of atoms:\n{:?}\n", &mol.Z_vals);
         // println!("Geometry of molecule:\n{:?}\n", &mol.geom);
         //* Fancy print of geometry of file (check for valid input)
@@ -143,7 +143,7 @@ fn main() {
         }
 
         //* Step 6: Center of mass
-        println!("\nCenter of mass: {:?}", &mol.calc_center_mass());
+        println!("\nCenter of mass: {:^.2}", &mol.calc_center_mass());
 
         //* Step 6.5: Translate molecule such that center of mass is in middle of coordinate system
         println!("\nTranslate molecule such that center of mass is in middle of coordinate system");
@@ -156,8 +156,8 @@ fn main() {
 
         //* Step 7: Inertia tensor
         println!("\nPrinting the moment of inertia tensor:");
-        let mut inertia_tensor: Array2<f64> = mol.calc_inertia_tensor();
-        println!("Inertia tensor: \n{:?}", inertia_tensor);
+        let inertia_tensor: Array2<f64> = mol.calc_inertia_tensor();
+        println!("Inertia tensor: \n{:^.5}\n", inertia_tensor);
 
         //* Step 7.1 : Get eigenvalues and eigenvectors of inertia tensor
         let eigenvals: Array1<f64> = inertia_tensor
@@ -165,15 +165,15 @@ fn main() {
             .unwrap();
 
         println!(
-            "Principal moments of inertia (amu * bohr^2): \n{:?}\n",
+            "Principal moments of inertia (amu * bohr^2): \n{:^.5}\n",
             &eigenvals
         );
         println!(
-            "Principal moments of inertia (amu * Angstrom^2): \n{:?}\n",
+            "Principal moments of inertia (amu * Angstrom^2): \n{:^.5}\n",
             &eigenvals * (1.0e10 * physical_constants::BOHR_RADIUS).powi(2) //* prefactor but not exponent for conversion
         );
         println!(
-            "Principal moments of inertia (g * cm^2): \n{:?}\n",
+            "Principal moments of inertia (g * cm^2): \n{:^.5e}\n",
             &eigenvals
                 * physical_constants::ATOMIC_MASS_CONSTANT
                 * (100. * physical_constants::BOHR_RADIUS).powi(2)
@@ -220,6 +220,7 @@ fn main() {
     }
 
     if run_project2 {
+        println!("\nProject 2 implementation:\n");
         // * Project 2: read coordinate data DONE -> read hessian
         // * Step 1: Read coordinates (see above in Molecule struct) */
         // * Step 2: Read the cartessian hessian data
@@ -247,6 +248,7 @@ fn main() {
     }
 
     if run_project3 {
+        println!("\nProject 3 implementation:\n");
         //* Project 3: SCF (with data provided)
         // ! THIS IS A QUICK FIX AND NOT A GOOD SOLUTION
         let no_basis_funcs: usize = 7;
@@ -304,7 +306,7 @@ fn main() {
 
         //* Step 2.4: Form core Hamiltonian H_core = T + V
         let mut H_matr: Array2<f64> = &T_matr + &V_matr;
-        println!("Core Hamiltonian:\n{:1.5}\n", H_matr);
+        println!("Core Hamiltonian:\n{:^1.5}\n", H_matr);
 
         //* Step 3: Read the 2-electron integrals -> ERI tensor
         let (mut i, mut j, mut k, mut l) = (0, 0, 0, 0);
@@ -337,12 +339,57 @@ fn main() {
             ERI_vec.insert(calc_ijkl_idx(i, j, k, l), val);
         }
         let ERI_array: Array1<f64> = Array1::from_vec(ERI_vec);
-        println!("Electron-electron repulsion array:\n{:1.5}\n", &ERI_array);
+        println!("Electron-electron repulsion array:\n{:^1.5}\n", &ERI_array);
 
         //* Step 4: Build the orthogonalization matrix
-        let mut S_matr_inv_sqrt: Array2<f64> = S_matr.ssqrt(ndarray_linalg::UPLO::Upper).unwrap();
+        let mut S_matr_inv_sqrt: Array2<f64> = S_matr.ssqrt(ndarray_linalg::UPLO::Upper).unwrap(); // S^1/2 matrix
+        S_matr_inv_sqrt = S_matr_inv_sqrt.inv().unwrap(); // S^-1/2 matrix
 
-        println!("S^-1/2:\n{:1.5}\n", S_matr_inv_sqrt);
+        println!("S^-1/2:\n{:^1.5}\n", S_matr_inv_sqrt);
+
+        //* Step 5: Build the inital guess density matrix
+        // let S_matr_inv_sqrt_T: Array2<f64> = S_matr_inv_sqrt.reversed_axes();
+
+        //? Intial guess the fock matrix
+        let F_matr: Array2<f64> = S_matr_inv_sqrt
+            .dot(&H_matr)
+            .dot(&S_matr_inv_sqrt.reversed_axes());
+
+        println!("F_matr:\n{:1.5}\n", F_matr);
+
+        //* Read the initials MO coefficients
+        let mut C_matr: Array2<f64> = Array2::zeros((no_basis_funcs, no_basis_funcs));
+        let C_matr_file_contents = fs::read_to_string("inp/Project3/STO-3G/c0.dat")
+            .expect("Failed to open C0 matrix data!");
+
+        for (row_idx, line) in C_matr_file_contents.lines().enumerate() {
+            let line_split: Vec<&str> = line.trim().split_whitespace().collect();
+            for col_idx in 0..no_basis_funcs {
+                let val: f64 = line_split[col_idx + 1].parse().unwrap();
+                C_matr[(row_idx, col_idx)] = val;
+            }
+        }
+        println!("Initial coeff matrix C0:\n{:^.5}", &C_matr);
+
+        let C_matr_inv: Array2<f64> = C_matr.inv().unwrap();
+
+        let orb_energy_matr = C_matr_inv
+            .dot(&F_matr)
+            .dot(&C_matr);
+        println!("Orbital energy matrix:\n{:^.5}", &orb_energy_matr);
+
+        let C_matr_AO_basis: Array2<f64> = S_matr_inv_sqrt.dot(&C_matr);
+        println!("C_matr_AO_basis:\n{:^.5}", &C_matr_AO_basis);
+
+        let mut D_matr: Array2<f64> = Array2::zeros((no_basis_funcs, no_basis_funcs));
+        for mu in 0..no_basis_funcs {
+            for nu in 0..no_basis_funcs {
+                for m in 0..no_basis_funcs {
+                    D_matr[(mu, nu)] += C_matr_AO_basis[(mu, m)] * C_matr_AO_basis[(nu, m)];
+                }
+            }
+        }
+        println!("Initial density matrix:\n{:^.5}", &D_matr);
     }
 
     //*****************************************************************
@@ -376,8 +423,4 @@ fn calc_ijkl_idx(i: usize, j: usize, k: usize, l: usize) -> usize {
 fn calc_cmp_idx(idx1: usize, idx2: usize) -> usize {
     let idx1idx2: usize = (idx1 * (idx1 + 1)) / 2 + idx2;
     idx1idx2
-}
-
-fn sum_up_to(i: i32) -> i32 {
-    i * (i + 1) / 2
 }

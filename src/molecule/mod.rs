@@ -230,6 +230,7 @@ impl Molecule {
         }
     }
 
+    #[allow(non_snake_case)]
     pub fn get_mass_Z_val(&self, Z_val: &usize) -> f64 {
         // return self.mass_map.get(Z_val).unwrap().clone();
         //* new impl with mass_array
@@ -238,10 +239,11 @@ impl Molecule {
 
     pub fn other_two(n: usize) -> Vec<usize> {
         let arr: [usize; 3] = [0, 1, 2];
-        arr.iter()
+        arr
+            .iter()
             .filter(|&x| *x != n)
             .map(|x| *x)
-            .collect::<Vec<usize>>()
+            .collect()
     }
 
     pub fn calc_inertia_tensor(&self) -> Array2<f64> {
