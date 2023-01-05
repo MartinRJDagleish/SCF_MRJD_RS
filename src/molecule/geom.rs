@@ -38,11 +38,11 @@ impl Molecule {
 
     // Calculate the distance between 2 3-d cart coords points
     pub fn calc_r_ij(&self, i: usize, j: usize) -> f64 {
-        let mut bond_length: f64 = 0.0;
+        let mut r_ij: f64 = 0.0;
         for cart_coord in 0..3 {
-            bond_length += (&self.geom[(j, cart_coord)] - &self.geom[(i, cart_coord)]).powi(2);
+            r_ij += (&self.geom[(j, cart_coord)] - &self.geom[(i, cart_coord)]).powi(2);
         }
-        return bond_length.sqrt();
+        return r_ij.sqrt();
     }
 
     pub fn calc_e_ij(&self, i: usize, j: usize) -> Vec<f64> {

@@ -1,5 +1,5 @@
 use ndarray::prelude::*;
-use ndarray_linalg::{EigValsh, Inverse, SymmetricSqrt};
+use ndarray_linalg::{EigValsh, Inverse, SymmetricSqrt, Trace};
 use std::f64::consts::PI;
 use std::fs;
 // use physical_constants;
@@ -351,14 +351,14 @@ fn main() {
         // let S_matr_inv_sqrt_T: Array2<f64> = S_matr_inv_sqrt.reversed_axes();
 
         //? Intial guess the fock matrix
-        let F_matr: Array2<f64> = S_matr_inv_sqrt
+        let mut F_matr: Array2<f64> = S_matr_inv_sqrt
             .dot(&H_matr)
-            .dot(&S_matr_inv_sqrt.reversed_axes());
+            .dot(&S_matr_inv_sqrt.clone().reversed_axes());
 
         println!("F_matr:\n{:1.5}\n", F_matr);
 
-        //* Read the initials MO coefficients
-        let mut C_matr: Array2<f64> = Array2::zeros((no_basis_funcs, no_basis_funcs));
+        //* Read the initials MO coefficients (file has non-orthogonals AO basis C0 matrix)
+        let mut C_matr_AO_basis: Array2<f64> = Array2::zeros((no_basis_funcs, no_basis_funcs));
         let C_matr_file_contents = fs::read_to_string("inp/Project3/STO-3G/c0.dat")
             .expect("Failed to open C0 matrix data!");
 
@@ -366,30 +366,67 @@ fn main() {
             let line_split: Vec<&str> = line.trim().split_whitespace().collect();
             for col_idx in 0..no_basis_funcs {
                 let val: f64 = line_split[col_idx + 1].parse().unwrap();
-                C_matr[(row_idx, col_idx)] = val;
+                C_matr_AO_basis[(row_idx, col_idx)] = val;
             }
         }
-        println!("Initial coeff matrix C0:\n{:^.5}", &C_matr);
+        println!("Initial coeff matrix C0:\n{:^.5}\n", &C_matr_AO_basis);
 
-        let C_matr_inv: Array2<f64> = C_matr.inv().unwrap();
+        let C_matr_AO_basis_inv: Array2<f64> = C_matr_AO_basis.clone().inv().unwrap();
 
-        let orb_energy_matr = C_matr_inv
-            .dot(&F_matr)
-            .dot(&C_matr);
-        println!("Orbital energy matrix:\n{:^.5}", &orb_energy_matr);
+        let orb_energy_matr = C_matr_AO_basis_inv.dot(&F_matr).dot(&C_matr_AO_basis);
+        println!("Orbital energy matrix:\n{:^.5}\n", &orb_energy_matr);
 
-        let C_matr_AO_basis: Array2<f64> = S_matr_inv_sqrt.dot(&C_matr);
-        println!("C_matr_AO_basis:\n{:^.5}", &C_matr_AO_basis);
+        // ! THIS IS ONLY VALID FOR RHF -> QUICK FIX
+        // ! QUICK FIX FOR WATER
+        //TODO: Add a calculation of the number of occupied orbitals
+        let no_occ_orb: usize = (8 + 1 + 1) / 2;
 
         let mut D_matr: Array2<f64> = Array2::zeros((no_basis_funcs, no_basis_funcs));
+
         for mu in 0..no_basis_funcs {
             for nu in 0..no_basis_funcs {
-                for m in 0..no_basis_funcs {
+                for m in 0..no_occ_orb {
                     D_matr[(mu, nu)] += C_matr_AO_basis[(mu, m)] * C_matr_AO_basis[(nu, m)];
                 }
             }
         }
-        println!("Initial density matrix:\n{:^.5}", &D_matr);
+        println!("Initial density matrix:\n{:^.5}\n", &D_matr);
+
+        //* Step 6: Compute the initial SCF energy
+        let mut E_scf: f64 = 0.0;
+        for mu in 0..no_basis_funcs {
+            for nu in 0..no_basis_funcs {
+                E_scf += D_matr[(mu, nu)] * (H_matr[(mu, nu)] + F_matr[(mu, nu)]);
+            }
+        }
+
+        let mut E_nuc: f64 = 0.0;
+        for i in 0..mol.no_atoms {
+            for j in 0..i {
+                E_nuc += mol.Z_vals[i] as f64 * mol.Z_vals[j] as f64 * mol.calc_r_ij(i, j).recip();
+            }
+        }
+
+        let mut E_total: f64 = E_scf + E_nuc;
+
+        println!("Initial SCF energy: {:^1.5}", E_scf);
+        println!("Initial total energy: {:^1.5}", E_total);
+
+        //* Step 7: Iterate the SCF procedure
+        for mu in 0..no_basis_funcs {
+            for nu in 0..no_basis_funcs {
+                F_matr[(mu, nu)] = H_matr[(mu, nu)];
+                for lambda in 0..no_basis_funcs {
+                    for sigma in 0..no_basis_funcs {
+                        F_matr[(mu, nu)] += D_matr[(lambda, sigma)]
+                            * (2.0 * ERI_array[calc_ijkl_idx(mu, nu, lambda, sigma)]
+                                - ERI_array[calc_ijkl_idx(mu, lambda, nu, sigma)]);
+                    }
+                }
+            }
+        }
+
+        println!("F_matr:\n{:1.5}\n", F_matr);
     }
 
     //*****************************************************************
