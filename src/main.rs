@@ -393,6 +393,8 @@ fn main() {
         println!("Initial density matrix:\n{:^.5}\n", &D_matr);
 
         //* Step 6: Compute the initial SCF energy
+        let mut E_scf_vec: Vec<f64> = Vec::new();
+        let mut E_total_vec: Vec<f64> = Vec::new();
         let mut E_scf: f64 = 0.0;
         for mu in 0..no_basis_funcs {
             for nu in 0..no_basis_funcs {
@@ -407,12 +409,15 @@ fn main() {
             }
         }
 
-        let mut E_total: f64 = E_scf + E_nuc;
+        let E_total: f64 = E_scf + E_nuc;
+        E_total_vec.push(E_total);
+        E_scf_vec.push(E_scf);
 
-        println!("Initial SCF energy: {:^1.5}", E_scf);
-        println!("Initial total energy: {:^1.5}", E_total);
+        println!("Initial SCF energy: {:^1.5}", &E_scf_vec[0]);
+        println!("Initial total energy: {:^1.5}", &E_total_vec[0]);
 
-        //* Step 7: Iterate the SCF procedure
+        //* Step 7: Iterate the SCF procedure -> 7.1 compute the new Fock matrix
+        println!("Previous F matrix: \n{:^1.5}\n", &F_matr);
         for mu in 0..no_basis_funcs {
             for nu in 0..no_basis_funcs {
                 F_matr[(mu, nu)] = H_matr[(mu, nu)];
@@ -426,7 +431,7 @@ fn main() {
             }
         }
 
-        println!("F_matr:\n{:1.5}\n", F_matr);
+        println!("F_matr:\n{:1.5}\n", &F_matr);
     }
 
     //*****************************************************************
