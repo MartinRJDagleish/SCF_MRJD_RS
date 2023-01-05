@@ -343,8 +343,8 @@ fn main() {
         println!("Electron-electron repulsion array:\n{:^1.5}\n", &ERI_array);
 
         //* Step 4: Build the orthogonalization matrix
-        let mut S_matr_inv_sqrt: Array2<f64> = S_matr.ssqrt(ndarray_linalg::UPLO::Upper).unwrap(); // S^1/2 matrix
-        S_matr_inv_sqrt = S_matr_inv_sqrt.inv().unwrap(); // S^-1/2 matrix
+        let S_matr_sqrt: Array2<f64> = S_matr.ssqrt(ndarray_linalg::UPLO::Upper).unwrap(); // S^1/2 matrix
+        let S_matr_inv_sqrt = S_matr_sqrt.inv().unwrap(); // S^-1/2 matrix
 
         println!("S^-1/2:\n{:^1.5}\n", S_matr_inv_sqrt);
 
@@ -373,8 +373,10 @@ fn main() {
         println!("Initial coeff matrix C0:\n{:^.5}\n", &C_matr_AO_basis);
 
         let C_matr_AO_basis_inv: Array2<f64> = C_matr_AO_basis.clone().inv().unwrap();
+        let C_matr_MO_basis: Array2<f64> = S_matr_sqrt.dot(&C_matr_AO_basis);
+        let C_matr_MO_basis_inv: Array2<f64> = C_matr_MO_basis.clone().inv().unwrap();
 
-        let orb_energy_matr = C_matr_AO_basis_inv.dot(&F_matr).dot(&C_matr_AO_basis);
+        let orb_energy_matr = C_matr_MO_basis_inv.dot(&F_matr).dot(&C_matr_MO_basis);
         println!("Orbital energy matrix:\n{:^.5}\n", &orb_energy_matr);
 
         // ! THIS IS ONLY VALID FOR RHF -> QUICK FIX
@@ -435,7 +437,10 @@ fn main() {
             }
         }
 
-        println!("F_matr:\n{:1.5}\n", &F_matr);
+        println!("New F_matr:\n{:1.5}\n", &F_matr);
+
+        //* Step 7.2: Build the new density matrix
+
     }
 
     //*****************************************************************
