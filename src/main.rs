@@ -52,10 +52,11 @@ fn main() {
     //*******************************************************************
     //* OOP way:
 
-    let mut mol: Molecule = Molecule::new("inp/Project3/h2o.xyz", "inp/Project2/h2o.hess", 0);
+    let mut mol: Molecule =
+        Molecule::new("inp/Project3/STO-3G/h2o_v2.xyz", "inp/Project2/h2o.hess", 0);
 
     let run_project1: bool = true;
-    let run_project2: bool = true;
+    let run_project2: bool = false;
     let run_project3: bool = true;
 
     if run_project1 {
@@ -253,11 +254,11 @@ fn main() {
         // ! THIS IS A QUICK FIX AND NOT A GOOD SOLUTION
         let no_basis_funcs: usize = 7;
         //* Step 1: Read Nuclear Repulsion Energy (enuc) from file
-        let e_nuc_val: f64 = fs::read_to_string("inp/Project3/STO-3G/enuc.dat")
+        let E_nuc_val: f64 = fs::read_to_string("inp/Project3/STO-3G/enuc.dat")
             .expect("Failed to open enuc data!")
             .parse()
             .expect("Failed to parse enuc data file!");
-        println!("Nuclear Repulsion Energy: {}\n", e_nuc_val);
+        println!("Nuclear Repulsion Energy: {}\n", E_nuc_val);
 
         //* Step 2.1: Read the overlap matrix
         let mut S_matr: Array2<f64> = Array2::zeros((no_basis_funcs, no_basis_funcs));
@@ -402,17 +403,20 @@ fn main() {
             }
         }
 
-        let mut E_nuc: f64 = 0.0;
-        for i in 0..mol.no_atoms {
-            for j in 0..i {
-                E_nuc += mol.Z_vals[i] as f64 * mol.Z_vals[j] as f64 * mol.calc_r_ij(i, j).recip();
-            }
-        }
+        // ! Not necassray -> given as file
+        // let mut E_nuc: f64 = 0.0;
+        // for i in 0..mol.no_atoms {
+        //     for j in 0..i {
+        //         E_nuc += mol.Z_vals[i] as f64 * mol.Z_vals[j] as f64 * mol.calc_r_ij(i, j).recip();
+        //     }
+        // }
+        // println!("Initial nuclear repulsion energy: {:^1.5}", &E_nuc);
 
-        let E_total: f64 = E_scf + E_nuc;
+        let E_total: f64 = E_scf + E_nuc_val;
         E_total_vec.push(E_total);
         E_scf_vec.push(E_scf);
 
+        println!("E_nuc from file: {:^1.5}", &E_nuc_val);
         println!("Initial SCF energy: {:^1.5}", &E_scf_vec[0]);
         println!("Initial total energy: {:^1.5}", &E_total_vec[0]);
 
