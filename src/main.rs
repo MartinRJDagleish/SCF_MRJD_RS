@@ -353,8 +353,10 @@ fn main() {
 
         //? Intial guess the fock matrix
         let mut F_matr: Array2<f64> = S_matr_inv_sqrt
+            .clone()
+            .reversed_axes()
             .dot(&H_matr)
-            .dot(&S_matr_inv_sqrt.clone().reversed_axes());
+            .dot(&S_matr_inv_sqrt.clone());
 
         println!("F_matr:\n{:1.5}\n", F_matr);
 
@@ -376,7 +378,7 @@ fn main() {
         let C_matr_MO_basis: Array2<f64> = S_matr_sqrt.dot(&C_matr_AO_basis);
         let C_matr_MO_basis_inv: Array2<f64> = C_matr_MO_basis.clone().inv().unwrap();
 
-        let orb_energy_matr = C_matr_MO_basis_inv.dot(&F_matr).dot(&C_matr_MO_basis);
+        let mut orb_energy_matr = C_matr_MO_basis_inv.dot(&F_matr).dot(&C_matr_MO_basis);
         println!("Orbital energy matrix:\n{:^.5}\n", &orb_energy_matr);
 
         // ! THIS IS ONLY VALID FOR RHF -> QUICK FIX
@@ -438,9 +440,16 @@ fn main() {
         }
 
         println!("New F_matr:\n{:1.5}\n", &F_matr);
+        let F_matr_test: Array2<f64> = S_matr_inv_sqrt
+            .clone()
+            .reversed_axes()
+            .dot(&F_matr)
+            .dot(&S_matr_inv_sqrt.clone());
 
+        println!("New F_matr_test:\n{:1.5}\n", &F_matr_test);
+        orb_energy_matr = C_matr_MO_basis_inv.dot(&F_matr_test).dot(&C_matr_MO_basis);
+        println!("Orbital energy matrix:\n{:^.5}\n", &orb_energy_matr);
         //* Step 7.2: Build the new density matrix
-
     }
 
     //*****************************************************************
