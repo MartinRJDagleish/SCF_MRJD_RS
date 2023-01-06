@@ -31,9 +31,9 @@
     -----------------------------------------------------------------------
 
 
-    Psi4 started on: Friday, 06 January 2023 11:08AM
+    Psi4 started on: Friday, 06 January 2023 06:27PM
 
-    Process ID: 189911
+    Process ID: 193150
     Host:       ch202
     PSIDATADIR: /loctmp/dam63759/psi4conda/share/psi4
     Memory:     500.0 MiB
@@ -45,19 +45,22 @@
 import psi4
 import numpy as np 
 
+# molecule h2o {
 h2o = psi4.geometry("""
-symmetry c1
-O
-H 1 0.96
-H 1 0.96 2 104.5
+0 1
+O   0.000000000000  -0.143225816552   0.000000000000
+H   1.638036840407   1.136548822547  -0.000000000000
+H  -1.638036840407   1.136548822547  -0.000000000001
+units bohr
 """)
+#}
 
 set {
     save_jk true
     guess CORE
     basis sto-3g
     DIIS false
-    SCF_INITIAL_ACCELERATOR None
+    # SCF_INITIAL_ACCELERATOR None
 }
 
 eng, wfn = psi4.energy("scf", molecule=h2o, return_wfn=True)
@@ -75,10 +78,10 @@ H = np.array(h)
 
 D = np.dot(C,C.transpose())
 
-E_el = 2*np.trace(np.dot(D, H)) + 2*np.trace(np.dot(D, J)) - np.trace(np.dot(D, K))
+# E_el = 2*np.trace(np.dot(D, H)) + 2*np.trace(np.dot(D, J)) - np.trace(np.dot(D, K))
 
 print(f"reference: {eng}")
-print(f"HF energy: {E_el+E_nuc}")
+# print(f"HF energy: {E_el+E_nuc}")
 
 print(f"{J=}")
 print(f"{K=}")
@@ -87,7 +90,7 @@ print(f"{K=}")
 Scratch directory: /tmp/
 
 *** tstart() called on ch202
-*** at Fri Jan  6 11:08:47 2023
+*** at Fri Jan  6 18:27:17 2023
 
    => Loading Basis Set <=
 
@@ -108,22 +111,22 @@ Scratch directory: /tmp/
 
   ==> Geometry <==
 
-    Molecular point group: c1
+    Molecular point group: c2v
     Full point group: C2v
 
-    Geometry (in Angstrom), charge = 0, multiplicity = 1:
+    Geometry (in Bohr), charge = 0, multiplicity = 1:
 
        Center              X                  Y                   Z               Mass       
     ------------   -----------------  -----------------  -----------------  -----------------
-         O            0.000000000000     0.000000000000    -0.065775570547    15.994914619570
-         H            0.000000000000    -0.759061990794     0.521953018286     1.007825032230
-         H            0.000000000000     0.759061990794     0.521953018286     1.007825032230
+         O            0.000000000000     0.000000000000    -0.143225816572    15.994914619570
+         H            1.638036840407     0.000000000000     1.136548822527     1.007825032230
+         H           -1.638036840407    -0.000000000000     1.136548822527     1.007825032230
 
-  Running in c1 symmetry.
+  Running in c2v symmetry.
 
-  Rotational constants: A =     27.26297  B =     14.51533  C =      9.47217 [cm^-1]
-  Rotational constants: A = 817323.21126  B = 435158.60141  C = 283968.37536 [MHz]
-  Nuclear repulsion =    9.168193296424349
+  Rotational constants: A =     20.53324  B =     11.13094  C =      7.21807 [cm^-1]
+  Rotational constants: A = 615571.06989  B = 333697.12648  C = 216392.26717 [MHz]
+  Nuclear repulsion =    8.002367061810769
 
   Charge       = 0
   Multiplicity = 1
@@ -186,8 +189,8 @@ Scratch directory: /tmp/
     Spherical Harmonics?: true
     Max angular momentum: 4
 
-  Minimum eigenvalue in the overlap matrix is 3.4405295587E-01.
-  Reciprocal condition number of the overlap matrix is 1.7851413927E-01.
+  Minimum eigenvalue in the overlap matrix is 4.0541985814E-01.
+  Reciprocal condition number of the overlap matrix is 2.4911903781E-01.
     Using symmetric orthogonalization.
 
   ==> Pre-Iterations <==
@@ -197,7 +200,10 @@ Scratch directory: /tmp/
    -------------------------------------------------------
     Irrep   Nso     Nmo     Nalpha   Nbeta   Ndocc  Nsocc
    -------------------------------------------------------
-     A          7       7       5       5       5       0
+     A1         4       4       3       3       3       0
+     A2         0       0       0       0       0       0
+     B1         2       2       1       1       1       0
+     B2         1       1       1       1       1       0
    -------------------------------------------------------
     Total       7       7       5       5       5       0
    -------------------------------------------------------
@@ -206,19 +212,40 @@ Scratch directory: /tmp/
 
                            Total Energy        Delta E     RMS |[F,P]|
 
-   @DF-RHF iter   1:   -73.23391796302916   -7.32339e+01   1.48428e-01 
-   @DF-RHF iter   2:   -74.94553765265555   -1.71162e+00   2.08166e-02 
-   @DF-RHF iter   3:   -74.96252591202278   -1.69883e-02   4.34864e-03 
-   @DF-RHF iter   4:   -74.96328659116284   -7.60679e-04   1.30167e-03 
-   @DF-RHF iter   5:   -74.96338515646114   -9.85653e-05   5.32891e-04 
-   @DF-RHF iter   6:   -74.96340211817279   -1.69617e-05   2.24800e-04 
-   @DF-RHF iter   7:   -74.96340522774892   -3.10958e-06   9.68938e-05 
-   @DF-RHF iter   8:   -74.96340580911978   -5.81371e-07   4.19693e-05 
-   @DF-RHF iter   9:   -74.96340591847412   -1.09354e-07   1.82125e-05 
-   @DF-RHF iter  10:   -74.96340593908182   -2.06077e-08   7.90744e-06 
-   @DF-RHF iter  11:   -74.96340594296764   -3.88582e-09   3.43383e-06 
-   @DF-RHF iter  12:   -74.96340594370045   -7.32811e-10   1.49123e-06 
-   @DF-RHF iter  13:   -74.96340594383859   -1.38144e-10   6.47619e-07 
+   @DF-RHF iter   1:   -73.28578104286802   -7.32858e+01   1.84416e-01 ADIIS
+   @DF-RHF iter   2:   -74.82821367840418   -1.54243e+00   7.76404e-02 ADIIS
+   @DF-RHF iter   3:   -74.93558604296166   -1.07372e-01   2.01656e-02 ADIIS
+   @DF-RHF iter   4:   -74.94157391879712   -5.98788e-03   4.22581e-03 ADIIS
+   @DF-RHF iter   5:   -74.94206814547498   -4.94227e-04   1.77457e-03 ADIIS
+   @DF-RHF iter   6:   -74.94211914334771   -5.09979e-05   1.23567e-03 ADIIS
+   @DF-RHF iter   7:   -74.94213765090085   -1.85076e-05   1.00212e-03 ADIIS
+   @DF-RHF iter   8:   -74.94214715033118   -9.49943e-06   8.63987e-04 ADIIS
+   @DF-RHF iter   9:   -74.94215287027444   -5.71994e-06   7.71016e-04 ADIIS
+   @DF-RHF iter  10:   -74.94215671603365   -3.84576e-06   7.02501e-04 ADIIS
+   @DF-RHF iter  11:   -74.94215946396982   -2.74794e-06   6.49612e-04 ADIIS
+   @DF-RHF iter  12:   -74.94216187992369   -2.41595e-06   5.99174e-04 ADIIS
+   @DF-RHF iter  13:   -74.94216354035120   -1.66043e-06   5.62461e-04 ADIIS
+   @DF-RHF iter  14:   -74.94216448047530   -9.40124e-07   5.41161e-04 ADIIS
+   @DF-RHF iter  15:   -74.94216957952067   -5.09905e-06   3.98484e-04 ADIIS
+   @DF-RHF iter  16:   -74.94217131366015   -1.73414e-06   3.42110e-04 ADIIS
+   @DF-RHF iter  17:   -74.94217236493861   -1.05128e-06   3.02616e-04 ADIIS
+   @DF-RHF iter  18:   -74.94217311286329   -7.47925e-07   2.70963e-04 ADIIS
+   @DF-RHF iter  19:   -74.94217368814823   -5.75285e-07   2.43801e-04 ADIIS
+   @DF-RHF iter  20:   -74.94217415154823   -4.63400e-07   2.19468e-04 ADIIS
+   @DF-RHF iter  21:   -74.94217453457846   -3.83030e-07   1.97084e-04 ADIIS
+   @DF-RHF iter  22:   -74.94217485767632   -3.23098e-07   1.75989e-04 ADIIS
+   @DF-RHF iter  23:   -74.94217512789677   -2.70220e-07   1.56159e-04 ADIIS
+   @DF-RHF iter  24:   -74.94217535749578   -2.29599e-07   1.37064e-04 ADIIS
+   @DF-RHF iter  25:   -74.94217555619224   -1.98696e-07   1.18070e-04 ADIIS
+   @DF-RHF iter  26:   -74.94217567976719   -1.23575e-07   1.04445e-04 ADIIS
+   @DF-RHF iter  27:   -74.94217577257646   -9.28093e-08   9.29282e-05 
+   @DF-RHF iter  28:   -74.94217604378329   -2.71207e-07   4.47942e-05 
+   @DF-RHF iter  29:   -74.94217610691322   -6.31299e-08   2.16165e-05 
+   @DF-RHF iter  30:   -74.94217612161155   -1.46983e-08   1.04294e-05 
+   @DF-RHF iter  31:   -74.94217612503385   -3.42230e-09   5.03259e-06 
+   @DF-RHF iter  32:   -74.94217612583068   -7.96831e-10   2.42835e-06 
+   @DF-RHF iter  33:   -74.94217612601628   -1.85594e-10   1.17176e-06 
+   @DF-RHF iter  34:   -74.94217612605944   -4.31584e-11   5.65411e-07 
   Energy and wave function converged.
 
 
@@ -229,27 +256,27 @@ Scratch directory: /tmp/
 
     Doubly Occupied:                                                      
 
-       1A    -20.242317     2A     -1.267014     3A     -0.616422  
-       4A     -0.452702     5A     -0.391073  
+       1A1   -20.263131     2A1    -1.209724     1B1    -0.547972  
+       3A1    -0.436534     1B2    -0.387598  
 
     Virtual:                                                              
 
-       6A      0.602951     7A      0.739064  
+       4A1     0.477615     2B1     0.588147  
 
     Final Occupation by Irrep:
-              A 
-    DOCC [     5 ]
-    NA   [     5 ]
-    NB   [     5 ]
+             A1    A2    B1    B2 
+    DOCC [     3,    0,    1,    1 ]
+    NA   [     3,    0,    1,    1 ]
+    NB   [     3,    0,    1,    1 ]
 
-  @DF-RHF Final Energy:   -74.96340594383859
+  @DF-RHF Final Energy:   -74.94217612605944
 
    => Energetics <=
 
-    Nuclear Repulsion Energy =              9.1681932964243487
-    One-Electron Energy =                -122.3241441816617794
-    Two-Electron Energy =                  38.1925449413988218
-    Total Energy =                        -74.9634059438386089
+    Nuclear Repulsion Energy =              8.0023670618107694
+    One-Electron Energy =                -120.1991678526539999
+    Two-Electron Energy =                  37.2546246647837833
+    Total Energy =                        -74.9421761260594508
 
 Computation Completed
 
@@ -267,23 +294,23 @@ Properties computed using the SCF density matrix
 
  L = 1.  Multiply by 2.5417464519 to convert [e a0] to [Debye]
  Dipole X            :          0.0000000            0.0000000            0.0000000
- Dipole Y            :         -0.0000000            0.0000000           -0.0000000
- Dipole Z            :         -0.3008326            0.9783140            0.6774814
- Magnitude           :                                                    0.6774814
+ Dipole Y            :          0.0000000            0.0000000            0.0000000
+ Dipole Z            :         -0.5239316            1.1272911            0.6033596
+ Magnitude           :                                                    0.6033596
 
  ------------------------------------------------------------------------------------
 
-*** tstop() called on ch202 at Fri Jan  6 11:08:47 2023
+*** tstop() called on ch202 at Fri Jan  6 18:27:17 2023
 Module time:
-	user time   =       0.10 seconds =       0.00 minutes
-	system time =       0.01 seconds =       0.00 minutes
+	user time   =       0.21 seconds =       0.00 minutes
+	system time =       0.00 seconds =       0.00 minutes
 	total time  =          0 seconds =       0.00 minutes
 Total time:
-	user time   =       0.10 seconds =       0.00 minutes
-	system time =       0.01 seconds =       0.00 minutes
+	user time   =       0.21 seconds =       0.00 minutes
+	system time =       0.00 seconds =       0.00 minutes
 	total time  =          0 seconds =       0.00 minutes
 
-    Psi4 stopped on: Friday, 06 January 2023 11:08AM
-    Psi4 wall time for execution: 0:00:00.17
+    Psi4 stopped on: Friday, 06 January 2023 06:27PM
+    Psi4 wall time for execution: 0:00:00.27
 
 *** Psi4 exiting successfully. Buy a developer a beer!

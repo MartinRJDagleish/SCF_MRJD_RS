@@ -329,7 +329,8 @@ fn main() {
             let l: usize = line_split[3].parse::<usize>().unwrap() - 1;
             let val: f64 = line_split[4].parse::<f64>().unwrap();
             let idx: usize = calc_ijkl_idx(i, j, k, l);
-            println!("{} {} {} {} {} {}", i, j, k, l, val, idx);
+            // Debugging:
+            // println!("{} {} {} {} {} {}", i, j, k, l, val, idx);
 
             if ERI_vec.len() < idx {
                 ERI_vec.resize(idx, 0.0);
@@ -376,13 +377,14 @@ fn main() {
         // let C_matr_MO_basis_inv: Array2<f64> = C_matr_MO_basis.clone().inv().unwrap();
 
         let (orb_energy_list, C_matr_MO_basis_from_F): (Array1<f64>, Array2<f64>) =
-            F_matr_prime
-            .eigh(ndarray_linalg::UPLO::Upper)
-            .unwrap();
+            F_matr_prime.eigh(ndarray_linalg::UPLO::Upper).unwrap();
         // let mut orb_energy_matr = C_matr_MO_basis_from_F
         println!("Orbital energy matrix:\n{:^.5}\n", &orb_energy_list);
         let C_matr_AO_basis_from_F: Array2<f64> = S_matr_inv_sqrt.dot(&C_matr_MO_basis_from_F);
-        println!("Initial coeff matrix C0:\n{:^.5}\n", &C_matr_AO_basis_from_F);
+        println!(
+            "Initial coeff matrix C0:\n{:^.5}\n",
+            &C_matr_AO_basis_from_F
+        );
 
         // ! THIS IS ONLY VALID FOR RHF -> QUICK FIX
         // ! QUICK FIX FOR WATER
@@ -394,14 +396,15 @@ fn main() {
         for mu in 0..no_basis_funcs {
             for nu in 0..no_basis_funcs {
                 for m in 0..no_occ_orb {
-                    D_matr[(mu, nu)] += C_matr_AO_basis_from_F[(mu, m)] * C_matr_AO_basis_from_F[(nu, m)];
+                    D_matr[(mu, nu)] +=
+                        C_matr_AO_basis_from_F[(mu, m)] * C_matr_AO_basis_from_F[(nu, m)];
                 }
             }
         }
         println!("Initial density matrix:\n{:^.5}\n", &D_matr);
 
         //* Step 6: Compute the initial SCF energy
-        // let F_matr: Array2<f64> = 
+        // let F_matr: Array2<f64> =
         let mut E_scf_vec: Vec<f64> = Vec::new();
         let mut E_total_vec: Vec<f64> = Vec::new();
         let mut E_scf: f64 = 0.0;
@@ -432,27 +435,28 @@ fn main() {
 
         //* Step 7: Iterate the SCF procedure -> 7.1 compute the new Fock matrix
         println!("Previous F matrix: \n{:^1.5}\n", &F_matr_prime);
-        let mut F_matr : Array2<f64> = Array2::zeros((no_basis_funcs, no_basis_funcs));
+        let mut F_matr: Array2<f64> = Array2::zeros((no_basis_funcs, no_basis_funcs));
         for mu in 0..no_basis_funcs {
             for nu in 0..no_basis_funcs {
                 F_matr[(mu, nu)] = H_matr[(mu, nu)];
                 for lambda in 0..no_basis_funcs {
                     for sigma in 0..no_basis_funcs {
-                        F_matr[(mu, nu)] += D_matr[(lambda, sigma)]
-                            * (2.0 * ERI_array[calc_ijkl_idx(mu, nu, lambda, sigma)]
-                                - ERI_array[calc_ijkl_idx(mu, lambda, nu, sigma)]);
+                        let J_idx: usize = calc_ijkl_idx(mu, nu, lambda, sigma);
+                        let K_idx: usize = calc_ijkl_idx(mu, lambda, nu, sigma);
+                        F_matr[(mu, nu)] +=
+                            D_matr[(lambda, sigma)] * (2.0 * ERI_array[J_idx] - ERI_array[K_idx]);
                     }
                 }
             }
         }
 
         println!("New F_matr:\n{:1.5}\n", &F_matr);
-        let F_matr_test: Array2<f64> = S_matr_inv_sqrt
-            .clone()
-            .reversed_axes()
-            .dot(&F_matr)
-            .dot(&S_matr_inv_sqrt.clone());
-        println!("New F_matr_test:\n{:1.5}\n", &F_matr_test);
+        // let F_matr_test: Array2<f64> = S_matr_inv_sqrt
+        //     .clone()
+        //     .reversed_axes()
+        //     .dot(&F_matr)
+        //     .dot(&S_matr_inv_sqrt.clone());
+        // println!("New F_matr_test:\n{:1.5}\n", &F_matr_test);
         // let F_matr_test: Array2<f64> = S_matr_inv_sqrt
         //     .clone()
         //     .reversed_axes()
@@ -460,6 +464,45 @@ fn main() {
         //     .dot(&S_matr_inv_sqrt.clone());
 
         //* Step 7.2: Build the new density matrix
+        F_matr_prime = S_matr_inv_sqrt
+            .clone()
+            .reversed_axes()
+            .dot(&F_matr.clone())
+            .dot(&S_matr_inv_sqrt.clone());
+        println!("New F_matr_prime:\n{:1.5}\n", &F_matr_prime);
+
+        let (orb_energy_list, C_matr_MO_basis_from_F): (Array1<f64>, Array2<f64>) =
+            F_matr_prime.eigh(ndarray_linalg::UPLO::Upper).unwrap();
+        // let mut orb_energy_matr = C_matr_MO_basis_from_F
+        println!(
+            "Orbital energy matrix after 1st iter:\n{:^.5}\n",
+            &orb_energy_list
+        );
+        let C_matr_AO_basis_from_F: Array2<f64> = S_matr_inv_sqrt.dot(&C_matr_MO_basis_from_F);
+        println!(
+            "Matrix C0 after 1st iter:\n{:^.5}\n",
+            &C_matr_AO_basis_from_F
+        );
+
+        let mut D_matr: Array2<f64> = Array2::zeros((no_basis_funcs, no_basis_funcs));
+
+        for mu in 0..no_basis_funcs {
+            for nu in 0..no_basis_funcs {
+                for m in 0..no_occ_orb {
+                    D_matr[(mu, nu)] +=
+                        C_matr_AO_basis_from_F[(mu, m)] * C_matr_AO_basis_from_F[(nu, m)];
+                }
+            }
+        }
+
+        E_scf = 0.0;
+        for mu in 0..no_basis_funcs {
+            for nu in 0..no_basis_funcs {
+                // E_scf += D_matr[(mu, nu)] * (H_matr[(mu, nu)] + F_matr_prime[(mu, nu)]);
+                E_scf += D_matr[(mu, nu)] * (H_matr[(mu, nu)] + F_matr_prime[(mu, nu)]);
+            }
+        }
+        println!("New SCF energy: {:^1.5}", &E_scf);
     }
 
     //*****************************************************************
@@ -491,6 +534,7 @@ fn calc_ijkl_idx(i: usize, j: usize, k: usize, l: usize) -> usize {
 }
 
 fn calc_cmp_idx(idx1: usize, idx2: usize) -> usize {
-    let idx1idx2: usize = (idx1 * (idx1 + 1)) / 2 + idx2;
-    idx1idx2
+    // let idx1idx2: usize = (idx1 * (idx1 + 1)) / 2 + idx2;
+    // idx1idx2
+    idx1 * (idx1 + 1) / 2 + idx2
 }
