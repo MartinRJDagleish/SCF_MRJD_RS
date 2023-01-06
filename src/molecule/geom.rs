@@ -1,6 +1,7 @@
-use ndarray::Array1;
-
+use ndarray::prelude::*;
 use super::Molecule;
+
+// mod geom;
 
 impl Molecule {
     /// Returns the geom of this [`Molecule`].

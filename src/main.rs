@@ -1,5 +1,5 @@
 use ndarray::prelude::*;
-use ndarray_linalg::{EigValsh, Inverse, SymmetricSqrt, Trace};
+use ndarray_linalg::{EigValsh, Eigh, Inverse, SymmetricSqrt, Trace};
 use std::f64::consts::PI;
 use std::fs;
 // use physical_constants;
@@ -55,7 +55,7 @@ fn main() {
     let mut mol: Molecule =
         Molecule::new("inp/Project3/STO-3G/h2o_v2.xyz", "inp/Project2/h2o.hess", 0);
 
-    let run_project1: bool = true;
+    let run_project1: bool = false;
     let run_project2: bool = false;
     let run_project3: bool = true;
 
@@ -310,9 +310,6 @@ fn main() {
         println!("Core Hamiltonian:\n{:^1.5}\n", H_matr);
 
         //* Step 3: Read the 2-electron integrals -> ERI tensor
-        let (mut i, mut j, mut k, mut l) = (0, 0, 0, 0);
-        let (mut ij, mut kl, mut ijkl) = (0, 0, 0);
-
         let ERI_file_contents = fs::read_to_string("inp/Project3/STO-3G/eri.dat")
             .expect("Failed to open ERI matrix data!");
 
@@ -330,8 +327,9 @@ fn main() {
             let j: usize = line_split[1].parse::<usize>().unwrap() - 1;
             let k: usize = line_split[2].parse::<usize>().unwrap() - 1;
             let l: usize = line_split[3].parse::<usize>().unwrap() - 1;
-            let val: f64 = line_split[4].parse().unwrap();
+            let val: f64 = line_split[4].parse::<f64>().unwrap();
             let idx: usize = calc_ijkl_idx(i, j, k, l);
+            println!("{} {} {} {} {} {}", i, j, k, l, val, idx);
 
             if ERI_vec.len() < idx {
                 ERI_vec.resize(idx, 0.0);
@@ -352,34 +350,39 @@ fn main() {
         // let S_matr_inv_sqrt_T: Array2<f64> = S_matr_inv_sqrt.reversed_axes();
 
         //? Intial guess the fock matrix
-        let mut F_matr: Array2<f64> = S_matr_inv_sqrt
+        let mut F_matr_prime: Array2<f64> = S_matr_inv_sqrt
             .clone()
             .reversed_axes()
             .dot(&H_matr)
             .dot(&S_matr_inv_sqrt.clone());
 
-        println!("F_matr:\n{:1.5}\n", F_matr);
+        println!("F_matr:\n{:1.5}\n", F_matr_prime);
 
-        //* Read the initials MO coefficients (file has non-orthogonals AO basis C0 matrix)
-        let mut C_matr_AO_basis: Array2<f64> = Array2::zeros((no_basis_funcs, no_basis_funcs));
-        let C_matr_file_contents = fs::read_to_string("inp/Project3/STO-3G/c0.dat")
-            .expect("Failed to open C0 matrix data!");
+        // ! WRONG FIRST TRY (my misunderstanding)
+        // //* Read the initials MO coefficients (file has non-orthogonals AO basis C0 matrix)
+        // let mut C_matr_AO_basis: Array2<f64> = Array2::zeros((no_basis_funcs, no_basis_funcs));
+        // let C_matr_file_contents = fs::read_to_string("inp/Project3/STO-3G/c0.dat")
+        //     .expect("Failed to open C0 matrix data!");
+        // for (row_idx, line) in C_matr_file_contents.lines().enumerate() {
+        //     let line_split: Vec<&str> = line.trim().split_whitespace().collect();
+        //     for col_idx in 0..no_basis_funcs {
+        //         let val: f64 = line_split[col_idx + 1].parse().unwrap();
+        //         C_matr_AO_basis[(row_idx, col_idx)] = val;
+        //     }
+        // }
+        // println!("Initial coeff matrix C0:\n{:^.5}\n", &C_matr_AO_basis);
+        // let C_matr_AO_basis_inv: Array2<f64> = C_matr_AO_basis.clone().inv().unwrap();
+        // let C_matr_MO_basis: Array2<f64> = S_matr_sqrt.dot(&C_matr_AO_basis);
+        // let C_matr_MO_basis_inv: Array2<f64> = C_matr_MO_basis.clone().inv().unwrap();
 
-        for (row_idx, line) in C_matr_file_contents.lines().enumerate() {
-            let line_split: Vec<&str> = line.trim().split_whitespace().collect();
-            for col_idx in 0..no_basis_funcs {
-                let val: f64 = line_split[col_idx + 1].parse().unwrap();
-                C_matr_AO_basis[(row_idx, col_idx)] = val;
-            }
-        }
-        println!("Initial coeff matrix C0:\n{:^.5}\n", &C_matr_AO_basis);
-
-        let C_matr_AO_basis_inv: Array2<f64> = C_matr_AO_basis.clone().inv().unwrap();
-        let C_matr_MO_basis: Array2<f64> = S_matr_sqrt.dot(&C_matr_AO_basis);
-        let C_matr_MO_basis_inv: Array2<f64> = C_matr_MO_basis.clone().inv().unwrap();
-
-        let mut orb_energy_matr = C_matr_MO_basis_inv.dot(&F_matr).dot(&C_matr_MO_basis);
-        println!("Orbital energy matrix:\n{:^.5}\n", &orb_energy_matr);
+        let (orb_energy_list, C_matr_MO_basis_from_F): (Array1<f64>, Array2<f64>) =
+            F_matr_prime
+            .eigh(ndarray_linalg::UPLO::Upper)
+            .unwrap();
+        // let mut orb_energy_matr = C_matr_MO_basis_from_F
+        println!("Orbital energy matrix:\n{:^.5}\n", &orb_energy_list);
+        let C_matr_AO_basis_from_F: Array2<f64> = S_matr_inv_sqrt.dot(&C_matr_MO_basis_from_F);
+        println!("Initial coeff matrix C0:\n{:^.5}\n", &C_matr_AO_basis_from_F);
 
         // ! THIS IS ONLY VALID FOR RHF -> QUICK FIX
         // ! QUICK FIX FOR WATER
@@ -391,19 +394,22 @@ fn main() {
         for mu in 0..no_basis_funcs {
             for nu in 0..no_basis_funcs {
                 for m in 0..no_occ_orb {
-                    D_matr[(mu, nu)] += C_matr_AO_basis[(mu, m)] * C_matr_AO_basis[(nu, m)];
+                    D_matr[(mu, nu)] += C_matr_AO_basis_from_F[(mu, m)] * C_matr_AO_basis_from_F[(nu, m)];
                 }
             }
         }
         println!("Initial density matrix:\n{:^.5}\n", &D_matr);
 
         //* Step 6: Compute the initial SCF energy
+        // let F_matr: Array2<f64> = 
         let mut E_scf_vec: Vec<f64> = Vec::new();
         let mut E_total_vec: Vec<f64> = Vec::new();
         let mut E_scf: f64 = 0.0;
         for mu in 0..no_basis_funcs {
             for nu in 0..no_basis_funcs {
-                E_scf += D_matr[(mu, nu)] * (H_matr[(mu, nu)] + F_matr[(mu, nu)]);
+                // E_scf += D_matr[(mu, nu)] * (H_matr[(mu, nu)] + F_matr_prime[(mu, nu)]);
+                //* test: (yes this is what Crawford does)
+                E_scf += D_matr[(mu, nu)] * (H_matr[(mu, nu)] + H_matr[(mu, nu)]);
             }
         }
 
@@ -425,7 +431,8 @@ fn main() {
         println!("Initial total energy: {:^1.5}", &E_total_vec[0]);
 
         //* Step 7: Iterate the SCF procedure -> 7.1 compute the new Fock matrix
-        println!("Previous F matrix: \n{:^1.5}\n", &F_matr);
+        println!("Previous F matrix: \n{:^1.5}\n", &F_matr_prime);
+        let mut F_matr : Array2<f64> = Array2::zeros((no_basis_funcs, no_basis_funcs));
         for mu in 0..no_basis_funcs {
             for nu in 0..no_basis_funcs {
                 F_matr[(mu, nu)] = H_matr[(mu, nu)];
@@ -445,10 +452,13 @@ fn main() {
             .reversed_axes()
             .dot(&F_matr)
             .dot(&S_matr_inv_sqrt.clone());
-
         println!("New F_matr_test:\n{:1.5}\n", &F_matr_test);
-        orb_energy_matr = C_matr_MO_basis_inv.dot(&F_matr_test).dot(&C_matr_MO_basis);
-        println!("Orbital energy matrix:\n{:^.5}\n", &orb_energy_matr);
+        // let F_matr_test: Array2<f64> = S_matr_inv_sqrt
+        //     .clone()
+        //     .reversed_axes()
+        //     .dot(&F_matr_prime)
+        //     .dot(&S_matr_inv_sqrt.clone());
+
         //* Step 7.2: Build the new density matrix
     }
 
