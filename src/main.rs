@@ -57,7 +57,7 @@ fn main() {
 
     let run_project1: bool = false;
     let run_project2: bool = false;
-    let run_project3: bool = false;
+    let run_project3: bool = true;
     let run_project4: bool = true;
 
     if run_project1 {
@@ -524,11 +524,56 @@ fn main() {
             );
         }
         // println!("SCF energy after {} iterations: {:?}", scf_maxiter, &E_scf_vec);
+        // }
+
+        // if run_project4 {
+        //* Project 4: Second oder Moller-Plesset Perturbation Theory
+
+        //* THIS PROJECT NEEDS PROJECT 3 TO RUN ASWELL!
+
+        //* Step 1: Read in the ERI array -> DONE IN PROJECT 3
+        //* Step 2: Obtain the MO cooefficients and energies -> DONE IN PROJECT 3
+        let MP2_C_matr_AO_basis: Array2<f64> = C_matr_AO_basis_from_F.clone();
+        let C_matr_occ: Array2<f64> = MP2_C_matr_AO_basis.slice(s![.., ..no_occ_orb]).to_owned();
+        let C_matr_virt: Array2<f64> = MP2_C_matr_AO_basis.slice(s![.., no_occ_orb..]).to_owned();
+
+        let orb_energy_list_MP2 = orb_energy_list.clone();
+        let orb_energy_list_MP2_occ: Array1<f64> =
+            orb_energy_list_MP2.slice(s![..no_occ_orb]).to_owned();
+        let orb_energy_list_MP2_virt: Array1<f64> =
+            orb_energy_list_MP2.slice(s![no_occ_orb..]).to_owned();
+
+        //* Step 3: Transform the ERI array to the MO basis
+        let mut noddy_matr: Array4<f64> = Array4::zeros((
+            no_basis_funcs,
+            no_basis_funcs,
+            no_basis_funcs,
+            no_basis_funcs,
+        ));
+
+        for i in 0..no_occ_orb {
+            for a in 0..no_basis_funcs - no_occ_orb {
+                for j in 0..no_occ_orb {
+                    for b in 0..no_basis_funcs - no_occ_orb {
+                        // let idx: usize = calc_ijkl_idx();
+                        todo!("Fix the ERI_array indexing");
+                        noddy_matr[(i, a, j, b)] += C_matr_occ[(i, a)] * C_matr_virt[(j, b)] * ERI_array[idx]
+                    }
+                }
+            }
+
+            // for mu in 0..no_occ_orb {
+            //     for nu in 0..no_occ_orb {
+            //         for lambda in 0..no_occ_orb {
+            //             for sigma in 0..no_occ_orb {
+            //                 let idx: usize = calc_ijkl_idx(mu, nu, lambda, sigma);
+            //                 noddy_matr[(mu, nu, lambda, sigma)] += C_matr_occ[(mu,nu)]
+            //             }
+            //         }
+            //     }
+        }
     }
 
-    if run_project4 {
-        
-    }
     //*****************************************************************
     //*****************************************************************
     //*****************************************************************
