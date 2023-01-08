@@ -57,7 +57,8 @@ fn main() {
 
     let run_project1: bool = false;
     let run_project2: bool = false;
-    let run_project3: bool = true;
+    let run_project3: bool = false;
+    let run_project4: bool = true;
 
     if run_project1 {
         println!("\nProject 1 implementation:\n");
@@ -254,11 +255,11 @@ fn main() {
         // ! THIS IS A QUICK FIX AND NOT A GOOD SOLUTION
         let no_basis_funcs: usize = 7;
         //* Step 1: Read Nuclear Repulsion Energy (enuc) from file
-        let E_nuc_val: f64 = fs::read_to_string("inp/Project3/STO-3G/enuc.dat")
+        let E_nn_val: f64 = fs::read_to_string("inp/Project3/STO-3G/enuc.dat")
             .expect("Failed to open enuc data!")
             .parse()
             .expect("Failed to parse enuc data file!");
-        println!("Nuclear Repulsion Energy: {}\n", E_nuc_val);
+        println!("Nuclear Repulsion Energy: {}\n", E_nn_val);
 
         //* Step 2.1: Read the overlap matrix
         let mut S_matr: Array2<f64> = Array2::zeros((no_basis_funcs, no_basis_funcs));
@@ -317,7 +318,6 @@ fn main() {
         let ERI_file_contents = fs::read_to_string("inp/Project3/STO-3G/eri.dat")
             .expect("Failed to open ERI matrix data!");
 
-
         //* 2nd try but with using a vec!
         let mut ERI_vec: Vec<f64> = Vec::new();
 
@@ -346,10 +346,10 @@ fn main() {
 
             while ERI_vec.len() <= idx {
                 ERI_vec.push(0.0);
-            };
+            }
 
             // ! THIS FUCKED ME UP FOR 3 DAYS !!!!!!!
-            // ! Insert: inserts the value at a given position and then shifts 
+            // ! Insert: inserts the value at a given position and then shifts
             // ! the rest of the vector to the right
             // ! I wanted to overwrite the value…
             // ! Moral of the story: Don't use insert() when you want to overwrite
@@ -371,13 +371,13 @@ fn main() {
         // let S_matr_inv_sqrt_T: Array2<f64> = S_matr_inv_sqrt.reversed_axes();
 
         //? Intial guess the fock matrix
-        let mut F_matr_prime: Array2<f64> = S_matr_inv_sqrt
+        let mut F_matr_init_prime: Array2<f64> = S_matr_inv_sqrt
             .clone()
             .reversed_axes()
             .dot(&H_matr)
             .dot(&S_matr_inv_sqrt.clone());
 
-        println!("F_matr:\n{:1.5}\n", F_matr_prime);
+        println!("F_matr:\n{:1.5}\n", F_matr_init_prime);
 
         // ! WRONG FIRST TRY (my misunderstanding)
         // //* Read the initials MO coefficients (file has non-orthogonals AO basis C0 matrix)
@@ -397,7 +397,7 @@ fn main() {
         // let C_matr_MO_basis_inv: Array2<f64> = C_matr_MO_basis.clone().inv().unwrap();
 
         let (orb_energy_list, C_matr_MO_basis_from_F): (Array1<f64>, Array2<f64>) =
-            F_matr_prime.eigh(ndarray_linalg::UPLO::Upper).unwrap();
+            F_matr_init_prime.eigh(ndarray_linalg::UPLO::Upper).unwrap();
         // let mut orb_energy_matr = C_matr_MO_basis_from_F
         println!("Orbital energy matrix:\n{:^.5}\n", &orb_energy_list);
         let C_matr_AO_basis_from_F: Array2<f64> = S_matr_inv_sqrt.dot(&C_matr_MO_basis_from_F);
@@ -431,103 +431,104 @@ fn main() {
         for mu in 0..no_basis_funcs {
             for nu in 0..no_basis_funcs {
                 // E_scf += D_matr[(mu, nu)] * (H_matr[(mu, nu)] + F_matr_prime[(mu, nu)]);
-                //* test: (yes this is what Crawford does)
+                //* test: (yes this is what Crawford does -> because the Fock matrix has to be transfomred to the AO basis)
                 E_scf += D_matr[(mu, nu)] * (H_matr[(mu, nu)] + H_matr[(mu, nu)]);
             }
         }
 
-        // ! Not necassray -> given as file
-        // let mut E_nuc: f64 = 0.0;
-        // for i in 0..mol.no_atoms {
-        //     for j in 0..i {
-        //         E_nuc += mol.Z_vals[i] as f64 * mol.Z_vals[j] as f64 * mol.calc_r_ij(i, j).recip();
-        //     }
-        // }
-        // println!("Initial nuclear repulsion energy: {:^1.5}", &E_nuc);
-
-        let E_total: f64 = E_scf + E_nuc_val;
+        let E_total: f64 = E_scf + E_nn_val;
         E_total_vec.push(E_total);
         E_scf_vec.push(E_scf);
 
-        println!("E_nuc from file: {:^1.5}", &E_nuc_val);
+        println!("E_nuc from file: {:^1.5}", &E_nn_val);
         println!("Initial SCF energy: {:^1.5}", &E_scf_vec[0]);
         println!("Initial total energy: {:^1.5}", &E_total_vec[0]);
 
         //* Step 7: Iterate the SCF procedure -> 7.1 compute the new Fock matrix
-        println!("Previous F matrix: \n{:^1.5}\n", &F_matr_prime);
-        let mut F_matr: Array2<f64> = Array2::zeros((no_basis_funcs, no_basis_funcs));
-        for mu in 0..no_basis_funcs {
-            for nu in 0..no_basis_funcs {
-                F_matr[(mu, nu)] = H_matr[(mu, nu)];
-                for lambda in 0..no_basis_funcs {
-                    for sigma in 0..no_basis_funcs {
-                        // let J_idx: usize = calc_ijkl_idx(mu, nu, lambda, sigma);
-                        // let K_idx: usize = calc_ijkl_idx(mu, lambda, nu, sigma);
-                        let J_idx: usize = calc_ijkl_idx(mu, nu, lambda, sigma);
-                        let K_idx: usize = calc_ijkl_idx(mu, lambda, nu, sigma);
-                        F_matr[(mu, nu)] +=
-                            D_matr[(lambda, sigma)] * (2.0 * ERI_array[J_idx] - ERI_array[K_idx]);
-                        // println!("{} {} {} {} {} {}", &mu, &nu, &lambda, &sigma, &ERI_array[J_idx], &J_idx);
+        let scf_maxiter: usize = 20;
+        //? THE SCF ITERATIONS START HERE
+        for scf_iter in 0..scf_maxiter {
+            // println!("Previous F matrix: \n{:^1.5}\n", &F_matr_init_prime);
+            let mut F_matr: Array2<f64> = Array2::zeros((no_basis_funcs, no_basis_funcs));
+            for mu in 0..no_basis_funcs {
+                for nu in 0..no_basis_funcs {
+                    F_matr[(mu, nu)] = H_matr[(mu, nu)];
+                    for lambda in 0..no_basis_funcs {
+                        for sigma in 0..no_basis_funcs {
+                            let J_idx: usize = calc_ijkl_idx(mu, nu, lambda, sigma);
+                            let K_idx: usize = calc_ijkl_idx(mu, lambda, nu, sigma);
+                            F_matr[(mu, nu)] += D_matr[(lambda, sigma)]
+                                * (2.0 * ERI_array[J_idx] - ERI_array[K_idx]);
+                        }
                     }
                 }
             }
-        }
+            // println!("New F_matr:\n{:1.5}\n", &F_matr);
 
-        println!("New F_matr:\n{:1.5}\n", &F_matr);
-        // let F_matr_test: Array2<f64> = S_matr_inv_sqrt
-        //     .clone()
-        //     .reversed_axes()
-        //     .dot(&F_matr)
-        //     .dot(&S_matr_inv_sqrt.clone());
-        // println!("New F_matr_test:\n{:1.5}\n", &F_matr_test);
-        // let F_matr_test: Array2<f64> = S_matr_inv_sqrt
-        //     .clone()
-        //     .reversed_axes()
-        //     .dot(&F_matr_prime)
-        //     .dot(&S_matr_inv_sqrt.clone());
+            //* Step 7.2: Build the new density matrix
+            let F_matr_prime: Array2<f64> = S_matr_inv_sqrt
+                .clone()
+                .reversed_axes()
+                .dot(&F_matr.clone())
+                .dot(&S_matr_inv_sqrt.clone());
+            // println!("New F_matr_prime:\n{:1.5}\n", &F_matr_prime);
 
-        //* Step 7.2: Build the new density matrix
-        F_matr_prime = S_matr_inv_sqrt
-            .clone()
-            .reversed_axes()
-            .dot(&F_matr.clone())
-            .dot(&S_matr_inv_sqrt.clone());
-        println!("New F_matr_prime:\n{:1.5}\n", &F_matr_prime);
+            let (orb_energy_list, C_matr_MO_basis_from_F): (Array1<f64>, Array2<f64>) =
+                F_matr_prime.eigh(ndarray_linalg::UPLO::Upper).unwrap();
+            // Debugging:
+            // println!(
+            //     "Orbital energy matrix after 1st iter:\n{:^.5}\n",
+            //     &orb_energy_list
+            // );
+            let C_matr_AO_basis_from_F: Array2<f64> = S_matr_inv_sqrt.dot(&C_matr_MO_basis_from_F);
+            // Debugging:
+            // println!(
+            //     "Matrix C0 after 1st iter:\n{:^.5}\n",
+            //     &C_matr_AO_basis_from_F
+            // );
 
-        let (orb_energy_list, C_matr_MO_basis_from_F): (Array1<f64>, Array2<f64>) =
-            F_matr_prime.eigh(ndarray_linalg::UPLO::Upper).unwrap();
-        // let mut orb_energy_matr = C_matr_MO_basis_from_F
-        println!(
-            "Orbital energy matrix after 1st iter:\n{:^.5}\n",
-            &orb_energy_list
-        );
-        let C_matr_AO_basis_from_F: Array2<f64> = S_matr_inv_sqrt.dot(&C_matr_MO_basis_from_F);
-        println!(
-            "Matrix C0 after 1st iter:\n{:^.5}\n",
-            &C_matr_AO_basis_from_F
-        );
+            let D_matr_prev: Array2<f64> = D_matr.clone();
 
-        let mut D_matr: Array2<f64> = Array2::zeros((no_basis_funcs, no_basis_funcs));
-
-        for mu in 0..no_basis_funcs {
-            for nu in 0..no_basis_funcs {
-                for m in 0..no_occ_orb {
-                    D_matr[(mu, nu)] +=
-                        C_matr_AO_basis_from_F[(mu, m)] * C_matr_AO_basis_from_F[(nu, m)];
+            for mu in 0..no_basis_funcs {
+                for nu in 0..no_basis_funcs {
+                    D_matr[(mu, nu)] = 0.0;
+                    for m in 0..no_occ_orb {
+                        D_matr[(mu, nu)] +=
+                            C_matr_AO_basis_from_F[(mu, m)] * C_matr_AO_basis_from_F[(nu, m)];
+                    }
                 }
             }
-        }
 
-        E_scf = 0.0;
-        for mu in 0..no_basis_funcs {
-            for nu in 0..no_basis_funcs {
-                // E_scf += D_matr[(mu, nu)] * (H_matr[(mu, nu)] + F_matr_prime[(mu, nu)]);
-                E_scf += D_matr[(mu, nu)] * (H_matr[(mu, nu)] + F_matr_prime[(mu, nu)]);
+            E_scf = 0.0;
+            for mu in 0..no_basis_funcs {
+                for nu in 0..no_basis_funcs {
+                    E_scf += D_matr[(mu, nu)] * (H_matr[(mu, nu)] + F_matr[(mu, nu)]);
+                }
             }
+            // println!("New SCF energy (iter): {:^1.5} ({})", &E_scf, &scf_iter);
+            E_scf_vec.push(E_scf);
+            E_total_vec.push(E_scf + E_nn_val);
+
+            //* Step 10: Calc rms density matrix difference
+            let mut rms_d_val: f64 = 0.0;
+            for mu in 0..no_basis_funcs {
+                for nu in 0..no_basis_funcs {
+                    rms_d_val += (D_matr[(mu, nu)] - D_matr_prev[(mu, nu)]).powi(2);
+                }
+            }
+            rms_d_val = rms_d_val.sqrt();
+            println!("Iter\tE_scf\tE_total\tRMS D");
+            println!(
+                "{}\t{:1.5}\t{:1.5}\t{:1.5}",
+                &scf_iter, &E_scf, &E_total, &rms_d_val
+            );
         }
-        println!("New SCF energy: {:^1.5}", &E_scf);
+        // println!("SCF energy after {} iterations: {:?}", scf_maxiter, &E_scf_vec);
     }
 
+    if run_project4 {
+        
+    }
     //*****************************************************************
     //*****************************************************************
     //*****************************************************************
