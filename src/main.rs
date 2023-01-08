@@ -310,19 +310,31 @@ fn main() {
         println!("Core Hamiltonian:\n{:^1.5}\n", H_matr);
 
         //* Step 3: Read the 2-electron integrals -> ERI tensor
+        //* Test with Psi4
+        // let ERI_file_contents = fs::read_to_string("inp/Project3/STO-3G/eri_Psi4_test.dat")
+        //     .expect("Failed to open ERI matrix data!");
+        //*Original
         let ERI_file_contents = fs::read_to_string("inp/Project3/STO-3G/eri.dat")
             .expect("Failed to open ERI matrix data!");
 
-        // let mut sums = Vec::new();
-        // for i in 0..=100 {
-        //     sums.push(sum_up_to(i));
-        // }
 
         //* 2nd try but with using a vec!
         let mut ERI_vec: Vec<f64> = Vec::new();
 
         for line in ERI_file_contents.lines() {
-            let mut line_split: Vec<&str> = line.trim().split_whitespace().collect();
+            //* Just a test with the correct data from Psi4
+            // let mut line_split: Vec<&str> = line.trim().split_whitespace().collect();
+            // let i: usize = line_split[0].parse::<usize>().unwrap();
+            // let j: usize = line_split[1].parse::<usize>().unwrap();
+            // let k: usize = line_split[2].parse::<usize>().unwrap();
+            // let l: usize = line_split[3].parse::<usize>().unwrap();
+            // let val: f64 = line_split[4].parse::<f64>().unwrap();
+            // let idx: usize = calc_ijkl_idx(i, j, k, l);
+            // Debugging:
+            // println!("{} {} {} {} {} {}", i, j, k, l, val, idx);
+
+            //* Original code:
+            let line_split: Vec<&str> = line.trim().split_whitespace().collect();
             let i: usize = line_split[0].parse::<usize>().unwrap() - 1;
             let j: usize = line_split[1].parse::<usize>().unwrap() - 1;
             let k: usize = line_split[2].parse::<usize>().unwrap() - 1;
@@ -332,14 +344,22 @@ fn main() {
             // Debugging:
             // println!("{} {} {} {} {} {}", i, j, k, l, val, idx);
 
-            if ERI_vec.len() < idx {
-                ERI_vec.resize(idx, 0.0);
-            }
+            while ERI_vec.len() <= idx {
+                ERI_vec.push(0.0);
+            };
 
-            ERI_vec.insert(calc_ijkl_idx(i, j, k, l), val);
+            // ! THIS FUCKED ME UP FOR 3 DAYS !!!!!!!
+            // ! Insert: inserts the value at a given position and then shifts 
+            // ! the rest of the vector to the right
+            // ! I wanted to overwrite the value…
+            // ! Moral of the story: Don't use insert() when you want to overwrite
+            // ERI_vec.insert(idx, val);
+
+            ERI_vec[idx] = val;
         }
         let ERI_array: Array1<f64> = Array1::from_vec(ERI_vec);
-        println!("Electron-electron repulsion array:\n{:^1.5}\n", &ERI_array);
+        // println!("Compare vec with array:\nVec:{}\nArray:{}\n",&ERI_vec[172], &ERI_array[172]);
+        println!("Electron-electron repulsion array:\n{:}\n", &ERI_array);
 
         //* Step 4: Build the orthogonalization matrix
         let S_matr_sqrt: Array2<f64> = S_matr.ssqrt(ndarray_linalg::UPLO::Upper).unwrap(); // S^1/2 matrix
@@ -441,10 +461,13 @@ fn main() {
                 F_matr[(mu, nu)] = H_matr[(mu, nu)];
                 for lambda in 0..no_basis_funcs {
                     for sigma in 0..no_basis_funcs {
+                        // let J_idx: usize = calc_ijkl_idx(mu, nu, lambda, sigma);
+                        // let K_idx: usize = calc_ijkl_idx(mu, lambda, nu, sigma);
                         let J_idx: usize = calc_ijkl_idx(mu, nu, lambda, sigma);
                         let K_idx: usize = calc_ijkl_idx(mu, lambda, nu, sigma);
                         F_matr[(mu, nu)] +=
                             D_matr[(lambda, sigma)] * (2.0 * ERI_array[J_idx] - ERI_array[K_idx]);
+                        // println!("{} {} {} {} {} {}", &mu, &nu, &lambda, &sigma, &ERI_array[J_idx], &J_idx);
                     }
                 }
             }
@@ -534,7 +557,5 @@ fn calc_ijkl_idx(i: usize, j: usize, k: usize, l: usize) -> usize {
 }
 
 fn calc_cmp_idx(idx1: usize, idx2: usize) -> usize {
-    // let idx1idx2: usize = (idx1 * (idx1 + 1)) / 2 + idx2;
-    // idx1idx2
-    idx1 * (idx1 + 1) / 2 + idx2
+    (idx1 * (idx1 + 1)) / 2 + idx2
 }

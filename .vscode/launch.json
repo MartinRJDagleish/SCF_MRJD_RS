@@ -7,15 +7,15 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug executable 'QM_Programm'",
+            "name": "Debug executable 'SCF_MRJD_RS'",
             "cargo": {
                 "args": [
                     "build",
-                    "--bin=QM_Programm",
-                    "--package=QM_Programm"
+                    "--bin=SCF_MRJD_RS",
+                    "--package=SCF_MRJD_RS"
                 ],
                 "filter": {
-                    "name": "QM_Programm",
+                    "name": "SCF_MRJD_RS",
                     "kind": "bin"
                 }
             },
@@ -25,16 +25,16 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests in executable 'QM_Programm'",
+            "name": "Debug unit tests in executable 'SCF_MRJD_RS'",
             "cargo": {
                 "args": [
                     "test",
                     "--no-run",
-                    "--bin=QM_Programm",
-                    "--package=QM_Programm"
+                    "--bin=SCF_MRJD_RS",
+                    "--package=SCF_MRJD_RS"
                 ],
                 "filter": {
-                    "name": "QM_Programm",
+                    "name": "SCF_MRJD_RS",
                     "kind": "bin"
                 }
             },

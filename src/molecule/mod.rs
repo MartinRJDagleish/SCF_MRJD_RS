@@ -7,21 +7,12 @@ use std::io::{BufRead, BufReader};
 use std::{collections::HashMap, fs};
 
 pub struct Molecule {
-    // charge
     pub charge: i32,
-    // number of atoms
     pub no_atoms: usize,
-    // cartesian coordinates (geometry of molecule)
     pub geom: Array2<f64>,
-    // atomic numbers
-    pub Z_vals: Vec<usize>,
-    // HashMap of atomic masses
-    // mass_map: HashMap<usize, f64>,
-    // Array of atmoic masses
+    pub Z_vals: Vec<i32>,
     pub mass_array: [f64; 119],
     pub hessian: Array2<f64>,
-    // point_group
-    // point_group: String,
 }
 
 mod geom;
@@ -29,7 +20,7 @@ mod geom;
 impl Molecule {
     pub fn new(geom_file: &str, hessian_file: &str, charge: i32) -> Molecule {
         //* Step 1: Read the coord data from input
-        println!("In file {}", geom_file);
+        println!("Inputfile: {}", geom_file);
 
         //* Show contents of file
         let geom_file_contents: String =
@@ -39,7 +30,7 @@ impl Molecule {
         let no_atoms: usize = geom_file_contents.lines().nth(0).unwrap().parse().unwrap();
         println!("No of atoms: {}", no_atoms);
 
-        let mut Z_vals: Vec<usize> = vec![0; no_atoms];
+        let mut Z_vals: Vec<i32> = vec![0; no_atoms];
         let mut geom: Array2<f64> = Array2::zeros((no_atoms, 3));
 
         for (line_idx, line) in geom_file_contents.lines().skip(1).enumerate() {
@@ -231,19 +222,15 @@ impl Molecule {
     }
 
     #[allow(non_snake_case)]
-    pub fn get_mass_Z_val(&self, Z_val: &usize) -> f64 {
+    pub fn get_mass_Z_val(&self, Z_val: &i32) -> f64 {
         // return self.mass_map.get(Z_val).unwrap().clone();
         //* new impl with mass_array
-        return self.mass_array.get(*Z_val).unwrap().clone();
+        return self.mass_array.get(*Z_val as usize).unwrap().clone();
     }
 
     pub fn other_two(n: usize) -> Vec<usize> {
         let arr: [usize; 3] = [0, 1, 2];
-        arr
-            .iter()
-            .filter(|&x| *x != n)
-            .map(|x| *x)
-            .collect()
+        arr.iter().filter(|&x| *x != n).map(|x| *x).collect()
     }
 
     pub fn calc_inertia_tensor(&self) -> Array2<f64> {
