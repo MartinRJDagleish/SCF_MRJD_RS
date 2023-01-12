@@ -55,10 +55,11 @@ fn main() {
 
     let mut mol: Molecule = Molecule::new("inp/Project3/STO-3G/h2o_v2.xyz", 0);
 
-    let run_project1: bool = true;
-    let run_project2: bool = false;
-    let run_project3: bool = false;
-    let run_project4: bool = false;
+    let run_project1: bool = true; //* General molecule geometry stuff 
+    let run_project2: bool = false; //* Hessian -> eigenfreqs from file
+    let run_project3_1: bool = false; //* SCF from precomputed integrals
+    let run_project3_2: bool = true; //* SCF from "scratch"
+    let run_project4: bool = false; //* MP2 from precomputed integrals
 
     if run_project1 {
         println!("\nProject 1 implementation:\n");
@@ -289,7 +290,7 @@ fn main() {
         );
     }
 
-    if run_project3 {
+    if run_project3_1 {
         println!("\nProject 3 implementation:\n");
         //* Project 3: SCF (with data provided)
         // ! THIS IS A QUICK FIX AND NOT A GOOD SOLUTION
@@ -398,7 +399,6 @@ fn main() {
             ERI_vec[idx] = val;
         }
         let ERI_array: Array1<f64> = Array1::from_vec(ERI_vec);
-        // println!("Compare vec with array:\nVec:{}\nArray:{}\n",&ERI_vec[172], &ERI_array[172]);
         println!("Electron-electron repulsion array:\n{:}\n", &ERI_array);
 
         //* Step 4: Build the orthogonalization matrix
@@ -698,6 +698,10 @@ fn main() {
         }
     }
 
+    if run_project3_2 {
+        println!("\nRunning project 3.2 (SCF from 'scratch')");
+
+    }
     //*****************************************************************
     //*****************************************************************
     //*****************************************************************
