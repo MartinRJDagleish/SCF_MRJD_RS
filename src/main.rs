@@ -1,20 +1,18 @@
 use humantime::format_duration;
 use ndarray::prelude::*;
-use ndarray_linalg::{EigValsh, Eigh, Inverse, SymmetricSqrt, Trace};
+use ndarray_linalg::{EigValsh, Eigh, Inverse, SymmetricSqrt};
 use std::f64::consts::PI;
 use std::fs;
+use std::io::{BufRead, BufReader};
 use std::time::Instant;
-// use physical_constants;
-// use std::collections::HashSet;
-// use std::io::{BufRead, BufReader};
-// use std::{collections::HashMap, fs};
 
 use crate::molecule::Molecule;
 mod molecule;
 
+#[allow(non_snake_case)] // * -> I need this due to QM naming conventions
 fn main() {
     let start_exec_time = Instant::now();
-    let output_beginning_string: String = String::from(
+    let ASCII_art_logo: String = String::from(
         r#"
     _____/\\\\\\\\\\\___________/\\\\\\\\\___/\\\\\\\\\\\\\\\_                                
      ___/\\\/////////\\\______/\\\////////___\/\\\///////////__                               
@@ -45,22 +43,21 @@ fn main() {
              ____________\///________\///_____\///////////_____  
         "#,
     );
-    println!("{}", output_beginning_string);
+    println!("{}", ASCII_art_logo);
 
-    //* Natural constants
-    let h: f64 = physical_constants::PLANCK_CONSTANT;
-    let c: f64 = physical_constants::SPEED_OF_LIGHT_IN_VACUUM;
+    // //* Natural constants
+    // let h: f64 = physical_constants::PLANCK_CONSTANT;
+    // let c: f64 = physical_constants::SPEED_OF_LIGHT_IN_VACUUM;
     //*******************************************************************
     //*                         OOP WAY
     //*******************************************************************
     //* OOP way:
 
-    let mut mol: Molecule =
-        Molecule::new("inp/Project3/STO-3G/h2o_v2.xyz", "inp/Project2/h2o.hess", 0);
+    let mut mol: Molecule = Molecule::new("inp/Project3/STO-3G/h2o_v2.xyz", 0);
 
-    let run_project1: bool = false;
-    let run_project2: bool = false;
-    let run_project3: bool = true;
+    let run_project1: bool = true;
+    let run_project2: bool = true;
+    let run_project3: bool = false;
     let run_project4: bool = false;
 
     if run_project1 {
@@ -185,17 +182,23 @@ fn main() {
         );
 
         //* Step 8: Rotational constants
-        let conv_factor_recip_cm: f64 = 1.0
-            / (100.0
-                * physical_constants::ATOMIC_MASS_CONSTANT
-                * physical_constants::BOHR_RADIUS.powi(2));
+        let conv_factor_recip_cm: f64 = (100.0
+            * physical_constants::ATOMIC_MASS_CONSTANT
+            * physical_constants::BOHR_RADIUS.powi(2))
+        .recip();
         // println!("\nConversion factor: {}\n", conv_factor_recip_cm);
-        let rot_const_A_per_cm: f64 =
-            conv_factor_recip_cm * (h / (8.0 * PI.powi(2) * c * &eigenvals[0]));
-        let rot_const_B_per_cm: f64 =
-            conv_factor_recip_cm * (h / (8.0 * PI.powi(2) * c * &eigenvals[1]));
-        let rot_const_C_per_cm: f64 =
-            conv_factor_recip_cm * (h / (8.0 * PI.powi(2) * c * &eigenvals[2]));
+        let rot_const_A_per_cm: f64 = conv_factor_recip_cm
+            * physical_constants::PLANCK_CONSTANT
+            * (8.0 * PI.powi(2) * physical_constants::SPEED_OF_LIGHT_IN_VACUUM * &eigenvals[0])
+                .recip();
+        let rot_const_B_per_cm: f64 = conv_factor_recip_cm
+            * physical_constants::PLANCK_CONSTANT
+            * (8.0 * PI.powi(2) * physical_constants::SPEED_OF_LIGHT_IN_VACUUM * &eigenvals[1])
+                .recip();
+        let rot_const_C_per_cm: f64 = conv_factor_recip_cm
+            * physical_constants::PLANCK_CONSTANT
+            * (8.0 * PI.powi(2) * physical_constants::SPEED_OF_LIGHT_IN_VACUUM * &eigenvals[2])
+                .recip();
         println!(
             "Rotational constants (cm^-1): \nA: {:.4}\nB: {:.4}\nC: {:.4}\n",
             &rot_const_A_per_cm, &rot_const_B_per_cm, &rot_const_C_per_cm
@@ -229,8 +232,40 @@ fn main() {
         // * Project 2: read coordinate data DONE -> read hessian
         // * Step 1: Read coordinates (see above in Molecule struct) */
         // * Step 2: Read the cartessian hessian data
-        println!("\n\nReading the hessian data...");
-        println!("{:1.5}\n", mol.hessian);
+        //* OLD way
+        // println!("\n\nReading the hessian data...");
+        // println!("{:1.5}\n", mol.hessian);
+
+        //* NEW way
+
+        //* READING THE HESSIAN
+        let hess_file_path: &str = "inp/Project2/h2o.hess";
+        let hess_file = fs::File::open(hess_file_path).unwrap();
+        let hess_reader = BufReader::new(hess_file);
+
+        let mut hessian: Vec<Vec<f64>> = Vec::new();
+        let mut line_iter = hess_reader.lines();
+
+        let hess_no_atoms: usize = line_iter.next().unwrap().unwrap().trim().parse().unwrap();
+        println!("No of atoms in hessian: {}", hess_no_atoms);
+        if mol.no_atoms != hess_no_atoms {
+            panic!("Number of atoms in geom file and hessian file are not the same!");
+        }
+
+        for line in line_iter {
+            let line = line.unwrap();
+            let values: Vec<f64> = line
+                .split_whitespace()
+                .map(|s| s.parse().unwrap())
+                .collect();
+            hessian.push(values);
+        }
+
+        mol.hessian = Array2::from_shape_vec(
+            (3 * hess_no_atoms, 3 * hess_no_atoms),
+            hessian.into_iter().flatten().collect(),
+        )
+        .unwrap();
 
         //* Step 3: Mass-weight the hessian matrix
         mol.mass_weight_hessian();
@@ -242,7 +277,7 @@ fn main() {
         let conv_hess_to_waveno: f64 = (physical_constants::HARTREE_ENERGY
             / (physical_constants::BOHR_RADIUS.powi(2) * physical_constants::ATOMIC_MASS_CONSTANT))
             .sqrt()
-            * (2.0 * PI * 100.0 * c).recip(); //* recip is ^-1, but "faster"
+            * (2.0 * PI * 100.0 * physical_constants::SPEED_OF_LIGHT_IN_VACUUM).recip(); //* recip is ^-1, but "faster"
         let harm_vib_freqs: Array1<f64> = mol
             .calc_hess_eigenvals()
             .mapv(|x| conv_hess_to_waveno * x.sqrt());
@@ -270,7 +305,7 @@ fn main() {
             fs::read_to_string("inp/Project3/STO-3G/s.dat").expect("Failed to open S matrix data!");
 
         for line in S_matr_file_contents.lines() {
-            let mut line_split: Vec<&str> = line.trim().split_whitespace().collect();
+            let line_split: Vec<&str> = line.trim().split_whitespace().collect();
             let row: usize = line_split[0].parse::<usize>().unwrap() - 1;
             let col: usize = line_split[1].parse::<usize>().unwrap() - 1;
             let val: f64 = line_split[2].parse().unwrap();
@@ -285,7 +320,7 @@ fn main() {
             fs::read_to_string("inp/Project3/STO-3G/t.dat").expect("Failed to open T matrix data!");
 
         for line in T_matr_file_contents.lines() {
-            let mut line_split: Vec<&str> = line.trim().split_whitespace().collect();
+            let line_split: Vec<&str> = line.trim().split_whitespace().collect();
             let row: usize = line_split[0].parse::<usize>().unwrap() - 1;
             let col: usize = line_split[1].parse::<usize>().unwrap() - 1;
             let val: f64 = line_split[2].parse().unwrap();
@@ -300,7 +335,7 @@ fn main() {
             fs::read_to_string("inp/Project3/STO-3G/v.dat").expect("Failed to open V matrix data!");
 
         for line in V_matr_file_contents.lines() {
-            let mut line_split: Vec<&str> = line.trim().split_whitespace().collect();
+            let line_split: Vec<&str> = line.trim().split_whitespace().collect();
             let row: usize = line_split[0].parse::<usize>().unwrap() - 1;
             let col: usize = line_split[1].parse::<usize>().unwrap() - 1;
             let val: f64 = line_split[2].parse().unwrap();
@@ -310,8 +345,8 @@ fn main() {
         println!("Nuclear attraction:\n{:1.5}\n", V_matr);
 
         //* Step 2.4: Form core Hamiltonian H_core = T + V
-        let mut H_matr: Array2<f64> = &T_matr + &V_matr;
-        println!("Core Hamiltonian:\n{:^1.5}\n", H_matr);
+        let H_core_matr: Array2<f64> = &T_matr + &V_matr;
+        println!("Core Hamiltonian:\n{:^1.5}\n", H_core_matr);
 
         //* Step 3: Read the 2-electron integrals -> ERI tensor
         //* Test with Psi4
@@ -374,10 +409,10 @@ fn main() {
         // let S_matr_inv_sqrt_T: Array2<f64> = S_matr_inv_sqrt.reversed_axes();
 
         //? Intial guess the fock matrix
-        let mut F_matr_init_prime: Array2<f64> = S_matr_inv_sqrt
+        let F_matr_init_prime: Array2<f64> = S_matr_inv_sqrt
             .clone()
             .reversed_axes()
-            .dot(&H_matr)
+            .dot(&H_core_matr)
             .dot(&S_matr_inv_sqrt.clone());
 
         println!("F_matr:\n{:1.5}\n", F_matr_init_prime);
@@ -435,7 +470,7 @@ fn main() {
             for nu in 0..no_basis_funcs {
                 // E_scf += D_matr[(mu, nu)] * (H_matr[(mu, nu)] + F_matr_prime[(mu, nu)]);
                 //* test: (yes this is what Crawford does -> because the Fock matrix has to be transfomred to the AO basis)
-                E_scf += D_matr[(mu, nu)] * (H_matr[(mu, nu)] + H_matr[(mu, nu)]);
+                E_scf += D_matr[(mu, nu)] * (H_core_matr[(mu, nu)] + H_core_matr[(mu, nu)]);
             }
         }
 
@@ -455,7 +490,7 @@ fn main() {
             let mut F_matr: Array2<f64> = Array2::zeros((no_basis_funcs, no_basis_funcs));
             for mu in 0..no_basis_funcs {
                 for nu in 0..no_basis_funcs {
-                    F_matr[(mu, nu)] = H_matr[(mu, nu)];
+                    F_matr[(mu, nu)] = H_core_matr[(mu, nu)];
                     for lambda in 0..no_basis_funcs {
                         for sigma in 0..no_basis_funcs {
                             let J_idx: usize = calc_ijkl_idx(mu, nu, lambda, sigma);
@@ -505,7 +540,7 @@ fn main() {
             E_scf = 0.0;
             for mu in 0..no_basis_funcs {
                 for nu in 0..no_basis_funcs {
-                    E_scf += D_matr[(mu, nu)] * (H_matr[(mu, nu)] + F_matr[(mu, nu)]);
+                    E_scf += D_matr[(mu, nu)] * (H_core_matr[(mu, nu)] + F_matr[(mu, nu)]);
                 }
             }
             // println!("New SCF energy (iter): {:^1.5} ({})", &E_scf, &scf_iter);
@@ -675,7 +710,10 @@ fn main() {
     let end_exec_time = Instant::now();
     let duration_exec_time = end_exec_time.duration_since(start_exec_time);
     let formatted_duration_exec_time = format_duration(duration_exec_time).to_string();
-    println!("\nTime elapsed in execution is: {}", formatted_duration_exec_time);
+    println!(
+        "\nTime elapsed in execution is: {}",
+        formatted_duration_exec_time
+    );
 }
 
 fn calc_ijkl_idx(i: usize, j: usize, k: usize, l: usize) -> usize {

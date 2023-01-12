@@ -1,8 +1,5 @@
 use ndarray::prelude::*;
 use ndarray_linalg::{EigValsh, Scalar, SymmetricSqrt};
-use physical_constants;
-use std::collections::HashSet;
-use std::f64::consts::PI;
 use std::io::{BufRead, BufReader};
 use std::{collections::HashMap, fs};
 
@@ -17,8 +14,9 @@ pub struct Molecule {
 
 mod geom;
 
+#[allow(non_snake_case)] // * -> I need this due to QM naming conventions
 impl Molecule {
-    pub fn new(geom_file: &str, hessian_file: &str, charge: i32) -> Molecule {
+    pub fn new(geom_file: &str, charge: i32) -> Molecule {
         //* Step 1: Read the coord data from input
         println!("Inputfile: {}", geom_file);
 
@@ -183,33 +181,8 @@ impl Molecule {
             294.0,
         ];
 
-        //* READING THE HESSIAN
-        let hess_file = fs::File::open(hessian_file).unwrap();
-        let hess_reader = BufReader::new(hess_file);
-
-        let mut hessian: Vec<Vec<f64>> = Vec::new();
-        let mut line_iter = hess_reader.lines();
-
-        let hess_no_atoms: usize = line_iter.next().unwrap().unwrap().trim().parse().unwrap();
-        println!("No of atoms in hessian: {}", hess_no_atoms);
-        if no_atoms != hess_no_atoms {
-            panic!("Number of atoms in geom file and hessian file are not the same!");
-        }
-
-        for line in line_iter {
-            let line = line.unwrap();
-            let values: Vec<f64> = line
-                .split_whitespace()
-                .map(|s| s.parse().unwrap())
-                .collect();
-            hessian.push(values);
-        }
-
-        let mut hessian: Array2<f64> = Array2::from_shape_vec(
-            (3 * hess_no_atoms, 3 * hess_no_atoms),
-            hessian.into_iter().flatten().collect(),
-        )
-        .unwrap();
+        //* Define a 0-matrix which can be edited later on ?
+        let hessian: Array2<f64> = Array2::zeros((1,1));
 
         Molecule {
             charge,
@@ -221,7 +194,6 @@ impl Molecule {
         }
     }
 
-    #[allow(non_snake_case)]
     pub fn get_mass_Z_val(&self, Z_val: &i32) -> f64 {
         // return self.mass_map.get(Z_val).unwrap().clone();
         //* new impl with mass_array
