@@ -1,7 +1,9 @@
+use humantime::format_duration;
 use ndarray::prelude::*;
 use ndarray_linalg::{EigValsh, Eigh, Inverse, SymmetricSqrt, Trace};
 use std::f64::consts::PI;
 use std::fs;
+use std::time::Instant;
 // use physical_constants;
 // use std::collections::HashSet;
 // use std::io::{BufRead, BufReader};
@@ -11,6 +13,7 @@ use crate::molecule::Molecule;
 mod molecule;
 
 fn main() {
+    let start_exec_time = Instant::now();
     let output_beginning_string: String = String::from(
         r#"
     _____/\\\\\\\\\\\___________/\\\\\\\\\___/\\\\\\\\\\\\\\\_                                
@@ -58,7 +61,7 @@ fn main() {
     let run_project1: bool = false;
     let run_project2: bool = false;
     let run_project3: bool = true;
-    let run_project4: bool = true;
+    let run_project4: bool = false;
 
     if run_project1 {
         println!("\nProject 1 implementation:\n");
@@ -517,142 +520,149 @@ fn main() {
                 }
             }
             rms_d_val = rms_d_val.sqrt();
-            println!("Iter\tE_scf\tE_total\tRMS D");
+            println!("Iter  E_scf           E_total      RMS D");
             println!(
-                "{}\t{:1.5}\t{:1.5}\t{:1.5}",
+                " {}  {:^5.8} {:^5.8} {:^1.8}",
                 &scf_iter, &E_scf, &E_total, &rms_d_val
             );
         }
         // println!("SCF energy after {} iterations: {:?}", scf_maxiter, &E_scf_vec);
         // }
 
-        // if run_project4 {
-        //* Project 4: Second oder Moller-Plesset Perturbation Theory
+        if run_project4 {
+            //* Project 4: Second oder Moller-Plesset Perturbation Theory
 
-        println!("\n\nMP2 PROJECT STARTS HERE:\n");
-        //* THIS PROJECT NEEDS PROJECT 3 TO RUN ASWELL!
+            println!("\n\nMP2 PROJECT STARTS HERE:\n");
+            //* THIS PROJECT NEEDS PROJECT 3 TO RUN ASWELL!
 
-        //* Step 1: Read in the ERI array -> DONE IN PROJECT 3
-        //* Step 2: Obtain the MO cooefficients and energies -> DONE IN PROJECT 3
-        let MP2_C_matr_AO_basis: Array2<f64> = C_matr_AO_basis_from_F.clone();
-        let C_matr_occ: Array2<f64> = MP2_C_matr_AO_basis.slice(s![.., ..no_occ_orb]).to_owned();
-        let C_matr_virt: Array2<f64> = MP2_C_matr_AO_basis.slice(s![.., no_occ_orb..]).to_owned();
+            //* Step 1: Read in the ERI array -> DONE IN PROJECT 3
+            //* Step 2: Obtain the MO cooefficients and energies -> DONE IN PROJECT 3
+            let MP2_C_matr_AO_basis: Array2<f64> = C_matr_AO_basis_from_F.clone();
+            let C_matr_occ: Array2<f64> =
+                MP2_C_matr_AO_basis.slice(s![.., ..no_occ_orb]).to_owned();
+            let C_matr_virt: Array2<f64> =
+                MP2_C_matr_AO_basis.slice(s![.., no_occ_orb..]).to_owned();
 
-        let orb_energy_list_MP2 = orb_energy_list.clone();
-        let orb_energy_list_MP2_occ: Array1<f64> =
-            orb_energy_list_MP2.slice(s![..no_occ_orb]).to_owned();
-        let orb_energy_list_MP2_virt: Array1<f64> =
-            orb_energy_list_MP2.slice(s![no_occ_orb..]).to_owned();
+            let orb_energy_list_MP2 = orb_energy_list.clone();
+            let orb_energy_list_MP2_occ: Array1<f64> =
+                orb_energy_list_MP2.slice(s![..no_occ_orb]).to_owned();
+            let orb_energy_list_MP2_virt: Array1<f64> =
+                orb_energy_list_MP2.slice(s![no_occ_orb..]).to_owned();
 
-        let no_virt_orb: usize = no_basis_funcs - no_occ_orb;
-        
-        //* Step 3: Transform the ERI array to the MO basis
-        let mut noddy_matr: Array4<f64> = Array4::zeros((
-            no_basis_funcs,
-            no_basis_funcs,
-            no_basis_funcs,
-            no_basis_funcs,
-        ));
+            let no_virt_orb: usize = no_basis_funcs - no_occ_orb;
 
-        // for p in 0..no_basis_funcs {
-        //     for q in 0..p {
-        //         for r in 0..p {
-        //             let upper_lim_s: usize = if p == r { q } else { r};
-        //             for s in 0..upper_lim_s {
-        //                 for mu in 0..no_basis_funcs {
-        //                     for nu in 0..no_basis_funcs {
-        //                         for lambda in 0..no_basis_funcs {
-        //                             for sigma in 0..no_basis_funcs {
-        //                                 let idx: usize = calc_ijkl_idx(mu, nu, lambda, sigma);
-        //                                 noddy_matr[(p,q,r,s)] += C_matr_occ[(mu, p)] * C_matr_virt[(nu, q)] * ERI_array[idx] * C_matr_occ[(lambda, r)] * C_matr_virt[(sigma, s)];
-        //                                 // noddy_matr[(mu, nu, lambda, sigma)] += C_matr_occ[(mu, nu)]
-        //                             }
-        //                         }
-        //                     }
-        //                 }
-        //             }
-        //         }
-        //     }
-        // }
-        println!("\nNoddy matr: {:^1.5}\n", &noddy_matr);
+            //* Step 3: Transform the ERI array to the MO basis
+            let mut noddy_matr: Array4<f64> = Array4::zeros((
+                no_basis_funcs,
+                no_basis_funcs,
+                no_basis_funcs,
+                no_basis_funcs,
+            ));
 
-        //* Step 3.2: Better version:
-        let mut smarter_matr: Array4<f64> = Array4::zeros((
-            no_basis_funcs,
-            no_basis_funcs,
-            no_basis_funcs,
-            no_basis_funcs,
-        ));
+            // for p in 0..no_basis_funcs {
+            //     for q in 0..p {
+            //         for r in 0..p {
+            //             let upper_lim_s: usize = if p == r { q } else { r};
+            //             for s in 0..upper_lim_s {
+            //                 for mu in 0..no_basis_funcs {
+            //                     for nu in 0..no_basis_funcs {
+            //                         for lambda in 0..no_basis_funcs {
+            //                             for sigma in 0..no_basis_funcs {
+            //                                 let idx: usize = calc_ijkl_idx(mu, nu, lambda, sigma);
+            //                                 noddy_matr[(p,q,r,s)] += C_matr_occ[(mu, p)] * C_matr_virt[(nu, q)] * ERI_array[idx] * C_matr_occ[(lambda, r)] * C_matr_virt[(sigma, s)];
+            //                                 // noddy_matr[(mu, nu, lambda, sigma)] += C_matr_occ[(mu, nu)]
+            //                             }
+            //                         }
+            //                     }
+            //                 }
+            //             }
+            //         }
+            //     }
+            // }
+            println!("\nNoddy matr: {:^1.5}\n", &noddy_matr);
 
-        for s in 0..no_virt_orb{
-            for mu in 0..no_occ_orb {
-                for nu in 0..no_occ_orb {
-                    for lambda in 0..no_occ_orb {
-                        for sigma in 0..no_occ_orb {
-                            let idx: usize = calc_ijkl_idx(mu, nu, lambda, sigma);
-                            smarter_matr[(mu, nu, lambda, sigma)] += C_matr_virt[(sigma, s)] * ERI_array[idx];                        
+            //* Step 3.2: Better version:
+            let mut smarter_matr: Array4<f64> = Array4::zeros((
+                no_basis_funcs,
+                no_basis_funcs,
+                no_basis_funcs,
+                no_basis_funcs,
+            ));
+
+            for s in 0..no_virt_orb {
+                for mu in 0..no_occ_orb {
+                    for nu in 0..no_occ_orb {
+                        for lambda in 0..no_occ_orb {
+                            for sigma in 0..no_occ_orb {
+                                let idx: usize = calc_ijkl_idx(mu, nu, lambda, sigma);
+                                smarter_matr[(mu, nu, lambda, sigma)] +=
+                                    C_matr_virt[(sigma, s)] * ERI_array[idx];
+                            }
                         }
                     }
                 }
             }
-        }
 
-        for r in 0..no_virt_orb{
-            for mu in 0..no_occ_orb {
-                for nu in 0..no_occ_orb {
-                    for lambda in 0..no_occ_orb {
-                        for sigma in 0..no_occ_orb {
-                            let idx: usize = calc_ijkl_idx(mu, nu, lambda, sigma);
-                            smarter_matr[(mu, nu, lambda, sigma)] += C_matr_occ[(lambda, r)] * smarter_matr[(mu, nu, lambda, sigma)];
+            for r in 0..no_virt_orb {
+                for mu in 0..no_occ_orb {
+                    for nu in 0..no_occ_orb {
+                        for lambda in 0..no_occ_orb {
+                            for sigma in 0..no_occ_orb {
+                                let idx: usize = calc_ijkl_idx(mu, nu, lambda, sigma);
+                                smarter_matr[(mu, nu, lambda, sigma)] +=
+                                    C_matr_occ[(lambda, r)] * smarter_matr[(mu, nu, lambda, sigma)];
+                            }
                         }
                     }
                 }
             }
-        }
 
-        for q in 0..no_virt_orb{
-            for mu in 0..no_occ_orb {
-                for nu in 0..no_occ_orb {
-                    for lambda in 0..no_occ_orb {
-                        for sigma in 0..no_occ_orb {
-                            let idx: usize = calc_ijkl_idx(mu, nu, lambda, sigma);
-                            smarter_matr[(mu, nu, lambda, sigma)] += C_matr_virt[(nu, q)] * smarter_matr[(mu, nu, lambda, sigma)];
+            for q in 0..no_virt_orb {
+                for mu in 0..no_occ_orb {
+                    for nu in 0..no_occ_orb {
+                        for lambda in 0..no_occ_orb {
+                            for sigma in 0..no_occ_orb {
+                                let idx: usize = calc_ijkl_idx(mu, nu, lambda, sigma);
+                                smarter_matr[(mu, nu, lambda, sigma)] +=
+                                    C_matr_virt[(nu, q)] * smarter_matr[(mu, nu, lambda, sigma)];
+                            }
                         }
                     }
                 }
             }
-        }
 
-        for p in 0..no_virt_orb{
-            for mu in 0..no_occ_orb {
-                for nu in 0..no_occ_orb {
-                    for lambda in 0..no_occ_orb {
-                        for sigma in 0..no_occ_orb {
-                            let idx: usize = calc_ijkl_idx(mu, nu, lambda, sigma);
-                            smarter_matr[(mu, nu, lambda, sigma)] += C_matr_occ[(mu, p)] * smarter_matr[(mu, nu, lambda, sigma)];
+            for p in 0..no_virt_orb {
+                for mu in 0..no_occ_orb {
+                    for nu in 0..no_occ_orb {
+                        for lambda in 0..no_occ_orb {
+                            for sigma in 0..no_occ_orb {
+                                let idx: usize = calc_ijkl_idx(mu, nu, lambda, sigma);
+                                smarter_matr[(mu, nu, lambda, sigma)] +=
+                                    C_matr_occ[(mu, p)] * smarter_matr[(mu, nu, lambda, sigma)];
+                            }
                         }
                     }
                 }
             }
+            println!("Smarter matr:\n{:^1.5}\n", &smarter_matr);
+
+            //* Step 4: Calculate the MP2 energy
+            let mut MP2_energy: f64 = 0.0;
+            // for mu in 0..no_occ_orb {
+            //     for nu in 0..no_occ_orb {
+            //         for lambda in 0..no_occ_orb {
+            //             for sigma in 0..no_occ_orb {
+            //                 let idx: usize = calc_ijkl_idx(mu, nu, lambda, sigma);
+            //                 MP2_energy += (2.0 * ERI_array[idx] - ERI_array[idx])
+            //                     * (1.0 / (orb_energy_list_MP2_occ[mu] + orb_energy_list_MP2_occ[nu] - orb_energy_list_MP2_virt[lambda] - orb_energy_list_MP2_virt[sigma]));
+            //             }
+            //         }
+            //     }
+            // }
+            // MP2_energy *= 0.25;
+
+            // println!("\nMP2 energy: {}", MP2_energy);
         }
-        println!("Smarter matr:\n{:^1.5}\n", &smarter_matr);
-        
-        //* Step 4: Calculate the MP2 energy
-        let mut MP2_energy: f64 = 0.0;
-        // for mu in 0..no_occ_orb {
-        //     for nu in 0..no_occ_orb {
-        //         for lambda in 0..no_occ_orb {
-        //             for sigma in 0..no_occ_orb {
-        //                 let idx: usize = calc_ijkl_idx(mu, nu, lambda, sigma);
-        //                 MP2_energy += (2.0 * ERI_array[idx] - ERI_array[idx])
-        //                     * (1.0 / (orb_energy_list_MP2_occ[mu] + orb_energy_list_MP2_occ[nu] - orb_energy_list_MP2_virt[lambda] - orb_energy_list_MP2_virt[sigma]));
-        //             }
-        //         }
-        //     }
-        // }
-        // MP2_energy *= 0.25;
-        
-        // println!("\nMP2 energy: {}", MP2_energy);
     }
 
     //*****************************************************************
@@ -662,6 +672,10 @@ fn main() {
     println!("\n{}", "*".repeat(31));
     println!("*{}*", end_of_calc_string);
     println!("{}", "*".repeat(31));
+    let end_exec_time = Instant::now();
+    let duration_exec_time = end_exec_time.duration_since(start_exec_time);
+    let formatted_duration_exec_time = format_duration(duration_exec_time).to_string();
+    println!("\nTime elapsed in execution is: {}", formatted_duration_exec_time);
 }
 
 fn calc_ijkl_idx(i: usize, j: usize, k: usize, l: usize) -> usize {
