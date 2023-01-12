@@ -56,7 +56,7 @@ fn main() {
     let mut mol: Molecule = Molecule::new("inp/Project3/STO-3G/h2o_v2.xyz", 0);
 
     let run_project1: bool = true;
-    let run_project2: bool = true;
+    let run_project2: bool = false;
     let run_project3: bool = false;
     let run_project4: bool = false;
 
@@ -232,11 +232,6 @@ fn main() {
         // * Project 2: read coordinate data DONE -> read hessian
         // * Step 1: Read coordinates (see above in Molecule struct) */
         // * Step 2: Read the cartessian hessian data
-        //* OLD way
-        // println!("\n\nReading the hessian data...");
-        // println!("{:1.5}\n", mol.hessian);
-
-        //* NEW way
 
         //* READING THE HESSIAN
         let hess_file_path: &str = "inp/Project2/h2o.hess";
