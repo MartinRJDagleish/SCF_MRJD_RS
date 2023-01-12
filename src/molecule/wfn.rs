@@ -44,6 +44,8 @@ impl Wavefunction_total {
     pub fn calc_S_matr(&mut self, basis_set: &Vec<PrimitiveGaussian>) {
         let no_basis_funcs: usize = basis_set.len();
         let mut S_matr: Array2<f64> = Array2::zeros((no_basis_funcs, no_basis_funcs));
+        //TODO: calculate S_matr -> need to give mol (coords) and PrimGaus (alpha, norm_const, position, angular_momentum_vec)
+        //TODO: more Rust knowledge how to do this: Wavefunction_total should be part of mol
 
         self.S_matr = S_matr;
     }
