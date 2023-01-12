@@ -247,3 +247,5 @@ impl Molecule {
         hess_eigenvals
     }
 }
+
+pub mod wfn;

@@ -6,7 +6,7 @@ use std::fs;
 use std::io::{BufRead, BufReader};
 use std::time::Instant;
 
-use crate::molecule::Molecule;
+use crate::molecule::*;
 mod molecule;
 
 #[allow(non_snake_case)] // * -> I need this due to QM naming conventions
@@ -53,9 +53,9 @@ fn main() {
     //*******************************************************************
     //* OOP way:
 
-    let mut mol: Molecule = Molecule::new("inp/Project3/STO-3G/h2o_v2.xyz", 0);
+    let mut mol: Molecule = Molecule::new("inp/Project3_1/STO-3G/h2o_v2.xyz", 0);
 
-    let run_project1: bool = true; //* General molecule geometry stuff 
+    let run_project1: bool = false; //* General molecule geometry stuff 
     let run_project2: bool = false; //* Hessian -> eigenfreqs from file
     let run_project3_1: bool = false; //* SCF from precomputed integrals
     let run_project3_2: bool = true; //* SCF from "scratch"
@@ -296,7 +296,7 @@ fn main() {
         // ! THIS IS A QUICK FIX AND NOT A GOOD SOLUTION
         let no_basis_funcs: usize = 7;
         //* Step 1: Read Nuclear Repulsion Energy (enuc) from file
-        let E_nn_val: f64 = fs::read_to_string("inp/Project3/STO-3G/enuc.dat")
+        let E_nn_val: f64 = fs::read_to_string("inp/Project3_1/STO-3G/enuc.dat")
             .expect("Failed to open enuc data!")
             .parse()
             .expect("Failed to parse enuc data file!");
@@ -305,7 +305,7 @@ fn main() {
         //* Step 2.1: Read the overlap matrix
         let mut S_matr: Array2<f64> = Array2::zeros((no_basis_funcs, no_basis_funcs));
         let S_matr_file_contents =
-            fs::read_to_string("inp/Project3/STO-3G/s.dat").expect("Failed to open S matrix data!");
+            fs::read_to_string("inp/Project3_1/STO-3G/s.dat").expect("Failed to open S matrix data!");
 
         for line in S_matr_file_contents.lines() {
             let line_split: Vec<&str> = line.trim().split_whitespace().collect();
@@ -320,7 +320,7 @@ fn main() {
         //* Step 2.2: Read the kinetic energy matrix
         let mut T_matr: Array2<f64> = Array2::zeros((no_basis_funcs, no_basis_funcs));
         let T_matr_file_contents =
-            fs::read_to_string("inp/Project3/STO-3G/t.dat").expect("Failed to open T matrix data!");
+            fs::read_to_string("inp/Project3_1/STO-3G/t.dat").expect("Failed to open T matrix data!");
 
         for line in T_matr_file_contents.lines() {
             let line_split: Vec<&str> = line.trim().split_whitespace().collect();
@@ -335,7 +335,7 @@ fn main() {
         //* Step 2.3: Read the nuclear attraction matrix
         let mut V_matr: Array2<f64> = Array2::zeros((no_basis_funcs, no_basis_funcs));
         let V_matr_file_contents =
-            fs::read_to_string("inp/Project3/STO-3G/v.dat").expect("Failed to open V matrix data!");
+            fs::read_to_string("inp/Project3_1/STO-3G/v.dat").expect("Failed to open V matrix data!");
 
         for line in V_matr_file_contents.lines() {
             let line_split: Vec<&str> = line.trim().split_whitespace().collect();
@@ -353,10 +353,10 @@ fn main() {
 
         //* Step 3: Read the 2-electron integrals -> ERI tensor
         //* Test with Psi4
-        // let ERI_file_contents = fs::read_to_string("inp/Project3/STO-3G/eri_Psi4_test.dat")
+        // let ERI_file_contents = fs::read_to_string("inp/Project3_1/STO-3G/eri_Psi4_test.dat")
         //     .expect("Failed to open ERI matrix data!");
         //*Original
-        let ERI_file_contents = fs::read_to_string("inp/Project3/STO-3G/eri.dat")
+        let ERI_file_contents = fs::read_to_string("inp/Project3_1/STO-3G/eri.dat")
             .expect("Failed to open ERI matrix data!");
 
         //* 2nd try but with using a vec!
@@ -422,7 +422,7 @@ fn main() {
         // ! WRONG FIRST TRY (my misunderstanding)
         // //* Read the initials MO coefficients (file has non-orthogonals AO basis C0 matrix)
         // let mut C_matr_AO_basis: Array2<f64> = Array2::zeros((no_basis_funcs, no_basis_funcs));
-        // let C_matr_file_contents = fs::read_to_string("inp/Project3/STO-3G/c0.dat")
+        // let C_matr_file_contents = fs::read_to_string("inp/Project3_1/STO-3G/c0.dat")
         //     .expect("Failed to open C0 matrix data!");
         // for (row_idx, line) in C_matr_file_contents.lines().enumerate() {
         //     let line_split: Vec<&str> = line.trim().split_whitespace().collect();
@@ -700,6 +700,20 @@ fn main() {
 
     if run_project3_2 {
         println!("\nRunning project 3.2 (SCF from 'scratch')");
+        // let test_pg = mol.
+        let alpha_test: f64 = 1.0;
+        let cgto_coeff_test: f64 = 0.4;
+        let position_test = Array1::from_vec(vec![1.0,0.0,0.0]);
+        let angular_momentum_test = Array1::<i32>::from_vec(vec![0,0,0]);
+        // let norm_const_test: f64 = 0.3;
+
+        let mut prim_test = molecule::wfn::PrimitiveGaussian::new(alpha_test, cgto_coeff_test, position_test, angular_momentum_test);
+        prim_test.calc_cart_norm_const();
+
+        //* DEBUG
+        println!("prim_test: {:?}",prim_test);
+
+
 
     }
     //*****************************************************************
