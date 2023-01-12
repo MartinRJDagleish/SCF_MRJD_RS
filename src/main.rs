@@ -243,29 +243,36 @@ fn main() {
         let hess_file = fs::File::open(hess_file_path).unwrap();
         let hess_reader = BufReader::new(hess_file);
 
-        let mut hessian: Vec<Vec<f64>> = Vec::new();
-        let mut line_iter = hess_reader.lines();
-
-        let hess_no_atoms: usize = line_iter.next().unwrap().unwrap().trim().parse().unwrap();
-        println!("No of atoms in hessian: {}", hess_no_atoms);
-        if mol.no_atoms != hess_no_atoms {
-            panic!("Number of atoms in geom file and hessian file are not the same!");
-        }
-
-        for line in line_iter {
+        let mut hessian = Array2::<f64>::zeros((3 * mol.no_atoms * mol.no_atoms, 3));
+        
+        for (i, line) in hess_reader.lines().enumerate() {
+            if i == 0 {
+                let hess_no_atoms: usize = line
+                    .unwrap()
+                    .trim()
+                    .parse::<usize>()
+                    .unwrap(); 
+                println!("No of atoms in hessian: {}", hess_no_atoms);
+                if mol.no_atoms != hess_no_atoms {
+                    panic!("Number of atoms in geom file and hessian file are not the same!");
+                }
+                continue;
+            }
+            let i = i - 1;
             let line = line.unwrap();
-            let values: Vec<f64> = line
+            let values = line
                 .split_whitespace()
-                .map(|s| s.parse().unwrap())
-                .collect();
-            hessian.push(values);
+                .map(|s| s.parse::<f64>().unwrap())
+                .collect::<Vec<f64>>();
+                for (j, value) in values.iter().enumerate() {
+                    hessian[[i, j]] = *value;
+                }
         }
 
-        mol.hessian = Array2::from_shape_vec(
-            (3 * hess_no_atoms, 3 * hess_no_atoms),
-            hessian.into_iter().flatten().collect(),
-        )
-        .unwrap();
+        mol.hessian = hessian.into_shape((3 * mol.no_atoms, 3 * mol.no_atoms)).unwrap();
+        // DEBUG 
+        // println!("Hessian before reshape: \n{:1.5}\n", &hessian);
+        // println!("Hessian after reshape: \n{:1.5}\n", &mol.hessian);
 
         //* Step 3: Mass-weight the hessian matrix
         mol.mass_weight_hessian();
@@ -562,7 +569,6 @@ fn main() {
             );
         }
         // println!("SCF energy after {} iterations: {:?}", scf_maxiter, &E_scf_vec);
-        // }
 
         if run_project4 {
             //* Project 4: Second oder Moller-Plesset Perturbation Theory
@@ -643,7 +649,6 @@ fn main() {
                     for nu in 0..no_occ_orb {
                         for lambda in 0..no_occ_orb {
                             for sigma in 0..no_occ_orb {
-                                let idx: usize = calc_ijkl_idx(mu, nu, lambda, sigma);
                                 smarter_matr[(mu, nu, lambda, sigma)] +=
                                     C_matr_occ[(lambda, r)] * smarter_matr[(mu, nu, lambda, sigma)];
                             }
@@ -657,7 +662,6 @@ fn main() {
                     for nu in 0..no_occ_orb {
                         for lambda in 0..no_occ_orb {
                             for sigma in 0..no_occ_orb {
-                                let idx: usize = calc_ijkl_idx(mu, nu, lambda, sigma);
                                 smarter_matr[(mu, nu, lambda, sigma)] +=
                                     C_matr_virt[(nu, q)] * smarter_matr[(mu, nu, lambda, sigma)];
                             }
@@ -671,7 +675,6 @@ fn main() {
                     for nu in 0..no_occ_orb {
                         for lambda in 0..no_occ_orb {
                             for sigma in 0..no_occ_orb {
-                                let idx: usize = calc_ijkl_idx(mu, nu, lambda, sigma);
                                 smarter_matr[(mu, nu, lambda, sigma)] +=
                                     C_matr_occ[(mu, p)] * smarter_matr[(mu, nu, lambda, sigma)];
                             }

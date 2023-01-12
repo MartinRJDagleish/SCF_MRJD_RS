@@ -1,7 +1,6 @@
 use ndarray::prelude::*;
-use ndarray_linalg::{EigValsh, Scalar, SymmetricSqrt};
-use std::io::{BufRead, BufReader};
-use std::{collections::HashMap, fs};
+use ndarray_linalg::EigValsh;
+use std::fs;
 
 pub struct Molecule {
     pub charge: i32,
@@ -182,7 +181,7 @@ impl Molecule {
         ];
 
         //* Define a 0-matrix which can be edited later on ?
-        let hessian: Array2<f64> = Array2::zeros((1,1));
+        let hessian: Array2<f64> = Array2::zeros((1, 1));
 
         Molecule {
             charge,
@@ -231,8 +230,8 @@ impl Molecule {
         for i in 0..self.no_atoms * 3 {
             for j in 0..self.no_atoms * 3 {
                 self.hessian[(i, j)] = self.hessian[(i, j)]
-                    / (self.get_mass_Z_val(&self.Z_vals[i / 3]) //* this uses integer div by default
-                    * self.get_mass_Z_val(&self.Z_vals[j / 3]))
+                    / (self.get_mass_Z_val(&self.Z_vals[i / 3]) //* this uses integer div by default 
+                    * self.get_mass_Z_val(&self.Z_vals[j / 3])) //* -> neat trick to get right index
                     .sqrt();
             }
         }
@@ -245,6 +244,6 @@ impl Molecule {
         //* Conversion to cm^-1
         // let conv: f64 = 0.0;
         // hess_eigenvals = conv * hess_eigenvals;
-        return hess_eigenvals;
+        hess_eigenvals;
     }
 }
