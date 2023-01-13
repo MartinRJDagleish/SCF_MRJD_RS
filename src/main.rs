@@ -6,6 +6,7 @@ use std::fs;
 use std::io::{BufRead, BufReader};
 use std::time::Instant;
 
+use crate::molecule::wfn::{BasisSet, ContractedGaussian, PrimitiveGaussian};
 use crate::molecule::*;
 mod molecule;
 
@@ -43,7 +44,7 @@ fn main() {
              ____________\///________\///_____\///////////_____  
         "#,
     );
-    println!("{}", ASCII_art_logo); // test 
+    println!("{}", ASCII_art_logo); // test
 
     // //* Natural constants
     // let h: f64 = physical_constants::PLANCK_CONSTANT;
@@ -55,7 +56,7 @@ fn main() {
 
     let mut mol: Molecule = Molecule::new("inp/Project3_1/STO-3G/h2o_v2.xyz", 0);
 
-    let run_project1: bool = false; //* General molecule geometry stuff 
+    let run_project1: bool = false; //* General molecule geometry stuff
     let run_project2: bool = false; //* Hessian -> eigenfreqs from file
     let run_project3_1: bool = false; //* SCF from precomputed integrals
     let run_project3_2: bool = true; //* SCF from "scratch"
@@ -240,14 +241,10 @@ fn main() {
         let hess_reader = BufReader::new(hess_file);
 
         let mut hessian = Array2::<f64>::zeros((3 * mol.no_atoms * mol.no_atoms, 3));
-        
+
         for (i, line) in hess_reader.lines().enumerate() {
             if i == 0 {
-                let hess_no_atoms: usize = line
-                    .unwrap()
-                    .trim()
-                    .parse::<usize>()
-                    .unwrap(); 
+                let hess_no_atoms: usize = line.unwrap().trim().parse::<usize>().unwrap();
                 println!("No of atoms in hessian: {}", hess_no_atoms);
                 if mol.no_atoms != hess_no_atoms {
                     panic!("Number of atoms in geom file and hessian file are not the same!");
@@ -260,13 +257,15 @@ fn main() {
                 .split_whitespace()
                 .map(|s| s.parse::<f64>().unwrap())
                 .collect::<Vec<f64>>();
-                for (j, value) in values.iter().enumerate() {
-                    hessian[[i, j]] = *value;
-                }
+            for (j, value) in values.iter().enumerate() {
+                hessian[[i, j]] = *value;
+            }
         }
 
-        mol.hessian = hessian.into_shape((3 * mol.no_atoms, 3 * mol.no_atoms)).unwrap();
-        // DEBUG 
+        mol.hessian = hessian
+            .into_shape((3 * mol.no_atoms, 3 * mol.no_atoms))
+            .unwrap();
+        // DEBUG
         // println!("Hessian before reshape: \n{:1.5}\n", &hessian);
         // println!("Hessian after reshape: \n{:1.5}\n", &mol.hessian);
 
@@ -304,8 +303,8 @@ fn main() {
 
         //* Step 2.1: Read the overlap matrix
         let mut S_matr: Array2<f64> = Array2::zeros((no_basis_funcs, no_basis_funcs));
-        let S_matr_file_contents =
-            fs::read_to_string("inp/Project3_1/STO-3G/s.dat").expect("Failed to open S matrix data!");
+        let S_matr_file_contents = fs::read_to_string("inp/Project3_1/STO-3G/s.dat")
+            .expect("Failed to open S matrix data!");
 
         for line in S_matr_file_contents.lines() {
             let line_split: Vec<&str> = line.trim().split_whitespace().collect();
@@ -319,8 +318,8 @@ fn main() {
 
         //* Step 2.2: Read the kinetic energy matrix
         let mut T_matr: Array2<f64> = Array2::zeros((no_basis_funcs, no_basis_funcs));
-        let T_matr_file_contents =
-            fs::read_to_string("inp/Project3_1/STO-3G/t.dat").expect("Failed to open T matrix data!");
+        let T_matr_file_contents = fs::read_to_string("inp/Project3_1/STO-3G/t.dat")
+            .expect("Failed to open T matrix data!");
 
         for line in T_matr_file_contents.lines() {
             let line_split: Vec<&str> = line.trim().split_whitespace().collect();
@@ -334,8 +333,8 @@ fn main() {
 
         //* Step 2.3: Read the nuclear attraction matrix
         let mut V_matr: Array2<f64> = Array2::zeros((no_basis_funcs, no_basis_funcs));
-        let V_matr_file_contents =
-            fs::read_to_string("inp/Project3_1/STO-3G/v.dat").expect("Failed to open V matrix data!");
+        let V_matr_file_contents = fs::read_to_string("inp/Project3_1/STO-3G/v.dat")
+            .expect("Failed to open V matrix data!");
 
         for line in V_matr_file_contents.lines() {
             let line_split: Vec<&str> = line.trim().split_whitespace().collect();
@@ -703,18 +702,69 @@ fn main() {
         // let test_pg = mol.
         let alpha_test: f64 = 1.0;
         let cgto_coeff_test: f64 = 0.4;
-        let position_test = Array1::from_vec(vec![1.0,0.0,0.0]);
-        let angular_momentum_test = Array1::<i32>::from_vec(vec![0,0,0]);
+        let position_test = Array1::from_vec(vec![1.0, 0.0, 0.0]);
+        let angular_momentum_test = Array1::<i32>::from_vec(vec![0, 0, 0]);
         // let norm_const_test: f64 = 0.3;
 
-        let mut prim_test = molecule::wfn::PrimitiveGaussian::new(alpha_test, cgto_coeff_test, position_test, angular_momentum_test);
-        prim_test.calc_cart_norm_const();
+        let mut prim_test = molecule::wfn::PrimitiveGaussian::new(
+            alpha_test,
+            cgto_coeff_test,
+            position_test,
+            angular_momentum_test,
+        );
 
         //* DEBUG
-        println!("prim_test: {:?}",prim_test);
+        // println!("prim_test: {:?}", prim_test);
 
+        let H1_prim_gaus_1 = PrimitiveGaussian::new(
+            0.3425250914E1,
+            0.1543289673E0,
+            Array1::from_vec(vec![0.0, 0.0, 0.0]),
+            Array1::from_vec(vec![0, 0, 0]),
+        );
+        println!("H1_prim_gaus_1 norm const: {:?}", H1_prim_gaus_1.norm_const);
+        let H1_prim_gaus_2 = PrimitiveGaussian::new(
+            0.6239137298E0,
+            0.5353281423E0,
+            Array1::from_vec(vec![0.0, 0.0, 0.0]),
+            Array1::from_vec(vec![0, 0, 0]),
+        );
+        let H1_prim_gaus_3 = PrimitiveGaussian::new(
+            0.1688554040E0,
+            0.4446345422E0,
+            Array1::from_vec(vec![0.0, 0.0, 0.0]),
+            Array1::from_vec(vec![0, 0, 0]),
+        );
 
+        let H2_prim_gaus_1 = PrimitiveGaussian::new(
+            0.3425250914E1,
+            0.1543289673E0,
+            Array1::from_vec(vec![0.0, 0.0, 1.4]),
+            Array1::from_vec(vec![0, 0, 0]),
+        );
+        let H2_prim_gaus_2 = PrimitiveGaussian::new(
+            0.6239137298E0,
+            0.5353281423E0,
+            Array1::from_vec(vec![0.0, 0.0, 1.4]),
+            Array1::from_vec(vec![0, 0, 0]),
+        );
+        let H2_prim_gaus_3 = PrimitiveGaussian::new(
+            0.1688554040E0,
+            0.4446345422E0,
+            Array1::from_vec(vec![0.0, 0.0, 1.4]),
+            Array1::from_vec(vec![0, 0, 0]),
+        );
 
+        let H1_contr_gaus =
+            ContractedGaussian::new(vec![H1_prim_gaus_1, H1_prim_gaus_2, H1_prim_gaus_3]);
+        let H2_contr_gaus =
+            ContractedGaussian::new(vec![H2_prim_gaus_1, H2_prim_gaus_2, H2_prim_gaus_3]);
+
+        let mol_basis_set = BasisSet::new(vec![H1_contr_gaus, H2_contr_gaus]);
+        //* Test:
+        // println!("{:?}", mol_basis_set.ContrGauss_vec[0].PrimGauss_vec[0].alpha);
+        let S_matr = mol_basis_set.calc_S_matr();
+        println!("S_matr:\n{:^1.5}\n", &S_matr);
     }
     //*****************************************************************
     //*****************************************************************

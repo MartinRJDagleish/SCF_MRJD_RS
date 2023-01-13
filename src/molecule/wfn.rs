@@ -1,7 +1,6 @@
 use std::f64::consts::PI;
 
 use ndarray::{Array1, Array2};
-// use factorial::{DoubleFactorial};
 
 #[derive(Debug)]
 pub struct Wavefunction_total {
@@ -19,6 +18,16 @@ pub struct PrimitiveGaussian {
     pub position: Array1<f64>,
     pub angular_momentum_vec: Array1<i32>,
     pub norm_const: f64,
+}
+
+#[derive(Debug)]
+pub struct ContractedGaussian {
+    pub PrimGauss_vec: Vec<PrimitiveGaussian>,
+}
+
+#[derive(Debug)]
+pub struct BasisSet {
+    pub ContrGauss_vec: Vec<ContractedGaussian>,
 }
 
 // mod parse_BSSE_data;
@@ -63,8 +72,7 @@ impl PrimitiveGaussian {
         // let position: Array1<f64> = Array1::zeros(3);
         // let angular_momentum_vec: Array1<u8> = Array1::zeros(3);
 
-        //TODO: calculate norm_const in new()
-        let mut norm_const: f64 = 0.0;
+        let norm_const: f64 = Self::calc_cart_norm_const(&alpha, &angular_momentum_vec);
 
         PrimitiveGaussian {
             alpha,
@@ -75,25 +83,86 @@ impl PrimitiveGaussian {
         }
     }
 
-    pub fn calc_cart_norm_const(&mut self) {
-        let numerator: f64 = (2.0 * &self.alpha / PI).powf(1.5)
-            * (4.0 * &self.alpha).powi(self.angular_momentum_vec.sum() as i32);
-        let denom: i32 = self
-            .angular_momentum_vec
-            .mapv(|x| PrimitiveGaussian::double_factorial(&self, 2 * x - 1))
+    pub fn calc_cart_norm_const(alpha: &f64, angular_momentum_vec: &Array1<i32>) -> f64 {
+        let numerator: f64 =
+            (2.0 * alpha / PI).powf(1.5) * (4.0 * alpha).powi(angular_momentum_vec.sum() as i32);
+        let denom: i32 = angular_momentum_vec
+            .mapv(|x| Self::double_factorial(2 * x - 1))
             .product();
 
-        self.norm_const = numerator / denom as f64
+        (numerator / denom as f64).sqrt()
     }
 
-    pub fn double_factorial(&self, n: i32) -> i32 {
+    pub fn double_factorial(n: i32) -> i32 {
         if n == -1 {
-            return 1
+            return 1;
         }
         if n == 1 {
-            return 1
+            return 1;
         } else {
-            n * self.double_factorial(n - 2)
+            n * Self::double_factorial(n - 2)
         }
+    }
+
+    // pub fn calc_cart_norm_const_V2(&self) {
+    //     let numerator: f64 = (2.0 * self.alpha / PI).powf(1.5)
+    //         * (4.0 * self.alpha).powi(self.angular_momentum_vec.sum() as i32);
+    //     let denom: i32 = self.angular_momentum_vec
+    //         .mapv(|x| double_factorial(2 * x - 1))
+    //         .product();
+
+    //     numerator / denom as f64
+    // }
+}
+
+impl ContractedGaussian {
+    pub fn new(list_of_prim_gauss: Vec<PrimitiveGaussian>) -> Self {
+        let PrimGauss_vec = list_of_prim_gauss;
+
+        ContractedGaussian { PrimGauss_vec }
+    }
+}
+
+impl BasisSet {
+    pub fn new(list_of_contr_gauss: Vec<ContractedGaussian>) -> Self {
+        let ContrGauss_vec = list_of_contr_gauss;
+
+        BasisSet { ContrGauss_vec }
+    }
+
+    //TODO: maybe move to Wavefunction_total? -> need to give mol (coords) and PrimGaus (alpha, norm_const, position, angular_momentum_vec)
+
+    pub fn calc_S_matr(&self) -> Array2<f64> {
+        let no_basis_funcs: usize = self.ContrGauss_vec.len();
+        let mut S_matr: Array2<f64> = Array2::zeros((no_basis_funcs, no_basis_funcs));
+
+        for i in 0..no_basis_funcs {
+            for j in 0..no_basis_funcs {
+                let no_prim_gauss_i: usize = self.ContrGauss_vec[i].PrimGauss_vec.len();
+                let no_prim_gauss_j: usize = self.ContrGauss_vec[j].PrimGauss_vec.len();
+                for k in 0..no_prim_gauss_i {
+                    for l in 0..no_prim_gauss_j {
+                        let norm_const: f64 = &self.ContrGauss_vec[i].PrimGauss_vec[k].norm_const
+                            * &self.ContrGauss_vec[j].PrimGauss_vec[l].norm_const; //* This is N
+                        let sum_alphas_recip: f64 = (&self.ContrGauss_vec[i].PrimGauss_vec[k].alpha
+                            + &self.ContrGauss_vec[j].PrimGauss_vec[l].alpha)
+                            .recip(); //* This is p^-1
+                        let prod_alphas_div_sum: f64 = &self.ContrGauss_vec[i].PrimGauss_vec[k].alpha
+                            * &self.ContrGauss_vec[j].PrimGauss_vec[l].alpha
+                            * sum_alphas_recip; //* This is q
+                        let diff_pos: Array1<f64> = &self.ContrGauss_vec[i].PrimGauss_vec[k].position
+                            - &self.ContrGauss_vec[j].PrimGauss_vec[l].position; //* This is Q
+                        let diff_pos_squ: f64 = diff_pos.dot(&diff_pos); //* This is Q^2
+
+                        S_matr[(i, j)] += norm_const * self.ContrGauss_vec[i].PrimGauss_vec[k].cgto_coeff
+                            * self.ContrGauss_vec[j].PrimGauss_vec[l].cgto_coeff
+                            * (PI * sum_alphas_recip).powf(1.5)
+                            * (-prod_alphas_div_sum * diff_pos_squ).exp();
+                    }
+                }
+            }
+        }
+
+        S_matr
     }
 }
