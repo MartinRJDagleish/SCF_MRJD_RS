@@ -707,16 +707,21 @@ fn main() {
         // let angular_momentum_test = Array1::<i32>::from_vec(vec![0, 0, 0]);
         // let norm_const_test: f64 = 0.3;
 
-        let mut prim_test = molecule::wfn::PrimitiveGaussian::new(
-            alpha_test,
-            cgto_coeff_test,
-            position_test,
-            angular_momentum_test,
-        );
+        // let mut prim_test = molecule::wfn::PrimitiveGaussian::new(
+        //     alpha_test,
+        //     cgto_coeff_test,
+        //     position_test,
+        //     angular_momentum_test,
+        // );
 
         //* DEBUG
         // println!("prim_test: {:?}", prim_test);
 
+        // let mol = molecule::Molecule::new("H2O", "sto-3g", "h2o.xyz");
+        //* Define the primitive gaussians
+        //* STO-3G here 
+        println!("Defining the primitive gaussians");
+        println!("Test molecule: H2 (STO-3G)");
         let H1_prim_gaus_1 = PrimitiveGaussian::new(
             0.3425250914E1,
             0.1543289673E0,
