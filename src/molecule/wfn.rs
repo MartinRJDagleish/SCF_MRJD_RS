@@ -141,7 +141,7 @@ impl BasisSet {
         let mut S_matr: Array2<f64> = Array2::zeros((no_basis_funcs, no_basis_funcs));
 
         for i in 0..no_basis_funcs {
-            for j in 0..no_basis_funcs {
+            for j in 0..=i {
                 let no_prim_gauss_i: usize = self.ContrGauss_vec[i].PrimGauss_vec.len();
                 let no_prim_gauss_j: usize = self.ContrGauss_vec[j].PrimGauss_vec.len();
                 //* Skips over diagonal elements -> reduces computation time
@@ -174,6 +174,7 @@ impl BasisSet {
                             * (-prod_alphas_div_sum * diff_pos_squ).exp();
                     }
                 }
+                S_matr[(j, i)] = S_matr[(i, j)].clone();
             }
         }
 
@@ -186,7 +187,7 @@ impl BasisSet {
             Array2::zeros((self.ContrGauss_vec.len(), self.ContrGauss_vec.len()));
 
         for i in 0..no_basis_funcs {
-            for j in 0..no_basis_funcs {
+            for j in 0..=i {
                 let no_prim_gauss_i: usize = self.ContrGauss_vec[i].PrimGauss_vec.len();
                 let no_prim_gauss_j: usize = self.ContrGauss_vec[j].PrimGauss_vec.len();
 
@@ -237,6 +238,7 @@ impl BasisSet {
                         }
                     }
                 }
+                T_matr[(j, i)] = T_matr[(i, j)].clone();
             }
         }
 
@@ -244,7 +246,8 @@ impl BasisSet {
     }
 
     pub fn calc_V_ne_matr_l_eq_0(&self) -> Array2<f64> {
-        let no_atoms: usize = self.ContrGauss_vec.len(); //TODO: fix this for right code
+        // let no_atoms: usize = self.ContrGauss_vec.len(); //TODO: fix this for right code
+        let no_atoms: usize = 2; //TODO: fix this for right code
         let no_basis_funcs: usize = self.ContrGauss_vec.len();
         //* QUICK FIX:
         let Z_val_list = [1, 1]; //TODO: change this to be read from input file
@@ -252,7 +255,7 @@ impl BasisSet {
             Array2::zeros((self.ContrGauss_vec.len(), self.ContrGauss_vec.len()));
 
         for i in 0..no_basis_funcs {
-            for j in 0..no_basis_funcs {
+            for j in 0..=i {
                 let no_prim_gauss_i: usize = self.ContrGauss_vec[i].PrimGauss_vec.len();
                 let no_prim_gauss_j: usize = self.ContrGauss_vec[j].PrimGauss_vec.len();
 
@@ -287,6 +290,10 @@ impl BasisSet {
                         for atom in 0..no_atoms {
                             let diff_pos_atom: Array1<f64> = &new_center_pos
                                 - &self.ContrGauss_vec[atom].PrimGauss_vec[0].position; //* This is PA
+                                //TODO: ↑ this is not correct -> only if one CGTO per atom
+                                //TODO: -> fix this for right code
+                                //TODO: this is why STO-3G is working, but not 6-311G
+                                //* the atom index is not correct 
                             let diff_pos_atom_squ: f64 = diff_pos_atom.dot(&diff_pos_atom); //* This is PA^2
                             V_ne_matr[(i, j)] += norm_const
                                 * (-Z_val_list[atom] as f64)
@@ -297,6 +304,7 @@ impl BasisSet {
                         }
                     }
                 }
+                V_ne_matr[(j, i)] = V_ne_matr[(i, j)].clone();
             }
         }
 
