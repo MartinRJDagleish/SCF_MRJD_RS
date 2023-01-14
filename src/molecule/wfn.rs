@@ -1,6 +1,7 @@
 use std::f64::consts::PI;
 
-use ndarray::{Array1, Array2};
+use boys;
+use ndarray::{Array1, Array2, Array4};
 
 #[derive(Debug)]
 pub struct Wavefunction_total {
@@ -60,6 +61,7 @@ impl Wavefunction_total {
     }
 }
 
+#[allow(non_snake_case)]
 impl PrimitiveGaussian {
     pub fn new(
         alpha: f64,
@@ -115,6 +117,7 @@ impl PrimitiveGaussian {
     // }
 }
 
+#[allow(non_snake_case)]
 impl ContractedGaussian {
     pub fn new(list_of_prim_gauss: Vec<PrimitiveGaussian>) -> Self {
         let PrimGauss_vec = list_of_prim_gauss;
@@ -123,6 +126,7 @@ impl ContractedGaussian {
     }
 }
 
+#[allow(non_snake_case)]
 impl BasisSet {
     pub fn new(list_of_contr_gauss: Vec<ContractedGaussian>) -> Self {
         let ContrGauss_vec = list_of_contr_gauss;
@@ -130,9 +134,9 @@ impl BasisSet {
         BasisSet { ContrGauss_vec }
     }
 
-    //TODO: maybe move to Wavefunction_total? -> need to give mol (coords) and PrimGaus (alpha, norm_const, position, angular_momentum_vec)
+    //TODO: maybe move to Wavefunction_total?
 
-    pub fn calc_S_matr(&self) -> Array2<f64> {
+    pub fn calc_S_matr_l_eq_0(&self) -> Array2<f64> {
         let no_basis_funcs: usize = self.ContrGauss_vec.len();
         let mut S_matr: Array2<f64> = Array2::zeros((no_basis_funcs, no_basis_funcs));
 
@@ -140,6 +144,12 @@ impl BasisSet {
             for j in 0..no_basis_funcs {
                 let no_prim_gauss_i: usize = self.ContrGauss_vec[i].PrimGauss_vec.len();
                 let no_prim_gauss_j: usize = self.ContrGauss_vec[j].PrimGauss_vec.len();
+                //* Skips over diagonal elements -> reduces computation time
+                //* COMMENT OUT IF YOU WANT TO CALCULATE DIAGONAL ELEMENTS
+                if i == j {
+                    S_matr[(i, j)] = 1.0;
+                    continue;
+                }
                 for k in 0..no_prim_gauss_i {
                     for l in 0..no_prim_gauss_j {
                         let norm_const: f64 = &self.ContrGauss_vec[i].PrimGauss_vec[k].norm_const
@@ -168,5 +178,231 @@ impl BasisSet {
         }
 
         S_matr
+    }
+
+    pub fn calc_T_matr_l_eq_0(&self) -> Array2<f64> {
+        let no_basis_funcs: usize = self.ContrGauss_vec.len();
+        let mut T_matr: Array2<f64> =
+            Array2::zeros((self.ContrGauss_vec.len(), self.ContrGauss_vec.len()));
+
+        for i in 0..no_basis_funcs {
+            for j in 0..no_basis_funcs {
+                let no_prim_gauss_i: usize = self.ContrGauss_vec[i].PrimGauss_vec.len();
+                let no_prim_gauss_j: usize = self.ContrGauss_vec[j].PrimGauss_vec.len();
+
+                for k in 0..no_prim_gauss_i {
+                    for l in 0..no_prim_gauss_j {
+                        let norm_const: f64 = &self.ContrGauss_vec[i].PrimGauss_vec[k].norm_const
+                            * &self.ContrGauss_vec[j].PrimGauss_vec[l].norm_const; //* This is N
+                        let prod_coeffs: f64 = &self.ContrGauss_vec[i].PrimGauss_vec[k].cgto_coeff
+                            * &self.ContrGauss_vec[j].PrimGauss_vec[l].cgto_coeff; //* This is c_i * c_j
+
+                        let sum_alphas_recip: f64 = (&self.ContrGauss_vec[i].PrimGauss_vec[k]
+                            .alpha
+                            + &self.ContrGauss_vec[j].PrimGauss_vec[l].alpha)
+                            .recip(); //* This is p^-1
+                        let prod_alphas_div_sum: f64 = &self.ContrGauss_vec[i].PrimGauss_vec[k]
+                            .alpha
+                            * &self.ContrGauss_vec[j].PrimGauss_vec[l].alpha
+                            * sum_alphas_recip; //* This is q
+                        let diff_pos: Array1<f64> = &self.ContrGauss_vec[i].PrimGauss_vec[k]
+                            .position
+                            - &self.ContrGauss_vec[j].PrimGauss_vec[l].position; //* This is Q
+                        let diff_pos_squ: f64 = diff_pos.dot(&diff_pos); //* This is Q^2
+
+                        let new_center_pos: Array1<f64> = &self.ContrGauss_vec[i].PrimGauss_vec[k]
+                            .position
+                            * self.ContrGauss_vec[i].PrimGauss_vec[k].alpha
+                            + &self.ContrGauss_vec[j].PrimGauss_vec[l].position
+                                * self.ContrGauss_vec[j].PrimGauss_vec[l].alpha; //* This is P
+                        let new_center_pos: Array1<f64> = new_center_pos * sum_alphas_recip; //* This is Pp
+                        let new_center_pos_diff_2nd: Array1<f64> =
+                            &new_center_pos - &self.ContrGauss_vec[j].PrimGauss_vec[l].position; //* This is PG = Pp - Pi
+                        let new_center_pos_diff_2nd_elem_squ: Array1<f64> =
+                            new_center_pos_diff_2nd.mapv(|x| x.powi(2)); //* This is PG^2
+
+                        let mini_S: f64 = norm_const
+                            * prod_coeffs
+                            * (PI * sum_alphas_recip).powf(1.5)
+                            * (-prod_alphas_div_sum * diff_pos_squ).exp();
+
+                        T_matr[(i, j)] +=
+                            3.0 * self.ContrGauss_vec[j].PrimGauss_vec[l].alpha * mini_S;
+                        for cart_coord in 0..3 {
+                            T_matr[(i, j)] -= 2.0
+                                * self.ContrGauss_vec[j].PrimGauss_vec[l].alpha.powi(2)
+                                * mini_S
+                                * (new_center_pos_diff_2nd_elem_squ[cart_coord]
+                                    + 0.5 * sum_alphas_recip);
+                        }
+                    }
+                }
+            }
+        }
+
+        T_matr
+    }
+
+    pub fn calc_V_ne_matr_l_eq_0(&self) -> Array2<f64> {
+        let no_atoms: usize = self.ContrGauss_vec.len(); //TODO: fix this for right code
+        let no_basis_funcs: usize = self.ContrGauss_vec.len();
+        //* QUICK FIX:
+        let Z_val_list = [1, 1]; //TODO: change this to be read from input file
+        let mut V_ne_matr: Array2<f64> =
+            Array2::zeros((self.ContrGauss_vec.len(), self.ContrGauss_vec.len()));
+
+        for i in 0..no_basis_funcs {
+            for j in 0..no_basis_funcs {
+                let no_prim_gauss_i: usize = self.ContrGauss_vec[i].PrimGauss_vec.len();
+                let no_prim_gauss_j: usize = self.ContrGauss_vec[j].PrimGauss_vec.len();
+
+                for k in 0..no_prim_gauss_i {
+                    for l in 0..no_prim_gauss_j {
+                        let norm_const: f64 = &self.ContrGauss_vec[i].PrimGauss_vec[k].norm_const
+                            * &self.ContrGauss_vec[j].PrimGauss_vec[l].norm_const; //* This is N
+                        let prod_coeffs: f64 = &self.ContrGauss_vec[i].PrimGauss_vec[k].cgto_coeff
+                            * &self.ContrGauss_vec[j].PrimGauss_vec[l].cgto_coeff; //* This is c_i * c_j
+                        let sum_alphas = &self.ContrGauss_vec[i].PrimGauss_vec[k].alpha
+                            + &self.ContrGauss_vec[j].PrimGauss_vec[l].alpha; //* This is p
+                        let sum_alphas_recip: f64 = (&self.ContrGauss_vec[i].PrimGauss_vec[k]
+                            .alpha
+                            + &self.ContrGauss_vec[j].PrimGauss_vec[l].alpha)
+                            .recip(); //* This is p^-1
+                        let prod_alphas_div_sum: f64 = &self.ContrGauss_vec[i].PrimGauss_vec[k]
+                            .alpha
+                            * &self.ContrGauss_vec[j].PrimGauss_vec[l].alpha
+                            * sum_alphas_recip; //* This is q
+                        let diff_pos: Array1<f64> = &self.ContrGauss_vec[i].PrimGauss_vec[k]
+                            .position
+                            - &self.ContrGauss_vec[j].PrimGauss_vec[l].position; //* This is Q
+                        let diff_pos_squ: f64 = diff_pos.dot(&diff_pos); //* This is Q^2
+
+                        let mut new_center_pos: Array1<f64> =
+                            &self.ContrGauss_vec[i].PrimGauss_vec[k].position
+                                * self.ContrGauss_vec[i].PrimGauss_vec[k].alpha
+                                + &self.ContrGauss_vec[j].PrimGauss_vec[l].position
+                                    * self.ContrGauss_vec[j].PrimGauss_vec[l].alpha; //* This is P
+                        new_center_pos *= sum_alphas_recip; //* This is Pp
+
+                        for atom in 0..no_atoms {
+                            let diff_pos_atom: Array1<f64> = &new_center_pos
+                                - &self.ContrGauss_vec[atom].PrimGauss_vec[0].position; //* This is PA
+                            let diff_pos_atom_squ: f64 = diff_pos_atom.dot(&diff_pos_atom); //* This is PA^2
+                            V_ne_matr[(i, j)] += norm_const
+                                * (-Z_val_list[atom] as f64)
+                                * (2.0 * PI * sum_alphas_recip)
+                                * prod_coeffs
+                                * (-prod_alphas_div_sum * diff_pos_squ).exp()
+                                * boys::micb25::boys(0, sum_alphas * diff_pos_atom_squ);
+                        }
+                    }
+                }
+            }
+        }
+
+        V_ne_matr
+    }
+
+    pub fn calc_V_ee_matr_l_eq_0(&self) -> Array4<f64> {
+        let no_basis_funcs: usize = self.ContrGauss_vec.len();
+        let mut V_ee_matr: Array4<f64> = Array4::zeros((
+            self.ContrGauss_vec.len(),
+            self.ContrGauss_vec.len(),
+            self.ContrGauss_vec.len(),
+            self.ContrGauss_vec.len(),
+        ));
+        for i in 0..no_basis_funcs {
+            for j in 0..no_basis_funcs {
+                for k in 0..no_basis_funcs {
+                    for l in 0..no_basis_funcs {
+                        let no_prim_gauss_i: usize = self.ContrGauss_vec[i].PrimGauss_vec.len();
+                        let no_prim_gauss_j: usize = self.ContrGauss_vec[j].PrimGauss_vec.len();
+                        let no_prim_gauss_k: usize = self.ContrGauss_vec[k].PrimGauss_vec.len();
+                        let no_prim_gauss_l: usize = self.ContrGauss_vec[l].PrimGauss_vec.len();
+
+                        for m in 0..no_prim_gauss_i {
+                            for n in 0..no_prim_gauss_j {
+                                for o in 0..no_prim_gauss_k {
+                                    for p in 0..no_prim_gauss_l {
+                                        let norm_const: f64 = &self.ContrGauss_vec[i].PrimGauss_vec
+                                            [m]
+                                            .norm_const
+                                            * &self.ContrGauss_vec[j].PrimGauss_vec[n].norm_const
+                                            * &self.ContrGauss_vec[k].PrimGauss_vec[o].norm_const
+                                            * &self.ContrGauss_vec[l].PrimGauss_vec[p].norm_const; //* This is N
+                                        let prod_coeffs: f64 = &self.ContrGauss_vec[i]
+                                            .PrimGauss_vec[m]
+                                            .cgto_coeff
+                                            * &self.ContrGauss_vec[j].PrimGauss_vec[n].cgto_coeff
+                                            * &self.ContrGauss_vec[k].PrimGauss_vec[o].cgto_coeff
+                                            * &self.ContrGauss_vec[l].PrimGauss_vec[p].cgto_coeff; //* This is c_i * c_j
+
+                                        let sum_alphas_ij =
+                                            &self.ContrGauss_vec[i].PrimGauss_vec[m].alpha
+                                                + &self.ContrGauss_vec[j].PrimGauss_vec[n].alpha; //* This is p_ij
+                                        let sum_alphas_recip_ij: f64 = sum_alphas_ij.recip(); //* This is p_ij^-1
+                                        let sum_alphas_kl =
+                                            &self.ContrGauss_vec[k].PrimGauss_vec[o].alpha
+                                                + &self.ContrGauss_vec[l].PrimGauss_vec[p].alpha; //* This is p_kl
+                                        let sum_alphas_recip_kl: f64 = sum_alphas_kl.recip(); //* This is p_kl^-1
+
+                                        let prod_alphas_div_sum_ij: f64 =
+                                            &self.ContrGauss_vec[i].PrimGauss_vec[m].alpha
+                                                * &self.ContrGauss_vec[j].PrimGauss_vec[n].alpha
+                                                * sum_alphas_recip_ij; //* This is q_ij
+                                        let prod_alphas_div_sum_kl: f64 =
+                                            &self.ContrGauss_vec[k].PrimGauss_vec[o].alpha
+                                                * &self.ContrGauss_vec[l].PrimGauss_vec[p].alpha
+                                                * sum_alphas_recip_kl; //* This is q_kl
+
+                                        let mut new_center_pos_ij: Array1<f64> =
+                                            &self.ContrGauss_vec[i].PrimGauss_vec[m].position
+                                                * self.ContrGauss_vec[i].PrimGauss_vec[m].alpha
+                                                + &self.ContrGauss_vec[j].PrimGauss_vec[n].position
+                                                    * self.ContrGauss_vec[j].PrimGauss_vec[n]
+                                                        .alpha; //* This is P_ij
+                                        new_center_pos_ij *= sum_alphas_recip_ij; //* This is Pp_ij
+
+                                        let mut new_center_pos_kl: Array1<f64> =
+                                            &self.ContrGauss_vec[k].PrimGauss_vec[o].position
+                                                * self.ContrGauss_vec[k].PrimGauss_vec[o].alpha
+                                                + &self.ContrGauss_vec[l].PrimGauss_vec[p].position
+                                                    * self.ContrGauss_vec[l].PrimGauss_vec[p]
+                                                        .alpha; //* This is P_kl
+                                        new_center_pos_kl *= sum_alphas_recip_kl; //* This is Pp_kl
+
+                                        let diff_new_center_pos_ijkl: Array1<f64> =
+                                            &new_center_pos_ij - &new_center_pos_kl; //* This is Pp_ijkl = Pp_ij - Pp_kl
+                                        let diff_new_center_pos_ijkl_sq: f64 =
+                                            diff_new_center_pos_ijkl.dot(&diff_new_center_pos_ijkl); //* This is Pp_ijkl^2 = (Pp_ij - Pp_kl)^2
+
+                                        let sum_alphas_ijkl_div_prod_alphas_ijkl: f64 =
+                                            (sum_alphas_ij + sum_alphas_kl)
+                                                * (sum_alphas_ij * sum_alphas_kl).recip(); //* This is (p_kl + p_ij) / (p_ij * p_kl)
+
+                                        let diff_pos_ij: Array1<f64> =
+                                            &self.ContrGauss_vec[i].PrimGauss_vec[m].position
+                                                - &self.ContrGauss_vec[j].PrimGauss_vec[n].position; //* This is Q_ij
+                                        let diff_pos_kl: Array1<f64> = &self.ContrGauss_vec[k].PrimGauss_vec[o].position
+                                            - &self.ContrGauss_vec[l].PrimGauss_vec[p].position; //* This is Q_kl
+                                        let diff_pos_ij_squ: f64 = diff_pos_ij.dot(&diff_pos_ij); //* This is Q_ij^2
+                                        let diff_pos_kl_squ: f64 = diff_pos_kl.dot(&diff_pos_kl); //* This is Q_kl^2
+                                    
+                                        V_ee_matr[(i,j,k,l)] += norm_const
+                                            * prod_coeffs
+                                            * 2.0 * PI.powi(2) * (sum_alphas_ij * sum_alphas_kl).recip()
+                                            * (PI * (sum_alphas_ij + sum_alphas_kl).recip()).sqrt()
+                                            * (-prod_alphas_div_sum_ij * diff_pos_ij_squ).exp()
+                                            * (-prod_alphas_div_sum_kl * diff_pos_kl_squ).exp()
+                                            * boys::micb25::boys(0, diff_new_center_pos_ijkl_sq * sum_alphas_ijkl_div_prod_alphas_ijkl.recip());
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        V_ee_matr
     }
 }

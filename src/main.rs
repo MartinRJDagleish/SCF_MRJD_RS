@@ -701,10 +701,10 @@ fn main() {
     if run_project3_2 {
         println!("\nRunning project 3.2 (SCF from 'scratch')");
         // let test_pg = mol.
-        let alpha_test: f64 = 1.0;
-        let cgto_coeff_test: f64 = 0.4;
-        let position_test = Array1::from_vec(vec![1.0, 0.0, 0.0]);
-        let angular_momentum_test = Array1::<i32>::from_vec(vec![0, 0, 0]);
+        // let alpha_test: f64 = 1.0;
+        // let cgto_coeff_test: f64 = 0.4;
+        // let position_test = Array1::from_vec(vec![1.0, 0.0, 0.0]);
+        // let angular_momentum_test = Array1::<i32>::from_vec(vec![0, 0, 0]);
         // let norm_const_test: f64 = 0.3;
 
         let mut prim_test = molecule::wfn::PrimitiveGaussian::new(
@@ -723,7 +723,6 @@ fn main() {
             Array1::from_vec(vec![0.0, 0.0, 0.0]),
             Array1::from_vec(vec![0, 0, 0]),
         );
-        println!("H1_prim_gaus_1 norm const: {:?}", H1_prim_gaus_1.norm_const);
         let H1_prim_gaus_2 = PrimitiveGaussian::new(
             0.6239137298E0,
             0.5353281423E0,
@@ -764,8 +763,14 @@ fn main() {
         let mol_basis_set = BasisSet::new(vec![H1_contr_gaus, H2_contr_gaus]);
         //* Test:
         // println!("{:?}", mol_basis_set.ContrGauss_vec[0].PrimGauss_vec[0].alpha);
-        let S_matr = mol_basis_set.calc_S_matr();
-        println!("S_matr:\n{:^1.5}\n", &S_matr);
+        let S_matr = mol_basis_set.calc_S_matr_l_eq_0();
+        println!("S_matr:\n{:^5.6}\n", &S_matr);
+        let T_matr = mol_basis_set.calc_T_matr_l_eq_0();
+        println!("T_matr:\n{:^5.6}\n", &T_matr);
+        let V_ne_matr = mol_basis_set.calc_V_ne_matr_l_eq_0();
+        println!("V_ne_matr:\n{:^5.6}\n", &V_ne_matr);
+        let V_ee_matr = mol_basis_set.calc_V_ee_matr_l_eq_0();
+        println!("V_ee_matr:\n{:^5.6}\n", &V_ee_matr);
     }
     //*****************************************************************
     //*****************************************************************
