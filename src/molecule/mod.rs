@@ -212,7 +212,10 @@ impl Molecule {
                 for (idx, Z_val) in self.Z_vals.iter().enumerate() {
                     let mass_Z_val: f64 = self.get_mass_Z_val(Z_val);
                     if i == j {
-                        let (i1, i2) = (Self::inertia_other_two_idx(i)[0], Self::inertia_other_two_idx(i)[1]);
+                        let (i1, i2) = (
+                            Self::inertia_other_two_idx(i)[0],
+                            Self::inertia_other_two_idx(i)[1],
+                        );
                         inertia_tensor[(i, j)] += mass_Z_val
                             * (self.geom[(idx, i1)].powi(2) + self.geom[(idx, i2)].powi(2));
                     } else {

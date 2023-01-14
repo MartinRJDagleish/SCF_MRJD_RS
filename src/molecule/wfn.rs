@@ -144,17 +144,21 @@ impl BasisSet {
                     for l in 0..no_prim_gauss_j {
                         let norm_const: f64 = &self.ContrGauss_vec[i].PrimGauss_vec[k].norm_const
                             * &self.ContrGauss_vec[j].PrimGauss_vec[l].norm_const; //* This is N
-                        let sum_alphas_recip: f64 = (&self.ContrGauss_vec[i].PrimGauss_vec[k].alpha
+                        let sum_alphas_recip: f64 = (&self.ContrGauss_vec[i].PrimGauss_vec[k]
+                            .alpha
                             + &self.ContrGauss_vec[j].PrimGauss_vec[l].alpha)
                             .recip(); //* This is p^-1
-                        let prod_alphas_div_sum: f64 = &self.ContrGauss_vec[i].PrimGauss_vec[k].alpha
+                        let prod_alphas_div_sum: f64 = &self.ContrGauss_vec[i].PrimGauss_vec[k]
+                            .alpha
                             * &self.ContrGauss_vec[j].PrimGauss_vec[l].alpha
                             * sum_alphas_recip; //* This is q
-                        let diff_pos: Array1<f64> = &self.ContrGauss_vec[i].PrimGauss_vec[k].position
+                        let diff_pos: Array1<f64> = &self.ContrGauss_vec[i].PrimGauss_vec[k]
+                            .position
                             - &self.ContrGauss_vec[j].PrimGauss_vec[l].position; //* This is Q
                         let diff_pos_squ: f64 = diff_pos.dot(&diff_pos); //* This is Q^2
 
-                        S_matr[(i, j)] += norm_const * self.ContrGauss_vec[i].PrimGauss_vec[k].cgto_coeff
+                        S_matr[(i, j)] += norm_const
+                            * self.ContrGauss_vec[i].PrimGauss_vec[k].cgto_coeff
                             * self.ContrGauss_vec[j].PrimGauss_vec[l].cgto_coeff
                             * (PI * sum_alphas_recip).powf(1.5)
                             * (-prod_alphas_div_sum * diff_pos_squ).exp();

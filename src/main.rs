@@ -55,6 +55,7 @@ fn main() {
     //* OOP way:
 
     let mut mol: Molecule = Molecule::new("inp/Project3_1/STO-3G/h2o_v2.xyz", 0);
+    // let mut mol: Molecule = Molecule::new("inp/Project2/3c1b.xyz", 0);
 
     let run_project1: bool = false; //* General molecule geometry stuff
     let run_project2: bool = false; //* Hessian -> eigenfreqs from file
@@ -147,14 +148,14 @@ fn main() {
         }
 
         //* Step 6: Center of mass
-        println!("\nCenter of mass: {:^.2}", &mol.calc_center_mass());
+        println!("\nCenter of mass: {:^.6}", &mol.calc_center_mass());
 
         //* Step 6.5: Translate molecule such that center of mass is in middle of coordinate system
         println!("\nTranslate molecule such that center of mass is in middle of coordinate system");
-        println!("Before translation:");
+        println!("\nBefore translation:");
         mol.print_geom_input();
 
-        println!("After translation:");
+        println!("\nAfter translation:");
         mol.translate_mol_to_center_mass();
         mol.print_geom_input();
 

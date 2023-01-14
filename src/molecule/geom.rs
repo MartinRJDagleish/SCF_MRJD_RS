@@ -1,8 +1,9 @@
-use ndarray::prelude::*;
 use super::Molecule;
+use ndarray::prelude::*;
 
 // mod geom;
 
+#[allow(non_snake_case)]
 impl Molecule {
     /// Returns the geom of this [`Molecule`].
     pub fn print_geom_input(&self) {
@@ -168,7 +169,6 @@ impl Molecule {
         }
     }
 
-
     pub fn calc_dihedral_angle(&self, idx1: usize, idx2: usize, idx3: usize, idx4: usize) -> f64 {
         //! Version1 just from math formula (Crawford)
         // let bond_dist_ij: f64 = self.calc_r_ij(i, j);
@@ -300,12 +300,8 @@ impl Molecule {
     pub fn translate_mol_to_center_mass(&mut self) {
         let center_mass_vec: Array1<f64> = self.calc_center_mass();
 
-        for (idx, Z_val) in self.Z_vals.iter().enumerate() {
-            for cart_coord in 0..3 {
-                self.geom[(idx, cart_coord)] -= center_mass_vec[cart_coord];
-            }
+        for (geom_val, center_mass_vec_val) in self.geom.iter_mut().zip(center_mass_vec.iter()) {
+            *geom_val -= center_mass_vec_val;
         }
     }
-
-
 }
