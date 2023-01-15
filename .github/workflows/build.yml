@@ -17,10 +17,14 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-      - name: Install and test OpenBLAS using my script
-        run:  bash ${GITHUB_WORKSPACE}/.github/openblas_install.sh
-        # run: .github/openblas_install.sh
-        shell: bash
+      - name: Test with the basic apt install for openblas
+        run : bash sudo apt-get install libopenblas-dev -y 
+      # - name: Install and test OpenBLAS using my script
+      #   run:  bash ${GITHUB_WORKSPACE}/.github/openblas_install.sh
+      #   # run: .github/openblas_install.sh
+      #   shell: bash
+      # - name: Maybe also install lapack as 
+      #   run: bash sudo apt-get install liblapack-dev -y
       - name: Cargo
         uses: actions-rs/cargo@v1
         with:
