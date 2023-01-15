@@ -7,6 +7,7 @@ use std::io::{BufRead, BufReader};
 use std::time::Instant;
 
 use crate::molecule::wfn::{BasisSet, ContractedGaussian, PrimitiveGaussian};
+use crate::molecule::wfn::ints::*;
 use crate::molecule::*;
 mod molecule;
 
@@ -47,8 +48,6 @@ fn main() {
     println!("{}", ASCII_art_logo); // test
 
     // //* Natural constants
-    // let h: f64 = physical_constants::PLANCK_CONSTANT;
-    // let c: f64 = physical_constants::SPEED_OF_LIGHT_IN_VACUUM;
     //*******************************************************************
     //*                         OOP WAY
     //*******************************************************************
@@ -888,6 +887,17 @@ fn main() {
         println!("V_ne_matr:\n{:^5.6}\n", &V_ne_matr);
         let V_ee_matr = mol_basis_set_6311G.calc_V_ee_matr_l_eq_0();
         println!("V_ee_matr:\n{:^5.6}\n", &V_ee_matr);
+
+        //* Test new code for overlap_int:
+        let S_matr_new_val_test: f64 = calc_overlap_int_prim(
+            mol_basis_set_STO_3G.ContrGauss_vec[0].PrimGauss_vec[0].alpha,
+            mol_basis_set_STO_3G.ContrGauss_vec[0].PrimGauss_vec[1].alpha,
+            mol_basis_set_STO_3G.ContrGauss_vec[0].PrimGauss_vec[0].angular_momentum_vec.clone(),
+            mol_basis_set_STO_3G.ContrGauss_vec[0].PrimGauss_vec[1].angular_momentum_vec.clone(),
+            mol_basis_set_STO_3G.ContrGauss_vec[0].PrimGauss_vec[0].position.clone(),
+            mol_basis_set_STO_3G.ContrGauss_vec[0].PrimGauss_vec[1].position.clone(),
+        );
+        println!("S_matr_new_val_test: {}", S_matr_new_val_test);
     }
     //*****************************************************************
     //*****************************************************************
