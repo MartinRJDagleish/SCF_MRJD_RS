@@ -16,21 +16,29 @@ cd $HOME
 git clone https://github.com/xianyi/OpenBLAS
 
 # 3.2 Build and install OpenBLAS (multithreaded, non OPENMP version)
+#non-threaded version
 cd $HOME/OpenBLAS
-export USE_THREAD=1
-export NUM_THREADS=2 # CHANGED SCRIPT HERE FROM 64 TO 4
-export DYNAMIC_ARCH=0
-export NO_WARMUP=1
-export BUILD_RELAPACK=0
-export COMMON_OPT="-O2 -march=native"
-export CFLAGS="-O2 -march=native"
-export FCOMMON_OPT="-O2 -march=native"
-export FCFLAGS="-O2 -march=native"
-echo ""
-echo "Building OpenBLAS with $NUM_THREADS threads"
-echo ""
-make -j DYNAMIC_ARCH=0 CC=gcc FC=gfortran HOSTCC=gcc BINARY=64 INTERFACE=64 LIBNAMESUFFIX=threaded \
-sudo make PREFIX=$OPENBLAS_DIR LIBNAMESUFFIX=threaded install
+echo "Starting make now..."
+make -j DYNAMIC_ARCH=0 CC=gcc FC=gfortran HOSTCC=gcc BINARY=64 INTERFACE=64 \
+  NO_AFFINITY=1 NO_WARMUP=1 USE_OPENMP=0 USE_THREAD=0 USE_LOCKING=1 LIBNAMESUFFIX=nonthreaded
+sudo make PREFIX=$OPENBLAS_DIR LIBNAMESUFFIX=nonthreaded install
+
+# threaded version
+# cd $HOME/OpenBLAS
+# export USE_THREAD=1
+# export NUM_THREADS=2 # CHANGED SCRIPT HERE FROM 64 TO 4
+# export DYNAMIC_ARCH=0
+# export NO_WARMUP=1
+# export BUILD_RELAPACK=0
+# export COMMON_OPT="-O2 -march=native"
+# export CFLAGS="-O2 -march=native"
+# export FCOMMON_OPT="-O2 -march=native"
+# export FCFLAGS="-O2 -march=native"
+# echo ""
+# echo "Building OpenBLAS with $NUM_THREADS threads"
+# echo ""
+# make -j DYNAMIC_ARCH=0 CC=gcc FC=gfortran HOSTCC=gcc BINARY=64 INTERFACE=64 LIBNAMESUFFIX=threaded \
+# sudo make PREFIX=$OPENBLAS_DIR LIBNAMESUFFIX=threaded install
 
 
 # 4. Test install
