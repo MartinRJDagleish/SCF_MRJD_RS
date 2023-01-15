@@ -7,7 +7,7 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build and test SCF_MRJD_RS bin:
+  build_and_test_SCF_MRJD_RS_bin:
     name: Rust project
     runs-on: ubuntu-latest
     steps:
