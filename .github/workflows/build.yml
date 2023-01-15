@@ -18,7 +18,8 @@ jobs:
         with:
           toolchain: stable
       - name: Install and test OpenBLAS using my script
-        run: .github/openblas_install.sh
+        run:  bash ${GITHUB_WORKSPACE}/.github/openblas_install.sh
+        # run: .github/openblas_install.sh
         shell: bash
       - name: Cargo
         uses: actions-rs/cargo@v1

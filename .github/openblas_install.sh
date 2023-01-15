@@ -4,7 +4,7 @@
 # Following the guide from: https://github.com/bgeneto/build-install-compile-openblas
 
 # 1. Install prerequisites
-sudo apt-get install -y build-essential gfortran g++ git -y
+sudo apt-get install -y build-essential gfortran g++ git libgsl-dev -y
 
 # 2. mkdir for OpenBLAS
 OPENBLAS_DIR=/opt/openblas
