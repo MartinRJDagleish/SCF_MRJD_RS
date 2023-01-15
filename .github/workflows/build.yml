@@ -1,0 +1,32 @@
+# .github/workflows/build.yml
+name: Build SCF_MRJD_RS binary
+
+on:
+  # Triggers the workflow on push or pull request events but only for the "Release" branch
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build and test SCF_MRJD_RS bin:
+    name: Rust project
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Git repo 
+        uses: actions/checkout@v3
+      - name: GitHub Actions for Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - name: Cargo
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release --all-features
+      - name: Upload bin as ZIP to workflow
+        uses: actions/upload-artifact@v3
+        with:
+          name: SCF_MRJD_RS
+          path: target/release/SCF_MRJD_RS
+
+
+        
