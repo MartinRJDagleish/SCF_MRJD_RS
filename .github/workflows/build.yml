@@ -18,14 +18,12 @@ jobs:
         with:
           toolchain: stable
       - name: Test with the basic apt install for openblas
-        run : sudo apt-get install -y libopenblas-dev 
+        run : sudo apt-get install -y libopenblas-dev libgsl-dev 
         shell: bash
       # - name: Install and test OpenBLAS using my script
       #   run:  bash ${GITHUB_WORKSPACE}/.github/openblas_install.sh
       #   # run: .github/openblas_install.sh
       #   shell: bash
-      # - name: Maybe also install lapack as 
-      #   run: bash sudo apt-get install liblapack-dev -y
       - name: Cargo
         uses: actions-rs/cargo@v1
         with:
