@@ -70,7 +70,7 @@ impl Molecule {
         let hess_reader = BufReader::new(hess_file);
 
         let mut hessian: Vec<Vec<f64>> = Vec::new();
-        let mut line_iter = hess_reader.lines();
+        let line_iter = hess_reader.lines();
 
         let hess_no_atoms: usize = line_iter.next().unwrap().unwrap().trim().parse().unwrap();
         println!("No of atoms in hessian: {}", hess_no_atoms);
