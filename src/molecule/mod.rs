@@ -2,18 +2,18 @@ use ndarray::prelude::*;
 use ndarray_linalg::EigValsh;
 use std::fs;
 
-use crate::molecule::geom::Geometry;
 #[derive(Clone, Debug)]
 pub struct Molecule {
     pub charge: i32,
-    pub geom_obj: Geometry,
+    pub geom_obj: geometry::Geometry,
     pub Z_vals: Vec<i32>,
     pub hessian: Array2<f64>,
     pub no_atoms: usize,
     // pub mass_array: [f64; 119],
 }
 
-mod geom;
+pub mod geometry;
+pub mod wfn;
 
 #[allow(non_snake_case)] // * -> I need this due to QM naming conventions
 impl Molecule {
@@ -21,7 +21,7 @@ impl Molecule {
         let (Z_vals, geom_matr, no_atoms): (Vec<i32>, Array2<f64>, usize) =
             Self::read_inputfile(geom_file);
 
-        let geom_obj: Geometry = Geometry::new(no_atoms.clone(), geom_matr, Z_vals.clone());
+        let geom_obj: geometry::Geometry = geometry::Geometry::new(no_atoms.clone(), geom_matr, Z_vals.clone());
 
         //* Define a 0-matrix which can be edited later on ?
         let hessian: Array2<f64> = Array2::zeros((3 * no_atoms, 3 * no_atoms));
@@ -84,4 +84,3 @@ impl Molecule {
     }
 }
 
-pub mod wfn;
