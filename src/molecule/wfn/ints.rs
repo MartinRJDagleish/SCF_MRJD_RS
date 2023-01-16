@@ -1,5 +1,4 @@
 use std::f64::consts::PI;
-
 use ndarray::Array1;
 
 #[doc(hidden)]

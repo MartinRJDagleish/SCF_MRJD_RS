@@ -1,10 +1,10 @@
+
 use std::f64::consts::PI;
 
 use boys;
 use ndarray::{Array1, Array2, Array4};
 
 pub mod ints;
-// use crate::molecule::ints::wfn::*;
 
 #[derive(Debug)]
 pub struct Wavefunction_total {
