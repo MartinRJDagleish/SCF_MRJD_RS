@@ -1,10 +1,9 @@
-
+use ndarray::prelude::*;
 use std::f64::consts::PI;
-
 use boys;
-use ndarray::{Array1, Array2, Array4};
 
 pub mod ints;
+pub mod parse_BSSE_basis_set;
 
 #[derive(Debug)]
 pub struct Wavefunction_total {
@@ -32,6 +31,7 @@ pub struct ContractedGaussian {
 #[derive(Debug)]
 pub struct BasisSet {
     pub ContrGauss_vec: Vec<ContractedGaussian>,
+    // pub name: String,
 }
 
 // mod parse_BSSE_data;
