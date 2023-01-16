@@ -7,18 +7,18 @@ use crate::molecule::Molecule;
 #[allow(non_snake_case)] 
 pub fn run_project1(mut mol: Molecule) {
     println!("\nProject 1 implementation:\n");
-    // println!("Z values of atoms:\n{:?}\n", &mol.Z_vals);
-    // println!("Geometry of molecule:\n{:?}\n", &mol.geom);
+    // println!("Z values of atoms:\n{:?}\n", &mol.geom_obj.Z_vals);
+    // println!("Geometry of molecule:\n{:?}\n", &mol.geom_obj.geom);
     //* Fancy print of geometry of file (check for valid input)
     println!("Input (bohr):");
-    mol.print_geom_input();
+    mol.geom_obj.print_geom_input();
 
     //* Step 2: Bond lengths
     println!("\nInteratomic distances (in bohr):");
     for i in 0..mol.no_atoms {
         for j in 0..i {
             if i != j {
-                let bond_length: f64 = mol.calc_r_ij(i, j);
+                let bond_length: f64 = mol.geom_obj.calc_r_ij(i, j);
 
                 println!("Distance between {}-{} is: {:3.5}", i, j, bond_length);
             } else {
@@ -32,8 +32,8 @@ pub fn run_project1(mut mol: Molecule) {
     for i in 0..mol.no_atoms {
         for j in 0..i {
             for k in 0..j {
-                if mol.calc_r_ij(i, j) < 4.0 && mol.calc_r_ij(j, k) < 4.0 {
-                    let bond_angle: f64 = mol.calc_bond_angle(i, j, k);
+                if mol.geom_obj.calc_r_ij(i, j) < 4.0 && mol.geom_obj.calc_r_ij(j, k) < 4.0 {
+                    let bond_angle: f64 = mol.geom_obj.calc_bond_angle(i, j, k);
                     println!("Angle for {}-{}-{} is: {:.5}", i, j, k, bond_angle);
                 }
             }
@@ -46,9 +46,9 @@ pub fn run_project1(mut mol: Molecule) {
         for j in 0..mol.no_atoms {
             for k in 0..mol.no_atoms {
                 for l in 0..mol.no_atoms {
-                    let bond_dist_jk: f64 = mol.calc_r_ij(j, k);
-                    let bond_dist_kl: f64 = mol.calc_r_ij(k, l);
-                    let bond_dist_ik: f64 = mol.calc_r_ij(i, k);
+                    let bond_dist_jk: f64 = mol.geom_obj.calc_r_ij(j, k);
+                    let bond_dist_kl: f64 = mol.geom_obj.calc_r_ij(k, l);
+                    let bond_dist_ik: f64 = mol.geom_obj.calc_r_ij(i, k);
                     if i != j
                         && i != k
                         && i != l
@@ -59,7 +59,7 @@ pub fn run_project1(mut mol: Molecule) {
                         && bond_dist_kl < 4.0
                         && bond_dist_ik < 4.0
                     {
-                        let oop_angle: f64 = mol.calc_oop_angle(i, j, k, l);
+                        let oop_angle: f64 = mol.geom_obj.calc_oop_angle(i, j, k, l);
 
                         println!("OOP angle for {}-{}-{}-{} is: {:.5}", i, j, k, l, oop_angle);
                     }
@@ -74,11 +74,11 @@ pub fn run_project1(mut mol: Molecule) {
         for j in 0..i {
             for k in 0..j {
                 for l in 0..k {
-                    let bond_dist_ij: f64 = mol.calc_r_ij(i, j);
-                    let bond_dist_jk: f64 = mol.calc_r_ij(j, k);
-                    let bond_dist_kl: f64 = mol.calc_r_ij(k, l);
+                    let bond_dist_ij: f64 = mol.geom_obj.calc_r_ij(i, j);
+                    let bond_dist_jk: f64 = mol.geom_obj.calc_r_ij(j, k);
+                    let bond_dist_kl: f64 = mol.geom_obj.calc_r_ij(k, l);
                     if bond_dist_ij < 4.0 && bond_dist_jk < 4.0 && bond_dist_kl < 4.0 {
-                        let dihedral_angle: f64 = mol.calc_dihedral_angle(i, j, k, l);
+                        let dihedral_angle: f64 = mol.geom_obj.calc_dihedral_angle(i, j, k, l);
                         println!(
                             "Dihedral angle for {}-{}-{}-{} is: {:.5}",
                             i, j, k, l, dihedral_angle
@@ -90,20 +90,20 @@ pub fn run_project1(mut mol: Molecule) {
     }
 
     //* Step 6: Center of mass
-    println!("\nCenter of mass: {:^.6}", &mol.calc_center_mass());
+    println!("\nCenter of mass: {:^.6}", &mol.geom_obj.calc_center_mass());
 
     //* Step 6.5: Translate molecule such that center of mass is in middle of coordinate system
     println!("\nTranslate molecule such that center of mass is in middle of coordinate system");
     println!("\nBefore translation:");
-    mol.print_geom_input();
+    mol.geom_obj.print_geom_input();
 
     println!("\nAfter translation:");
-    mol.translate_mol_to_center_mass();
-    mol.print_geom_input();
+    mol.geom_obj.translate_mol_to_center_mass();
+    mol.geom_obj.print_geom_input();
 
     //* Step 7: Inertia tensor
     println!("\nPrinting the moment of inertia tensor:");
-    let inertia_tensor: Array2<f64> = mol.calc_inertia_tensor();
+    let inertia_tensor: Array2<f64> = mol.geom_obj.calc_inertia_tensor();
     println!("Inertia tensor: \n{:^.5}\n", inertia_tensor);
 
     //* Step 7.1 : Get eigenvalues and eigenvectors of inertia tensor

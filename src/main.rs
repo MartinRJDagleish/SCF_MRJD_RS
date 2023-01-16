@@ -1,21 +1,18 @@
 use humantime::format_duration;
 use ndarray::prelude::*;
-use ndarray_linalg::{EigValsh, Eigh, Inverse, SymmetricSqrt};
-use std::f64::consts::PI;
-use std::fs;
-use std::io::{BufRead, BufReader};
 use std::time::Instant;
 
-use crate::molecule::wfn::{BasisSet, ContractedGaussian, PrimitiveGaussian};
 use crate::molecule::wfn::ints::*;
+use crate::molecule::wfn::{BasisSet, ContractedGaussian, PrimitiveGaussian};
 use crate::molecule::*;
-mod molecule;
 mod Crawford_projects;
+mod molecule;
 
 #[allow(non_snake_case)] // * -> I need this due to QM naming conventions
 fn main() {
     let start_exec_time = Instant::now();
-    let ASCII_art_logo: String = String::from(r#"
+    let ASCII_art_logo: String = String::from(
+        r#"
     _____/\\\\\\\\\\\___________/\\\\\\\\\___/\\\\\\\\\\\\\\\_                                
      ___/\\\/////////\\\______/\\\////////___\/\\\///////////__                               
       __\//\\\______\///_____/\\\/____________\/\\\_____________                              
@@ -49,13 +46,12 @@ fn main() {
 
     let mut mol: Molecule = Molecule::new("inp/Project3_1/STO-3G/h2o_v2.xyz", 0);
 
-    let is_run_project1: bool = true; //* General molecule geometry stuff
-    let is_run_project2: bool = true; //* Hessian -> eigenfreqs from file
-    let is_run_project3_1: bool = true; //* SCF from precomputed integrals
+    let is_run_project1: bool = false; //* General molecule geometry stuff
+    let is_run_project2: bool = false; //* Hessian -> eigenfreqs from file
+    let is_run_project3_1: bool = false; //* SCF from precomputed integrals
     let is_run_project3_2: bool = true; //* SCF from "scratch"
     let is_run_project4: bool = false; //* MP2 from precomputed integrals
-    
-    
+
     if is_run_project1 {
         Crawford_projects::project1::run_project1(mol.clone());
     }
@@ -263,10 +259,18 @@ fn main() {
         let S_matr_new_val_test: f64 = calc_overlap_int_prim(
             mol_basis_set_STO_3G.ContrGauss_vec[0].PrimGauss_vec[0].alpha,
             mol_basis_set_STO_3G.ContrGauss_vec[0].PrimGauss_vec[1].alpha,
-            mol_basis_set_STO_3G.ContrGauss_vec[0].PrimGauss_vec[0].angular_momentum_vec.clone(),
-            mol_basis_set_STO_3G.ContrGauss_vec[0].PrimGauss_vec[1].angular_momentum_vec.clone(),
-            mol_basis_set_STO_3G.ContrGauss_vec[0].PrimGauss_vec[0].position.clone(),
-            mol_basis_set_STO_3G.ContrGauss_vec[0].PrimGauss_vec[1].position.clone(),
+            mol_basis_set_STO_3G.ContrGauss_vec[0].PrimGauss_vec[0]
+                .angular_momentum_vec
+                .clone(),
+            mol_basis_set_STO_3G.ContrGauss_vec[0].PrimGauss_vec[1]
+                .angular_momentum_vec
+                .clone(),
+            mol_basis_set_STO_3G.ContrGauss_vec[0].PrimGauss_vec[0]
+                .position
+                .clone(),
+            mol_basis_set_STO_3G.ContrGauss_vec[0].PrimGauss_vec[1]
+                .position
+                .clone(),
         );
         println!("S_matr_new_val_test: {}", S_matr_new_val_test);
     }
