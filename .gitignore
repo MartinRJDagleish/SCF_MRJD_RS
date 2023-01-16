@@ -13,3 +13,9 @@ PDFs/
 
 # MSVC Windows builds of rustc generate these, which store debugging information
 *.pdb
+
+
+# Old versions of main file -> keeping for nostalgia
+src/main_old.rs
+src/main_Project1_DONE.rs
+src/main_Project2_DONE.rs
