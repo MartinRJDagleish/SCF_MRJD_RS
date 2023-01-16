@@ -161,37 +161,37 @@ pub fn calc_overlap_int_prim(
 }
 
 //TODO: this function is not complete yet -> use integrals.pdf to finish it
-pub fn calc_overlap_int_cgto(ContrGaus1: &ContrGaus, ContrGaus2: &ContrGaus) -> f64 {
-    // Calculate the overlap integral between two contracted Gaussian functions.
-    //
-    // # Arguments
-    // ----------
-    // ContrGaus1 : ContrGaus
-    //   The first contracted Gaussian function.
-    // ContrGaus2 : ContrGaus
-    //   The second contracted Gaussian function.
-    //
-    // # Returns
-    // --------
-    // overlap_int : f64
-    //   The overlap integral between the two contracted Gaussian functions.
-    //
+// pub fn calc_overlap_int_cgto(ContrGaus1: &ContrGaus, ContrGaus2: &ContrGaus) -> f64 {
+//     // Calculate the overlap integral between two contracted Gaussian functions.
+//     //
+//     // # Arguments
+//     // ----------
+//     // ContrGaus1 : ContrGaus
+//     //   The first contracted Gaussian function.
+//     // ContrGaus2 : ContrGaus
+//     //   The second contracted Gaussian function.
+//     //
+//     // # Returns
+//     // --------
+//     // overlap_int : f64
+//     //   The overlap integral between the two contracted Gaussian functions.
+//     //
 
-    let mut overlap_int: f64 = 0.0;
-    for i in 0..ContrGaus1.no_contr {
-        for j in 0..ContrGaus2.no_contr {
-            overlap_int += ContrGaus1.coeff[i]
-                * ContrGaus2.coeff[j]
-                * calc_overlap_int_prim(
-                    ContrGaus1.alpha[i],
-                    ContrGaus2.alpha[j],
-                    ContrGaus1.angular_momentum_vec,
-                    ContrGaus2.angular_momentum_vec,
-                    ContrGaus1.position,
-                    ContrGaus2.position,
-                );
-        }
-    }
-    overlap_int *= ContrGaus1.norm_const * ContrGaus2.norm_const;
-    overlap_int
-}
+//     let mut overlap_int: f64 = 0.0;
+//     for i in 0..ContrGaus1.no_contr {
+//         for j in 0..ContrGaus2.no_contr {
+//             overlap_int += ContrGaus1.coeff[i]
+//                 * ContrGaus2.coeff[j]
+//                 * calc_overlap_int_prim(
+//                     ContrGaus1.alpha[i],
+//                     ContrGaus2.alpha[j],
+//                     ContrGaus1.angular_momentum_vec,
+//                     ContrGaus2.angular_momentum_vec,
+//                     ContrGaus1.position,
+//                     ContrGaus2.position,
+//                 );
+//         }
+//     }
+//     overlap_int *= ContrGaus1.norm_const * ContrGaus2.norm_const;
+//     overlap_int
+// }

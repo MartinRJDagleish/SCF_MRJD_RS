@@ -2,6 +2,7 @@ use ndarray::prelude::*;
 use ndarray_linalg::EigValsh;
 use std::fs;
 
+#[derive(Clone, Debug)]
 pub struct Molecule {
     pub charge: i32,
     pub no_atoms: usize,

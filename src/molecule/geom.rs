@@ -1,8 +1,6 @@
 use super::Molecule;
 use ndarray::prelude::*;
 
-// mod geom;
-
 #[allow(non_snake_case)]
 impl Molecule {
     /// Returns the geom of this [`Molecule`].
