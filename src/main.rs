@@ -47,14 +47,7 @@ fn main() {
     );
     println!("{}", ASCII_art_logo); // test
 
-    // //* Natural constants
-    //*******************************************************************
-    //*                         OOP WAY
-    //*******************************************************************
-    //* OOP way:
-
     let mut mol: Molecule = Molecule::new("inp/Project3_1/STO-3G/h2o_v2.xyz", 0);
-    // let mut mol: Molecule = Molecule::new("inp/Project2/3c1b.xyz", 0);
 
     let is_run_project1: bool = true; //* General molecule geometry stuff
     let is_run_project2: bool = true; //* Hessian -> eigenfreqs from file
