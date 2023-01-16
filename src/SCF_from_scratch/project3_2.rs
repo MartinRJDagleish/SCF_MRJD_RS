@@ -75,7 +75,7 @@ pub fn run_project3_2() {
         H2_prim_gaus_1s_3,
     ]);
 
-    let mol_basis_set_STO_3G = molecule::wfn::BasisSet::new(vec![H1_contr_gaus, H2_contr_gaus]);
+    let mol_basis_set_STO_3G = molecule::wfn::WfnTotal::new(vec![H1_contr_gaus, H2_contr_gaus]);
     //* Test:
     // println!("{:?}", mol_basis_set_STO_3G.ContrGauss_vec[0].PrimGauss_vec[0].alpha);
     let S_matr = mol_basis_set_STO_3G.calc_S_matr_l_eq_0();
@@ -174,7 +174,7 @@ pub fn run_project3_2() {
     let H2_contr_gaus_2s = molecule::wfn::ContractedGaussian::new(vec![H2_prim_gaus_2s_1]);
     let H2_contr_gaus_3s = molecule::wfn::ContractedGaussian::new(vec![H2_prim_gaus_3s_1]);
 
-    let mol_basis_set_6311G = molecule::wfn::BasisSet::new(vec![
+    let mol_basis_set_6311G = molecule::wfn::WfnTotal::new(vec![
         H1_contr_gaus_1s,
         H1_contr_gaus_2s,
         H1_contr_gaus_3s,
@@ -184,34 +184,41 @@ pub fn run_project3_2() {
     ]);
     //* Test:
     // println!("{:?}", mol_basis_set_6311G.ContrGauss_vec[0].PrimGauss_vec[0].alpha);
-    let S_matr = mol_basis_set_6311G.calc_S_matr_l_eq_0();
-    println!("S_matr:\n{:^5.6}\n", &S_matr);
-    let T_matr = mol_basis_set_6311G.calc_T_matr_l_eq_0();
-    println!("T_matr:\n{:^5.6}\n", &T_matr);
-    let V_ne_matr = mol_basis_set_6311G.calc_V_ne_matr_l_eq_0();
-    println!("V_ne_matr:\n{:^5.6}\n", &V_ne_matr);
-    let V_ee_matr = mol_basis_set_6311G.calc_V_ee_matr_l_eq_0();
-    println!("V_ee_matr:\n{:^5.6}\n", &V_ee_matr);
+    // let S_matr = mol_basis_set_6311G.calc_S_matr_l_eq_0();
+    // println!("S_matr:\n{:^5.6}\n", &S_matr);
+    // let T_matr = mol_basis_set_6311G.calc_T_matr_l_eq_0();
+    // println!("T_matr:\n{:^5.6}\n", &T_matr);
+    // let V_ne_matr = mol_basis_set_6311G.calc_V_ne_matr_l_eq_0();
+    // println!("V_ne_matr:\n{:^5.6}\n", &V_ne_matr);
+    // let V_ee_matr = mol_basis_set_6311G.calc_V_ee_matr_l_eq_0();
+    // println!("V_ee_matr:\n{:^5.6}\n", &V_ee_matr);
 
     //* Test new code for overlap_int:
-    use crate::molecule::wfn::ints::*; //* for testing
-    let S_matr_new_val_test: f64 = calc_overlap_int_prim(
-        mol_basis_set_STO_3G.ContrGauss_vec[0].PrimGauss_vec[0].alpha,
-        mol_basis_set_STO_3G.ContrGauss_vec[0].PrimGauss_vec[1].alpha,
-        mol_basis_set_STO_3G.ContrGauss_vec[0].PrimGauss_vec[0]
-            .angular_momentum_vec
-            .clone(),
-        mol_basis_set_STO_3G.ContrGauss_vec[0].PrimGauss_vec[1]
-            .angular_momentum_vec
-            .clone(),
-        mol_basis_set_STO_3G.ContrGauss_vec[0].PrimGauss_vec[0]
-            .position
-            .clone(),
-        mol_basis_set_STO_3G.ContrGauss_vec[0].PrimGauss_vec[1]
-            .position
-            .clone(),
-    );
-    println!("S_matr_new_val_test: {}", S_matr_new_val_test);
+    // use crate::molecule::wfn::ints::*; //* for testing
+    // let S_matr_new_val_test: f64 = calc_overlap_int_prim(
+    //     mol_basis_set_STO_3G.ContrGauss_vec[0].PrimGauss_vec[0].alpha,
+    //     mol_basis_set_STO_3G.ContrGauss_vec[0].PrimGauss_vec[1].alpha,
+    //     mol_basis_set_STO_3G.ContrGauss_vec[0].PrimGauss_vec[0]
+    //         .angular_momentum_vec
+    //         .clone(),
+    //     mol_basis_set_STO_3G.ContrGauss_vec[0].PrimGauss_vec[1]
+    //         .angular_momentum_vec
+    //         .clone(),
+    //     mol_basis_set_STO_3G.ContrGauss_vec[0].PrimGauss_vec[0]
+    //         .position
+    //         .clone(),
+    //     mol_basis_set_STO_3G.ContrGauss_vec[0].PrimGauss_vec[1]
+    //         .position
+    //         .clone(),
+    // );
+    // println!("S_matr_new_val_test: {}", S_matr_new_val_test);
+
+    //* Test new code for parse_basis_set_file
+    {
+        use crate::molecule::wfn::parse_BSSE_basis_set::BasisSet::parse_basis_set_file;
+        parse_basis_set_file("STO-3G");
+    }
+
 }
 
 // ! Template for tests: (run with: 'cargo test')

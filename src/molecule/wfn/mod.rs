@@ -6,7 +6,7 @@ pub mod ints;
 pub mod parse_BSSE_basis_set;
 
 #[derive(Debug)]
-pub struct Wavefunction_total {
+pub struct HFMatrices {
     pub S_matr: Array2<f64>,
     pub T_matr: Array2<f64>,
     pub V_ne_matr: Array2<f64>,
@@ -29,7 +29,7 @@ pub struct ContractedGaussian {
 }
 
 #[derive(Debug)]
-pub struct BasisSet {
+pub struct WfnTotal {
     pub ContrGauss_vec: Vec<ContractedGaussian>,
     // pub name: String,
 }
@@ -37,15 +37,15 @@ pub struct BasisSet {
 // mod parse_BSSE_data;
 
 #[allow(non_snake_case)]
-impl Wavefunction_total {
-    pub fn new() -> Wavefunction_total {
+impl HFMatrices {
+    pub fn new() -> HFMatrices {
         let S_matr: Array2<f64> = Array2::zeros((1, 1));
         let T_matr: Array2<f64> = Array2::zeros((1, 1));
         let V_ne_matr: Array2<f64> = Array2::zeros((1, 1));
         let H_core_matr: Array2<f64> = Array2::zeros((1, 1));
         let ERI_arr1: Array1<f64> = Array1::zeros(1);
 
-        Wavefunction_total {
+        HFMatrices {
             S_matr,
             T_matr,
             V_ne_matr,
@@ -130,11 +130,11 @@ impl ContractedGaussian {
 }
 
 #[allow(non_snake_case)]
-impl BasisSet {
+impl WfnTotal {
     pub fn new(list_of_contr_gauss: Vec<ContractedGaussian>) -> Self {
         let ContrGauss_vec = list_of_contr_gauss;
 
-        BasisSet { ContrGauss_vec }
+        WfnTotal { ContrGauss_vec }
     }
 
     //TODO: maybe move to Wavefunction_total?
