@@ -3,6 +3,9 @@ use std::f64::consts::PI;
 use boys;
 use ndarray::{Array1, Array2, Array4};
 
+pub mod ints;
+// use crate::molecule::ints::wfn::*;
+
 #[derive(Debug)]
 pub struct Wavefunction_total {
     pub S_matr: Array2<f64>,
@@ -290,10 +293,10 @@ impl BasisSet {
                         for atom in 0..no_atoms {
                             let diff_pos_atom: Array1<f64> = &new_center_pos
                                 - &self.ContrGauss_vec[atom].PrimGauss_vec[0].position; //* This is PA
-                                //TODO: ↑ this is not correct -> only if one CGTO per atom
-                                //TODO: -> fix this for right code
-                                //TODO: this is why STO-3G is working, but not 6-311G
-                                //* the atom index is not correct 
+                                                                                        //TODO: ↑ this is not correct -> only if one CGTO per atom
+                                                                                        //TODO: -> fix this for right code
+                                                                                        //TODO: this is why STO-3G is working, but not 6-311G
+                                                                                        //* the atom index is not correct
                             let diff_pos_atom_squ: f64 = diff_pos_atom.dot(&diff_pos_atom); //* This is PA^2
                             V_ne_matr[(i, j)] += norm_const
                                 * (-Z_val_list[atom] as f64)
@@ -367,16 +370,14 @@ impl BasisSet {
                                             &self.ContrGauss_vec[i].PrimGauss_vec[m].position
                                                 * self.ContrGauss_vec[i].PrimGauss_vec[m].alpha
                                                 + &self.ContrGauss_vec[j].PrimGauss_vec[n].position
-                                                    * self.ContrGauss_vec[j].PrimGauss_vec[n]
-                                                        .alpha; //* This is P_ij
+                                                    * self.ContrGauss_vec[j].PrimGauss_vec[n].alpha; //* This is P_ij
                                         new_center_pos_ij *= sum_alphas_recip_ij; //* This is Pp_ij
 
                                         let mut new_center_pos_kl: Array1<f64> =
                                             &self.ContrGauss_vec[k].PrimGauss_vec[o].position
                                                 * self.ContrGauss_vec[k].PrimGauss_vec[o].alpha
                                                 + &self.ContrGauss_vec[l].PrimGauss_vec[p].position
-                                                    * self.ContrGauss_vec[l].PrimGauss_vec[p]
-                                                        .alpha; //* This is P_kl
+                                                    * self.ContrGauss_vec[l].PrimGauss_vec[p].alpha; //* This is P_kl
                                         new_center_pos_kl *= sum_alphas_recip_kl; //* This is Pp_kl
 
                                         let diff_new_center_pos_ijkl: Array1<f64> =
@@ -391,18 +392,25 @@ impl BasisSet {
                                         let diff_pos_ij: Array1<f64> =
                                             &self.ContrGauss_vec[i].PrimGauss_vec[m].position
                                                 - &self.ContrGauss_vec[j].PrimGauss_vec[n].position; //* This is Q_ij
-                                        let diff_pos_kl: Array1<f64> = &self.ContrGauss_vec[k].PrimGauss_vec[o].position
-                                            - &self.ContrGauss_vec[l].PrimGauss_vec[p].position; //* This is Q_kl
+                                        let diff_pos_kl: Array1<f64> =
+                                            &self.ContrGauss_vec[k].PrimGauss_vec[o].position
+                                                - &self.ContrGauss_vec[l].PrimGauss_vec[p].position; //* This is Q_kl
                                         let diff_pos_ij_squ: f64 = diff_pos_ij.dot(&diff_pos_ij); //* This is Q_ij^2
                                         let diff_pos_kl_squ: f64 = diff_pos_kl.dot(&diff_pos_kl); //* This is Q_kl^2
-                                    
-                                        V_ee_matr[(i,j,k,l)] += norm_const
+
+                                        V_ee_matr[(i, j, k, l)] += norm_const
                                             * prod_coeffs
-                                            * 2.0 * PI.powi(2) * (sum_alphas_ij * sum_alphas_kl).recip()
+                                            * 2.0
+                                            * PI.powi(2)
+                                            * (sum_alphas_ij * sum_alphas_kl).recip()
                                             * (PI * (sum_alphas_ij + sum_alphas_kl).recip()).sqrt()
                                             * (-prod_alphas_div_sum_ij * diff_pos_ij_squ).exp()
                                             * (-prod_alphas_div_sum_kl * diff_pos_kl_squ).exp()
-                                            * boys::micb25::boys(0, diff_new_center_pos_ijkl_sq * sum_alphas_ijkl_div_prod_alphas_ijkl.recip());
+                                            * boys::micb25::boys(
+                                                0,
+                                                diff_new_center_pos_ijkl_sq
+                                                    * sum_alphas_ijkl_div_prod_alphas_ijkl.recip(),
+                                            );
                                     }
                                 }
                             }
