@@ -2,13 +2,16 @@ use ndarray::prelude::*;
 use ndarray_linalg::EigValsh;
 use std::fs;
 
-#[derive(Clone, Debug)]
+// #[derive(Clone)] ONLY FOR CRAWFORD PROJECTS -> breaks 
+// with wfn_total 
+#[derive(Debug)]
 pub struct Molecule {
     pub charge: i32,
     pub geom_obj: geometry::Geometry,
     pub Z_vals: Vec<i32>,
     pub hessian: Array2<f64>,
     pub no_atoms: usize,
+    pub wfn_total: wfn::WfnTotal,
     // pub mass_array: [f64; 119],
 }
 
@@ -26,12 +29,15 @@ impl Molecule {
         //* Define a 0-matrix which can be edited later on ?
         let hessian: Array2<f64> = Array2::zeros((3 * no_atoms, 3 * no_atoms));
 
+        let wfn_total: wfn::WfnTotal = wfn::WfnTotal::new();
+
         Molecule {
             charge,
             no_atoms,
             geom_obj,
             Z_vals,
             hessian,
+            wfn_total,
         }
     }
 

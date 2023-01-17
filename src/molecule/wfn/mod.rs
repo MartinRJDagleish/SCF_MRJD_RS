@@ -1,18 +1,9 @@
+use boys;
 use ndarray::prelude::*;
 use std::f64::consts::PI;
-use boys;
 
 pub mod ints;
 pub mod parse_BSSE_basis_set;
-
-#[derive(Debug)]
-pub struct HFMatrices {
-    pub S_matr: Array2<f64>,
-    pub T_matr: Array2<f64>,
-    pub V_ne_matr: Array2<f64>,
-    pub H_core_matr: Array2<f64>,
-    pub ERI_arr1: Array1<f64>,
-}
 
 #[derive(Debug)]
 pub struct PrimitiveGaussian {
@@ -29,8 +20,20 @@ pub struct ContractedGaussian {
 }
 
 #[derive(Debug)]
+pub struct HFMatrices {
+    pub S_matr: Array2<f64>,
+    pub T_matr: Array2<f64>,
+    pub V_ne_matr: Array2<f64>,
+    pub H_core_matr: Array2<f64>,
+    pub ERI_arr1: Array1<f64>,
+}
+
+
+#[derive(Debug)]
 pub struct WfnTotal {
     pub ContrGauss_vec: Vec<ContractedGaussian>,
+    pub no_of_contr_gauss: usize,
+    pub HFMatrices: HFMatrices,
     // pub name: String,
 }
 
@@ -99,13 +102,10 @@ impl PrimitiveGaussian {
     }
 
     pub fn double_factorial(n: i32) -> i32 {
-        if n == -1 {
-            return 1;
-        }
-        if n == 1 {
-            return 1;
-        } else {
-            n * Self::double_factorial(n - 2)
+        match n {
+            -1 => 1,
+            1 => 1,
+            _ => n * Self::double_factorial(n - 2),
         }
     }
 
@@ -123,7 +123,7 @@ impl PrimitiveGaussian {
 #[allow(non_snake_case)]
 impl ContractedGaussian {
     pub fn new(list_of_prim_gauss: Vec<PrimitiveGaussian>) -> Self {
-        let PrimGauss_vec = list_of_prim_gauss;
+        let mut PrimGauss_vec = list_of_prim_gauss;
 
         ContractedGaussian { PrimGauss_vec }
     }
@@ -131,13 +131,21 @@ impl ContractedGaussian {
 
 #[allow(non_snake_case)]
 impl WfnTotal {
-    pub fn new(list_of_contr_gauss: Vec<ContractedGaussian>) -> Self {
-        let ContrGauss_vec = list_of_contr_gauss;
+    pub fn new() -> Self {
+        let mut ContrGauss_vec: Vec<ContractedGaussian> = vec![]; // Vec::new();
+        let HFMatrices = HFMatrices::new();
+        let mut no_of_contr_gauss: usize = ContrGauss_vec.len();
 
-        WfnTotal { ContrGauss_vec }
+        WfnTotal {
+            ContrGauss_vec,
+            HFMatrices,
+            no_of_contr_gauss
+        }
     }
 
-    //TODO: maybe move to Wavefunction_total?
+    pub fn update_no_of_contr_gauss(&mut self) {
+        self.no_of_contr_gauss = self.ContrGauss_vec.len();
+    }
 
     pub fn calc_S_matr_l_eq_0(&self) -> Array2<f64> {
         let no_basis_funcs: usize = self.ContrGauss_vec.len();
@@ -250,6 +258,9 @@ impl WfnTotal {
 
     pub fn calc_V_ne_matr_l_eq_0(&self) -> Array2<f64> {
         // let no_atoms: usize = self.ContrGauss_vec.len(); //TODO: fix this for right code
+        // ↓ This was a quick fix!
+        // let no_atoms: usize = 2; //TODO: fix this for right code
+        // let no_contr_gauss: usize = Self.no_of_contr_gauss(&self.ContrGauss_vec);
         let no_atoms: usize = 2; //TODO: fix this for right code
         let no_basis_funcs: usize = self.ContrGauss_vec.len();
         //* QUICK FIX:

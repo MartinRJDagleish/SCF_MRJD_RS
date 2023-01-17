@@ -1,5 +1,5 @@
-use std::f64::consts::PI;
 use ndarray::Array1;
+use std::f64::consts::PI;
 
 #[doc(hidden)]
 pub fn calc_expansion_coeff_overlap_int(
@@ -31,71 +31,71 @@ pub fn calc_expansion_coeff_overlap_int(
 
     let p_recip = (alpha1 + alpha2).recip();
     let q = alpha1 * alpha2 * p_recip;
-    //TODO: can I use match here?
-    if no_nodes < 0 || no_nodes > (l1 + l2) {
-        return 0.0;
-    } else if l1 == l2 && l2 == no_nodes && no_nodes == 0 {
-        return (-q * gauss_dist.powi(2)).exp();
-    } else if l2 == 0 {
-        //* decrement index l1
-        return 0.5
-            * p_recip
-            * calc_expansion_coeff_overlap_int(
-                l1 - 1,
-                l2,
-                no_nodes - 1,
-                gauss_dist,
-                alpha1,
-                alpha2,
-            )
-            - (q * gauss_dist / alpha1)
+    match (no_nodes, l1, l2) {
+        (x, _, _) if x < 0 || x > (l1 + l2) => return 0.0,
+        (0, 0, 0) => return (-q * gauss_dist.powi(2)).exp(),
+        (_, _, 0) => {
+            //* decrement index l1
+            return 0.5
+                * p_recip
                 * calc_expansion_coeff_overlap_int(
                     l1 - 1,
                     l2,
-                    no_nodes,
+                    no_nodes - 1,
                     gauss_dist,
                     alpha1,
                     alpha2,
                 )
-            + (no_nodes + 1) as f64
-                * calc_expansion_coeff_overlap_int(
-                    l1 - 1,
-                    l2,
-                    no_nodes + 1,
-                    gauss_dist,
-                    alpha1,
-                    alpha2,
-                );
-    } else {
-        //* decrement index l2
-        return 0.5
-            * p_recip
-            * calc_expansion_coeff_overlap_int(
-                l1,
-                l2 - 1,
-                no_nodes - 1,
-                gauss_dist,
-                alpha1,
-                alpha2,
-            )
-            - (q * gauss_dist / alpha1)
+                - (q * gauss_dist / alpha1)
+                    * calc_expansion_coeff_overlap_int(
+                        l1 - 1,
+                        l2,
+                        no_nodes,
+                        gauss_dist,
+                        alpha1,
+                        alpha2,
+                    )
+                + (no_nodes + 1) as f64
+                    * calc_expansion_coeff_overlap_int(
+                        l1 - 1,
+                        l2,
+                        no_nodes + 1,
+                        gauss_dist,
+                        alpha1,
+                        alpha2,
+                    );
+        }
+        _ => {
+            //* decrement index l2
+            return 0.5
+                * p_recip
                 * calc_expansion_coeff_overlap_int(
                     l1,
                     l2 - 1,
-                    no_nodes,
+                    no_nodes - 1,
                     gauss_dist,
                     alpha1,
                     alpha2,
                 )
-            + (no_nodes + 1) as f64
-                * calc_expansion_coeff_overlap_int(
-                    l1,
-                    l2 - 1,
-                    no_nodes + 1,
-                    gauss_dist,
-                    alpha1,
-                    alpha2,
-                );
+                - (q * gauss_dist / alpha1)
+                    * calc_expansion_coeff_overlap_int(
+                        l1,
+                        l2 - 1,
+                        no_nodes,
+                        gauss_dist,
+                        alpha1,
+                        alpha2,
+                    )
+                + (no_nodes + 1) as f64
+                    * calc_expansion_coeff_overlap_int(
+                        l1,
+                        l2 - 1,
+                        no_nodes + 1,
+                        gauss_dist,
+                        alpha1,
+                        alpha2,
+                    );
+        }
     }
 }
 
@@ -120,7 +120,7 @@ pub fn calc_overlap_int_prim(
     // angular_momentum_vec2 : Array1<i32>
     //   Angular momentum vector of the second Gaussian function.
     // position1 : Array1<f64>
-    //   Position of the first Gaussian function. (Center of the Gaussian)  
+    //   Position of the first Gaussian function. (Center of the Gaussian)
     // position2 : Array1<f64>
     //   Position of the second Gaussian function. (Center of the Gaussian)
     //
@@ -156,10 +156,9 @@ pub fn calc_overlap_int_prim(
     );
 
     S_x * S_y * S_z * PI.powf(1.5) * (alpha1 + alpha2).recip().powf(1.5)
-
 }
 
-//TODO: this function is not complete yet -> use integrals.pdf to finish it
+// TODO: this function is not complete yet -> use integrals.pdf to finish it
 // pub fn calc_overlap_int_cgto(ContrGaus1: &ContrGaus, ContrGaus2: &ContrGaus) -> f64 {
 //     // Calculate the overlap integral between two contracted Gaussian functions.
 //     //
