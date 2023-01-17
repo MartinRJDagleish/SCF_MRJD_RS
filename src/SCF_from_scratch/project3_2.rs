@@ -215,8 +215,8 @@ pub fn run_project3_2() {
 
     //* Test new code for parse_basis_set_file
     {
-        use crate::molecule::wfn::parse_BSSE_basis_set::BasisSet::parse_basis_set_file;
-        parse_basis_set_file("STO-3G");
+        // use crate::molecule::wfn::parse_BSSE_basis_set::BasisSet::parse_basis_set_file;
+        // parse_basis_set_file("STO-3G");
     }
 
 }
