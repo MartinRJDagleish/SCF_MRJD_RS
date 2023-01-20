@@ -3,6 +3,7 @@ use ndarray::prelude::*;
 use crate::molecule;
 //* For testing:
 use crate::molecule::wfn::*;
+use crate::molecule::wfn::ints::{calc_overlap_int_cgto, calc_kinetic_energy_int_cgto};
 
 pub fn run_project3_2() {
     println!("\nRunning project 3.2 (SCF from 'scratch')");
@@ -197,23 +198,32 @@ pub fn run_project3_2() {
 
     //* Test new code for overlap_int:
     // use crate::molecule::wfn::ints::*; //* for testing
-    // let S_matr_new_val_test: f64 = calc_overlap_int_prim(
-    //     mol_basis_set_STO_3G.ContrGauss_vec[0].PrimGauss_vec[0].alpha,
-    //     mol_basis_set_STO_3G.ContrGauss_vec[0].PrimGauss_vec[1].alpha,
-    //     mol_basis_set_STO_3G.ContrGauss_vec[0].PrimGauss_vec[0]
-    //         .angular_momentum_vec
-    //         .clone(),
-    //     mol_basis_set_STO_3G.ContrGauss_vec[0].PrimGauss_vec[1]
-    //         .angular_momentum_vec
-    //         .clone(),
-    //     mol_basis_set_STO_3G.ContrGauss_vec[0].PrimGauss_vec[0]
-    //         .position
-    //         .clone(),
-    //     mol_basis_set_STO_3G.ContrGauss_vec[0].PrimGauss_vec[1]
-    //         .position
-    //         .clone(),
-    // );
-    // println!("S_matr_new_val_test: {}", S_matr_new_val_test);
+
+    println!("Overlap integrals:");
+    let mut S_matr_test = Array2::<f64>::zeros((mol_6_311g.wfn_total.no_of_contr_gauss, mol_6_311g.wfn_total.no_of_contr_gauss));
+    for i in 0..mol_6_311g.wfn_total.no_of_contr_gauss {
+        for j in 0..mol_6_311g.wfn_total.no_of_contr_gauss {
+            S_matr_test[(i, j)] = calc_overlap_int_cgto(
+                &mol_6_311g.wfn_total.ContrGauss_vec[i],
+                &mol_6_311g.wfn_total.ContrGauss_vec[j],
+            );
+        }
+    }
+    println!("{:^5.6}\n", &S_matr_test);
+
+    println!("Kinetic energy integrals:");
+    let mut T_matr_test = Array2::<f64>::zeros((mol_6_311g.wfn_total.no_of_contr_gauss, mol_6_311g.wfn_total.no_of_contr_gauss));
+    for i in 0..mol_6_311g.wfn_total.no_of_contr_gauss {
+        for j in 0..mol_6_311g.wfn_total.no_of_contr_gauss {
+            T_matr_test[(i, j)] = calc_kinetic_energy_int_cgto(
+                &mol_6_311g.wfn_total.ContrGauss_vec[i],
+                &mol_6_311g.wfn_total.ContrGauss_vec[j],
+            );
+        }
+    }
+    println!("{:^5.6}\n", &T_matr_test);
+
+
 
     //* Test new code for parse_basis_set_file
     {
