@@ -6,7 +6,6 @@
     "configurations": [
         {
             "type": "lldb",
-            // "type": "cppdbg",
             "request": "launch",
             "name": "Debug executable 'SCF_MRJD_RS'",
             "cargo": {
@@ -21,10 +20,28 @@
                 }
             },
             "args": [],
-            // "MIMode": "lldb",
             "cwd": "${workspaceFolder}",
-            // "visualizerFile": "${workspaceFolder}/.vscode/custom.natvis"
         },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'SCF_MRJD_RS'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=SCF_MRJD_RS",
+                    "--package=SCF_MRJD_RS"
+                ],
+                "filter": {
+                    "name": "SCF_MRJD_RS",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
         // {
         //     "type": "cppdbg",
         //     "name": "Debug executable 'SCF_MRJD_RS' with cppdbg (lldb)",
@@ -55,24 +72,4 @@
         //     "preLaunchTask": "cargo build (stable-msvc)",
         //     "visualizerFile":"${workspaceFolder}/.vscode/custom.natvis"
         // }
-        {
-            "type": "lldb",
-            "request": "launch",
-            "name": "Debug unit tests in executable 'SCF_MRJD_RS'",
-            "cargo": {
-                "args": [
-                    "test",
-                    "--no-run",
-                    "--bin=SCF_MRJD_RS",
-                    "--package=SCF_MRJD_RS"
-                ],
-                "filter": {
-                    "name": "SCF_MRJD_RS",
-                    "kind": "bin"
-                }
-            },
-            "args": [],
-            "cwd": "${workspaceFolder}"
-        }
-    ]
 }

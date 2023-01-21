@@ -229,6 +229,7 @@ pub fn calc_kinetic_energy_int_prim(
     //   The overlap integral between the two Gaussian functions.
     //
 
+    //* This is the clone in the outside scoop. 
     let mut ang_mom_vec2_tmp = angular_momentum_vec2.clone();
     let part1: f64 = alpha2
         * (2.0 * angular_momentum_vec2.sum() as f64 + 3.0)
@@ -251,6 +252,7 @@ pub fn calc_kinetic_energy_int_prim(
             &position1,
             &position2,
         );
+        ang_mom_vec2_tmp[i] -= 2;
     }
     let part2_2: f64 = -2.0 * alpha2.powi(2) * part2_1;
     let mut part3: f64 = 0.0;
@@ -266,6 +268,7 @@ pub fn calc_kinetic_energy_int_prim(
                 &position1,
                 &position2,
             );
+        ang_mom_vec2_tmp[i] -= 2;
     }
     part3 *= -0.5;
 
