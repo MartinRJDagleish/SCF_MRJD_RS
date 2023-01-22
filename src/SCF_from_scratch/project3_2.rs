@@ -264,6 +264,28 @@ pub fn run_project3_2() {
     }
     println!("{:^5.6}\n", &V_ne_matr_test);
 
+    println!("Electron-electron repulsion integrals (V_ee / ERI matrix):");
+    let mut V_ee_matr_test = Array4::<f64>::zeros((
+        mol_6_311g.wfn_total.no_of_contr_gauss,
+        mol_6_311g.wfn_total.no_of_contr_gauss,
+        mol_6_311g.wfn_total.no_of_contr_gauss,
+        mol_6_311g.wfn_total.no_of_contr_gauss,
+    ));
+    for i in 0..mol_6_311g.wfn_total.no_of_contr_gauss {
+        for j in 0..mol_6_311g.wfn_total.no_of_contr_gauss {
+            for k in 0..mol_6_311g.wfn_total.no_of_contr_gauss {
+                for l in 0..mol_6_311g.wfn_total.no_of_contr_gauss {
+                    V_ee_matr_test[(i, j, k, l)] = calc_electron_rep_int_cgto(
+                        &mol_6_311g.wfn_total.ContrGauss_vec[i],
+                        &mol_6_311g.wfn_total.ContrGauss_vec[j],
+                        &mol_6_311g.wfn_total.ContrGauss_vec[k],
+                        &mol_6_311g.wfn_total.ContrGauss_vec[l],
+                    );
+                }
+            }
+        }
+    }
+
     //* Test new code for parse_basis_set_file
     {
         // use crate::molecule::wfn::parse_BSSE_basis_set::BasisSet::parse_basis_set_file;
