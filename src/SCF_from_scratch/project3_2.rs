@@ -3,7 +3,7 @@ use ndarray::prelude::*;
 use crate::molecule;
 //* For testing:
 use crate::molecule::wfn::ints::{
-    calc_kinetic_energy_int_cgto, calc_nuc_attr_int_cgto, calc_overlap_int_cgto,
+    calc_kinetic_energy_int_cgto, calc_nuc_attr_int_cgto, calc_overlap_int_cgto, calc_elec_elec_repulsion_cgto,
 };
 use crate::molecule::wfn::*;
 
@@ -275,7 +275,7 @@ pub fn run_project3_2() {
         for j in 0..mol_6_311g.wfn_total.no_of_contr_gauss {
             for k in 0..mol_6_311g.wfn_total.no_of_contr_gauss {
                 for l in 0..mol_6_311g.wfn_total.no_of_contr_gauss {
-                    V_ee_matr_test[(i, j, k, l)] = calc_electron_rep_int_cgto(
+                    V_ee_matr_test[(i,j,k,l)] = calc_elec_elec_repulsion_cgto(
                         &mol_6_311g.wfn_total.ContrGauss_vec[i],
                         &mol_6_311g.wfn_total.ContrGauss_vec[j],
                         &mol_6_311g.wfn_total.ContrGauss_vec[k],
@@ -285,6 +285,8 @@ pub fn run_project3_2() {
             }
         }
     }
+
+    println!("{:^5.6}\n", &V_ee_matr_test);
 
     //* Test new code for parse_basis_set_file
     {

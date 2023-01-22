@@ -1,7 +1,9 @@
 use crate::molecule::wfn::ContractedGaussian;
 use boys::micb25::boys;
+// use boys::exact::boys;
 use ndarray::Array1;
-use std::{f64::consts::PI, ops::Range};
+use ndarray_linalg::Scalar;
+use std::f64::consts::PI;
 
 use crate::molecule::geometry::calc_r_ij_general;
 
@@ -591,7 +593,7 @@ pub fn calc_elec_elec_repulsion_prim(
                 for tau in 0..(ang_mom_vec3[0] + ang_mom_vec4[0] + 1) {
                     for nu in 0..(ang_mom_vec3[1] + ang_mom_vec4[1] + 1) {
                         for phi in 0..(ang_mom_vec3[2] + ang_mom_vec4[2] + 1) {
-                            ERI_result += ((tau + nu + phi) as f64).recip()
+                            ERI_result += (-1.0).powi(tau + nu + phi)
                                 * calc_expansion_coeff_overlap_int(
                                     ang_mom_vec1[0],
                                     ang_mom_vec2[0],
@@ -661,3 +663,44 @@ pub fn calc_elec_elec_repulsion_prim(
     ERI_result
 }
 
+pub fn calc_elec_elec_repulsion_cgto(
+    ContrGaus1: &ContractedGaussian,
+    ContrGaus2: &ContractedGaussian,
+    ContrGaus3: &ContractedGaussian,
+    ContrGaus4: &ContractedGaussian,
+) -> f64 {
+    let mut ERI_val: f64 = 0.0;
+
+    for (idx1, prim1) in ContrGaus1.PrimGauss_vec.iter().enumerate() {
+        for (idx2, prim2) in ContrGaus2.PrimGauss_vec.iter().enumerate() {
+            for (idx3, prim3) in ContrGaus3.PrimGauss_vec.iter().enumerate() {
+                for (idx4, prim4) in ContrGaus4.PrimGauss_vec.iter().enumerate() {
+                    ERI_val += ContrGaus1.PrimGauss_vec[idx1].norm_const
+                        * ContrGaus2.PrimGauss_vec[idx2].norm_const
+                        * ContrGaus3.PrimGauss_vec[idx3].norm_const
+                        * ContrGaus4.PrimGauss_vec[idx4].norm_const
+                        * ContrGaus1.PrimGauss_vec[idx1].cgto_coeff
+                        * ContrGaus2.PrimGauss_vec[idx2].cgto_coeff
+                        * ContrGaus3.PrimGauss_vec[idx3].cgto_coeff
+                        * ContrGaus4.PrimGauss_vec[idx4].cgto_coeff
+                        * calc_elec_elec_repulsion_prim(
+                            &prim1.alpha,
+                            &prim2.alpha,
+                            &prim3.alpha,
+                            &prim4.alpha,
+                            &prim1.angular_momentum_vec,
+                            &prim2.angular_momentum_vec,
+                            &prim3.angular_momentum_vec,
+                            &prim4.angular_momentum_vec,
+                            &prim1.gauss_center_pos,
+                            &prim2.gauss_center_pos,
+                            &prim3.gauss_center_pos,
+                            &prim4.gauss_center_pos,
+                        );
+                }
+            }
+        }
+    }
+
+    ERI_val
+}
