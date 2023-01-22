@@ -108,8 +108,8 @@ pub fn calc_overlap_int_prim(
     alpha2: &f64,
     angular_momentum_vec1: &Array1<i32>,
     angular_momentum_vec2: &Array1<i32>,
-    gauss1_center: &Array1<f64>,
-    gauss2_center: &Array1<f64>,
+    gauss1_center_pos: &Array1<f64>,
+    gauss2_center_pos: &Array1<f64>,
 ) -> f64 {
     // Calculate the overlap integral between two Gaussian functions.
     //
@@ -123,9 +123,9 @@ pub fn calc_overlap_int_prim(
     //   Angular momentum vector of the first Gaussian function.
     // angular_momentum_vec2 : Array1<i32>
     //   Angular momentum vector of the second Gaussian function.
-    // gauss1_center : Array1<f64>
+    // gauss1_center_pos : Array1<f64>
     //   Position of the first Gaussian function. (Center of the Gaussian)
-    // gauss2_center : Array1<f64>
+    // gauss2_center_pos : Array1<f64>
     //   Position of the second Gaussian function. (Center of the Gaussian)
     //
     // # Returns
@@ -138,7 +138,7 @@ pub fn calc_overlap_int_prim(
         angular_momentum_vec1[0],
         angular_momentum_vec2[0],
         0,
-        &gauss1_center[0] - &gauss2_center[0],
+        &gauss1_center_pos[0] - &gauss2_center_pos[0],
         &alpha1,
         &alpha2,
     );
@@ -146,7 +146,7 @@ pub fn calc_overlap_int_prim(
         angular_momentum_vec1[1],
         angular_momentum_vec2[1],
         0,
-        &gauss1_center[1] - &gauss2_center[1],
+        &gauss1_center_pos[1] - &gauss2_center_pos[1],
         &alpha1,
         &alpha2,
     );
@@ -154,7 +154,7 @@ pub fn calc_overlap_int_prim(
         angular_momentum_vec1[2],
         angular_momentum_vec2[2],
         0,
-        &gauss1_center[2] - &gauss2_center[2],
+        &gauss1_center_pos[2] - &gauss2_center_pos[2],
         &alpha1,
         &alpha2,
     );
@@ -193,8 +193,8 @@ pub fn calc_overlap_int_cgto(
                     &prim2.alpha,
                     &prim1.angular_momentum_vec,
                     &prim2.angular_momentum_vec,
-                    &prim1.position,
-                    &prim2.position,
+                    &prim1.gauss_center_pos,
+                    &prim2.gauss_center_pos,
                 );
         }
     }
@@ -206,8 +206,8 @@ pub fn calc_kinetic_energy_int_prim(
     alpha2: &f64,
     angular_momentum_vec1: &Array1<i32>,
     angular_momentum_vec2: &Array1<i32>,
-    gauss1_center: &Array1<f64>,
-    gauss2_center: &Array1<f64>,
+    gauss1_center_pos: &Array1<f64>,
+    gauss2_center_pos: &Array1<f64>,
 ) -> f64 {
     // Calculate the overlap integral between two Gaussian functions.
     //
@@ -221,9 +221,9 @@ pub fn calc_kinetic_energy_int_prim(
     //   Angular momentum vector of the first Gaussian function.
     // angular_momentum_vec2 : Array1<i32>
     //   Angular momentum vector of the second Gaussian function.
-    // gauss1_center : Array1<f64>
+    // gauss1_center_pos : Array1<f64>
     //   Position of the first Gaussian function. (Center of the Gaussian)
-    // gauss2_center : Array1<f64>
+    // gauss2_center_pos : Array1<f64>
     //   Position of the second Gaussian function. (Center of the Gaussian)
     //
     // # Returns
@@ -241,8 +241,8 @@ pub fn calc_kinetic_energy_int_prim(
             &alpha2,
             &angular_momentum_vec1,
             &ang_mom_vec2_tmp,
-            &gauss1_center,
-            &gauss2_center,
+            &gauss1_center_pos,
+            &gauss2_center_pos,
         );
     let mut part2_1: f64 = 0.0;
     for i in 0..3 {
@@ -252,8 +252,8 @@ pub fn calc_kinetic_energy_int_prim(
             &alpha2,
             &angular_momentum_vec1,
             &ang_mom_vec2_tmp,
-            &gauss1_center,
-            &gauss2_center,
+            &gauss1_center_pos,
+            &gauss2_center_pos,
         );
         ang_mom_vec2_tmp[i] -= 2;
     }
@@ -268,8 +268,8 @@ pub fn calc_kinetic_energy_int_prim(
                 &alpha2,
                 &angular_momentum_vec1,
                 &ang_mom_vec2_tmp,
-                &gauss1_center,
-                &gauss2_center,
+                &gauss1_center_pos,
+                &gauss2_center_pos,
             );
         ang_mom_vec2_tmp[i] -= 2;
     }
@@ -309,8 +309,8 @@ pub fn calc_kinetic_energy_int_cgto(
                     &prim2.alpha,
                     &prim1.angular_momentum_vec,
                     &prim2.angular_momentum_vec,
-                    &prim1.position,
-                    &prim2.position,
+                    &prim1.gauss_center_pos,
+                    &prim2.gauss_center_pos,
                 );
         }
     }
@@ -434,17 +434,15 @@ pub fn calc_expansion_coeff_attraction_int(
                     P_C_vec,
                     dist_P_C,
                 )
-        } // (x, _, _) if x < 0 || x > (l1 + l2) => return 0.0,
-          // (0, 0, 0) => return (-q * gauss_dist.powi(2)).exp(),
-          // (_, _, 0) => {
+        }
     }
 
     result
 }
 
 pub fn calc_gaussian_prod_center(
-    alpha1: &f64,
-    alpha2: &f64,
+    alpha1: f64,
+    alpha2: f64,
     origin_vec1: &Array1<f64>,
     origin_vec2: &Array1<f64>,
 ) -> Array1<f64> {
@@ -478,31 +476,31 @@ pub fn calc_nuc_attr_int_prim(
     alpha2: &f64,
     ang_mom_vec1: &Array1<i32>,
     ang_mom_vec2: &Array1<i32>,
-    gauss1_center: &Array1<f64>,
-    gauss2_center: &Array1<f64>,
+    gauss1_center_pos: &Array1<f64>,
+    gauss2_center_pos: &Array1<f64>,
     nuc_center: &Array1<f64>,
 ) -> f64 {
-    let gaussian_prod_center: Array1<f64> =
-        calc_gaussian_prod_center(alpha1, alpha2, gauss1_center, gauss2_center);
+    let gaussian_prod_center: Array1<f64> = calc_gaussian_prod_center(
+        alpha1.clone(),
+        alpha2.clone(),
+        gauss1_center_pos,
+        gauss2_center_pos,
+    );
     let p_recip = (alpha1 + alpha2).recip();
     let dist_P_C: f64 = calc_r_ij_general(&gaussian_prod_center, &nuc_center);
 
-    let result: f64 = 0.0;
+    let mut result: f64 = 0.0;
 
-    let range1: Range<i32> = 0..(ang_mom_vec1[0] + ang_mom_vec2[0] + 1);
-    let range2: Range<i32> = 0..(ang_mom_vec1[1] + ang_mom_vec2[1] + 1);
-    let range3: Range<i32> = 0..(ang_mom_vec1[2] + ang_mom_vec2[2] + 1);
-
-    for t in range1 {
-        for u in range2 {
-            for v in range3 {
-                let result_tmp: f64 = 1.0; //* Intialize the result_tmp variable  
+    for t in 0..(ang_mom_vec1[0] + ang_mom_vec2[0] + 1) {
+        for u in 0..(ang_mom_vec1[1] + ang_mom_vec2[1] + 1) {
+            for v in 0..(ang_mom_vec1[2] + ang_mom_vec2[2] + 1) {
+                let mut result_tmp: f64 = 1.0; //* Intialize the result_tmp variable
                 for cart_coord in 0..3 {
                     result_tmp *= calc_expansion_coeff_overlap_int(
                         ang_mom_vec1[cart_coord],
                         ang_mom_vec2[cart_coord],
                         t,
-                        gauss1_center[cart_coord] - gauss2_center[cart_coord],
+                        gauss1_center_pos[cart_coord] - gauss2_center_pos[cart_coord],
                         alpha1,
                         alpha2,
                     )
@@ -523,7 +521,31 @@ pub fn calc_nuc_attr_int_prim(
     }
 
     result *= 2.0 * PI * p_recip;
-    result 
+    result
 }
 
-//TODO: calc_nuc_attr_int_cgto impl 
+pub fn calc_nuc_attr_int_cgto(
+    ContrGaus1: &ContractedGaussian,
+    ContrGaus2: &ContractedGaussian,
+    nuc_center: &Array1<f64>,
+) -> f64 {
+    let mut nuc_attr_int_val: f64 = 0.0;
+    for (idx1, prim1) in ContrGaus1.PrimGauss_vec.iter().enumerate() {
+        for (idx2, prim2) in ContrGaus2.PrimGauss_vec.iter().enumerate() {
+            nuc_attr_int_val += ContrGaus1.PrimGauss_vec[idx1].norm_const
+                * ContrGaus2.PrimGauss_vec[idx2].norm_const
+                * ContrGaus1.PrimGauss_vec[idx1].cgto_coeff
+                * ContrGaus2.PrimGauss_vec[idx2].cgto_coeff
+                * calc_kinetic_energy_int_prim(
+                    &prim1.alpha,
+                    &prim2.alpha,
+                    &prim1.angular_momentum_vec,
+                    &prim2.angular_momentum_vec,
+                    &prim1.gauss_center_pos,
+                    &prim2.gauss_center_pos,
+                );
+        }
+    }
+
+    nuc_attr_int_val
+}

@@ -2,8 +2,10 @@ use ndarray::prelude::*;
 
 use crate::molecule;
 //* For testing:
+use crate::molecule::wfn::ints::{
+    calc_kinetic_energy_int_cgto, calc_nuc_attr_int_cgto, calc_overlap_int_cgto,
+};
 use crate::molecule::wfn::*;
-use crate::molecule::wfn::ints::{calc_overlap_int_cgto, calc_kinetic_energy_int_cgto};
 
 pub fn run_project3_2() {
     println!("\nRunning project 3.2 (SCF from 'scratch')");
@@ -68,7 +70,7 @@ pub fn run_project3_2() {
             Array1::from_vec(vec![0.0, 0.0, 1.4]),
             Array1::from_vec(vec![0, 0, 0]),
         ));
-    
+
     mol_sto_3g.wfn_total.update_no_of_contr_gauss();
 
     // let mol_basis_set_STO_3G = molecule::wfn::WfnTotal::new(vec![H1_contr_gaus, H2_contr_gaus]);
@@ -200,7 +202,10 @@ pub fn run_project3_2() {
     // use crate::molecule::wfn::ints::*; //* for testing
 
     println!("Overlap integrals:");
-    let mut S_matr_test = Array2::<f64>::zeros((mol_6_311g.wfn_total.no_of_contr_gauss, mol_6_311g.wfn_total.no_of_contr_gauss));
+    let mut S_matr_test = Array2::<f64>::zeros((
+        mol_6_311g.wfn_total.no_of_contr_gauss,
+        mol_6_311g.wfn_total.no_of_contr_gauss,
+    ));
     for i in 0..mol_6_311g.wfn_total.no_of_contr_gauss {
         for j in 0..mol_6_311g.wfn_total.no_of_contr_gauss {
             S_matr_test[(i, j)] = calc_overlap_int_cgto(
@@ -212,7 +217,10 @@ pub fn run_project3_2() {
     println!("{:^5.6}\n", &S_matr_test);
 
     println!("Kinetic energy integrals:");
-    let mut T_matr_test = Array2::<f64>::zeros((mol_6_311g.wfn_total.no_of_contr_gauss, mol_6_311g.wfn_total.no_of_contr_gauss));
+    let mut T_matr_test = Array2::<f64>::zeros((
+        mol_6_311g.wfn_total.no_of_contr_gauss,
+        mol_6_311g.wfn_total.no_of_contr_gauss,
+    ));
     for i in 0..mol_6_311g.wfn_total.no_of_contr_gauss {
         for j in 0..mol_6_311g.wfn_total.no_of_contr_gauss {
             T_matr_test[(i, j)] = calc_kinetic_energy_int_cgto(
@@ -223,7 +231,25 @@ pub fn run_project3_2() {
     }
     println!("{:^5.6}\n", &T_matr_test);
 
+    println!("Nuclear attraction integrals:");
+    let mut V_ne_matr_test = Array2::<f64>::zeros((
+        mol_6_311g.wfn_total.no_of_contr_gauss,
+        mol_6_311g.wfn_total.no_of_contr_gauss,
+    ));
+    for i in 0..mol_6_311g.wfn_total.no_of_contr_gauss {
+        for j in 0..mol_6_311g.wfn_total.no_of_contr_gauss {
+            for atom_pos in mol_6_311g.geom_obj.geom_matr.axis_iter(ndarray::Axis(0)) {
+                V_ne_matr_test[(i, j)] += calc_nuc_attr_int_cgto(
+                    &mol_6_311g.wfn_total.ContrGauss_vec[i],
+                    &mol_6_311g.wfn_total.ContrGauss_vec[j],
+                    &atom_pos.to_owned(),
+                );
 
+                // }
+            }
+        }
+    }
+    println!("{:^5.6}\n", &V_ne_matr_test);
 
     //* Test new code for parse_basis_set_file
     {
