@@ -536,13 +536,14 @@ pub fn calc_nuc_attr_int_cgto(
                 * ContrGaus2.PrimGauss_vec[idx2].norm_const
                 * ContrGaus1.PrimGauss_vec[idx1].cgto_coeff
                 * ContrGaus2.PrimGauss_vec[idx2].cgto_coeff
-                * calc_kinetic_energy_int_prim(
+                * calc_nuc_attr_int_prim(
                     &prim1.alpha,
                     &prim2.alpha,
                     &prim1.angular_momentum_vec,
                     &prim2.angular_momentum_vec,
                     &prim1.gauss_center_pos,
                     &prim2.gauss_center_pos,
+                    &nuc_center,
                 );
         }
     }

@@ -138,15 +138,18 @@ pub fn run_project3_2() {
             Array1::from_vec(vec![0, 0, 0]),
         )]));
 
+    //* The second H atom -> H2
     // H2_contr_gauss_1s
-    mol_6_311g.wfn_total.ContrGauss_vec =
-        vec![ContractedGaussian::new(vec![PrimitiveGaussian::new(
+    mol_6_311g
+        .wfn_total
+        .ContrGauss_vec
+        .push(ContractedGaussian::new(vec![PrimitiveGaussian::new(
             33.86500,
             0.0254938,
             Array1::from_vec(vec![0.0, 0.0, 1.4]),
             Array1::from_vec(vec![0, 0, 0]),
-        )])];
-    mol_6_311g.wfn_total.ContrGauss_vec[0]
+        )]));
+    mol_6_311g.wfn_total.ContrGauss_vec[3]
         .PrimGauss_vec
         .push(PrimitiveGaussian::new(
             5.094790,
@@ -154,7 +157,7 @@ pub fn run_project3_2() {
             Array1::from_vec(vec![0.0, 0.0, 1.4]),
             Array1::from_vec(vec![0, 0, 0]),
         ));
-    mol_6_311g.wfn_total.ContrGauss_vec[0]
+    mol_6_311g.wfn_total.ContrGauss_vec[3]
         .PrimGauss_vec
         .push(PrimitiveGaussian::new(
             1.158790,
@@ -201,7 +204,12 @@ pub fn run_project3_2() {
     //* Test new code for overlap_int:
     // use crate::molecule::wfn::ints::*; //* for testing
 
-    println!("Overlap integrals:");
+    println!("\n****************************************");
+    println!("           TESTS FOR INTEGRALS         ");
+    println!("****************************************");
+    println!("****************************************");
+    println!("Basis: 6-311G");
+    println!("\nOverlap integrals (S matrix):");
     let mut S_matr_test = Array2::<f64>::zeros((
         mol_6_311g.wfn_total.no_of_contr_gauss,
         mol_6_311g.wfn_total.no_of_contr_gauss,
@@ -216,7 +224,7 @@ pub fn run_project3_2() {
     }
     println!("{:^5.6}\n", &S_matr_test);
 
-    println!("Kinetic energy integrals:");
+    println!("Kinetic energy integrals (T matrix):");
     let mut T_matr_test = Array2::<f64>::zeros((
         mol_6_311g.wfn_total.no_of_contr_gauss,
         mol_6_311g.wfn_total.no_of_contr_gauss,
@@ -231,21 +239,26 @@ pub fn run_project3_2() {
     }
     println!("{:^5.6}\n", &T_matr_test);
 
-    println!("Nuclear attraction integrals:");
+    println!("Nuclear attraction integrals (V_ne matrix):");
     let mut V_ne_matr_test = Array2::<f64>::zeros((
         mol_6_311g.wfn_total.no_of_contr_gauss,
         mol_6_311g.wfn_total.no_of_contr_gauss,
     ));
     for i in 0..mol_6_311g.wfn_total.no_of_contr_gauss {
         for j in 0..mol_6_311g.wfn_total.no_of_contr_gauss {
-            for atom_pos in mol_6_311g.geom_obj.geom_matr.axis_iter(ndarray::Axis(0)) {
-                V_ne_matr_test[(i, j)] += calc_nuc_attr_int_cgto(
-                    &mol_6_311g.wfn_total.ContrGauss_vec[i],
-                    &mol_6_311g.wfn_total.ContrGauss_vec[j],
-                    &atom_pos.to_owned(),
-                );
-
-                // }
+            for (idx, atom_pos) in mol_6_311g
+                .geom_obj
+                .geom_matr
+                .axis_iter(ndarray::Axis(0))
+                .enumerate()
+            {
+                V_ne_matr_test[(i, j)] -= (mol_6_311g.geom_obj.Z_vals[idx] as f64)
+                    * calc_nuc_attr_int_cgto(
+                        &mol_6_311g.wfn_total.ContrGauss_vec[i],
+                        &mol_6_311g.wfn_total.ContrGauss_vec[j],
+                        &atom_pos.to_owned(),
+                    );
+                // V_ne_matr_test[(i, j)] *= (- mol_6_311g.geom_obj.Z_vals[idx] as f64);
             }
         }
     }
