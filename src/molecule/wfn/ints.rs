@@ -1,7 +1,7 @@
 use crate::molecule::wfn::ContractedGaussian;
 use boys::micb25::boys;
 // use boys::exact::boys;
-use ndarray::Array1;
+use ndarray::{Array1, Array2};
 use ndarray_linalg::Scalar;
 use std::f64::consts::PI;
 
@@ -71,7 +71,7 @@ pub fn calc_expansion_coeff_overlap_int(
                         alpha2,
                     );
         }
-        _ => {
+        (_,_,_) => {
             //* decrement index l2
             return 0.5
                 * p_recip
@@ -108,8 +108,8 @@ pub fn calc_expansion_coeff_overlap_int(
 pub fn calc_overlap_int_prim(
     alpha1: &f64,
     alpha2: &f64,
-    angular_momentum_vec1: &Array1<i32>,
-    angular_momentum_vec2: &Array1<i32>,
+    ang_mom_vec1: &Array1<i32>,
+    ang_mom_vec2: &Array1<i32>,
     gauss1_center_pos: &Array1<f64>,
     gauss2_center_pos: &Array1<f64>,
 ) -> f64 {
@@ -136,32 +136,19 @@ pub fn calc_overlap_int_prim(
     //   The overlap integral between the two Gaussian functions.
     //
 
-    let S_x: f64 = calc_expansion_coeff_overlap_int(
-        angular_momentum_vec1[0],
-        angular_momentum_vec2[0],
-        0,
-        &gauss1_center_pos[0] - &gauss2_center_pos[0],
-        &alpha1,
-        &alpha2,
-    );
-    let S_y: f64 = calc_expansion_coeff_overlap_int(
-        angular_momentum_vec1[1],
-        angular_momentum_vec2[1],
-        0,
-        &gauss1_center_pos[1] - &gauss2_center_pos[1],
-        &alpha1,
-        &alpha2,
-    );
-    let S_z: f64 = calc_expansion_coeff_overlap_int(
-        angular_momentum_vec1[2],
-        angular_momentum_vec2[2],
-        0,
-        &gauss1_center_pos[2] - &gauss2_center_pos[2],
-        &alpha1,
-        &alpha2,
-    );
+    let mut S_cart_total: f64 = 1.0; //* Start with 1, otherwise it will be 0
+    for cart_coord in 0..3 {
+        S_cart_total *= calc_expansion_coeff_overlap_int(
+            ang_mom_vec1[cart_coord],
+            ang_mom_vec2[cart_coord],
+            0,
+            &gauss1_center_pos[cart_coord] - &gauss2_center_pos[cart_coord],
+            &alpha1,
+            &alpha2,
+        );
+    }
 
-    S_x * S_y * S_z * PI.powf(1.5) * (alpha1 + alpha2).recip().powf(1.5)
+    S_cart_total * PI.powf(1.5) * (alpha1 + alpha2).recip().powf(1.5)
 }
 
 pub fn calc_overlap_int_cgto(
@@ -203,11 +190,11 @@ pub fn calc_overlap_int_cgto(
     overlap_int_val
 }
 
-pub fn calc_kinetic_energy_int_prim(
+pub fn calc_kin_energy_int_prim(
     alpha1: &f64,
     alpha2: &f64,
-    angular_momentum_vec1: &Array1<i32>,
-    angular_momentum_vec2: &Array1<i32>,
+    ang_mom_vec1: &Array1<i32>,
+    ang_mom_vec2: &Array1<i32>,
     gauss1_center_pos: &Array1<f64>,
     gauss2_center_pos: &Array1<f64>,
 ) -> f64 {
@@ -235,14 +222,14 @@ pub fn calc_kinetic_energy_int_prim(
     //
 
     //* This is the clone in the outside scoop.
-    let mut ang_mom_vec2_tmp = angular_momentum_vec2.clone();
+    let mut ang_mom_vec2_tmp = ang_mom_vec2.clone();
     let part1: f64 = alpha2
-        * (2.0 * angular_momentum_vec2.sum() as f64 + 3.0)
+        * (2.0 * ang_mom_vec2.sum() as f64 + 3.0)
         * calc_overlap_int_prim(
             &alpha1,
             &alpha2,
-            &angular_momentum_vec1,
-            &ang_mom_vec2_tmp,
+            &ang_mom_vec1,
+            &ang_mom_vec2,
             &gauss1_center_pos,
             &gauss2_center_pos,
         );
@@ -252,7 +239,7 @@ pub fn calc_kinetic_energy_int_prim(
         part2_1 += calc_overlap_int_prim(
             &alpha1,
             &alpha2,
-            &angular_momentum_vec1,
+            &ang_mom_vec1,
             &ang_mom_vec2_tmp,
             &gauss1_center_pos,
             &gauss2_center_pos,
@@ -262,25 +249,25 @@ pub fn calc_kinetic_energy_int_prim(
     let part2_2: f64 = -2.0 * alpha2.powi(2) * part2_1;
     let mut part3: f64 = 0.0;
     for i in 0..3 {
-        ang_mom_vec2_tmp[i] += 2;
-        part3 += ((ang_mom_vec2_tmp[i] - 2) as f64)
-            * ((ang_mom_vec2_tmp[i]) as f64)
+        ang_mom_vec2_tmp[i] -= 2;
+        part3 += ((ang_mom_vec2_tmp[i] + 1) as f64) //* this is l * (l-1) effectively 
+            * ((ang_mom_vec2_tmp[i] + 2) as f64)
             * calc_overlap_int_prim(
                 &alpha1,
                 &alpha2,
-                &angular_momentum_vec1,
+                &ang_mom_vec1,
                 &ang_mom_vec2_tmp,
                 &gauss1_center_pos,
                 &gauss2_center_pos,
             );
-        ang_mom_vec2_tmp[i] -= 2;
+        ang_mom_vec2_tmp[i] += 2;
     }
     part3 *= -0.5;
 
     part1 + part2_2 + part3
 }
 
-pub fn calc_kinetic_energy_int_cgto(
+pub fn calc_kin_energy_int_cgto(
     ContrGaus1: &ContractedGaussian,
     ContrGaus2: &ContractedGaussian,
 ) -> f64 {
@@ -306,7 +293,7 @@ pub fn calc_kinetic_energy_int_cgto(
                 * ContrGaus2.PrimGauss_vec[idx2].norm_const
                 * ContrGaus1.PrimGauss_vec[idx1].cgto_coeff
                 * ContrGaus2.PrimGauss_vec[idx2].cgto_coeff
-                * calc_kinetic_energy_int_prim(
+                * calc_kin_energy_int_prim(
                     &prim1.alpha,
                     &prim2.alpha,
                     &prim1.angular_momentum_vec,
@@ -320,7 +307,7 @@ pub fn calc_kinetic_energy_int_cgto(
     kinetic_energy_int_val
 }
 
-pub fn calc_expansion_coeff_attraction_int(
+pub fn calc_expansion_coeff_attr_int(
     t: i32,
     u: i32,
     v: i32,
@@ -362,7 +349,7 @@ pub fn calc_expansion_coeff_attraction_int(
         (0, 0, _) => {
             if v > 1 {
                 result += (v - 1) as f64
-                    * calc_expansion_coeff_attraction_int(
+                    * calc_expansion_coeff_attr_int(
                         t,
                         u,
                         v - 2,
@@ -374,7 +361,7 @@ pub fn calc_expansion_coeff_attraction_int(
                     );
             }
             result += P_C_vec[2]
-                * calc_expansion_coeff_attraction_int(
+                * calc_expansion_coeff_attr_int(
                     t,
                     u,
                     v - 1,
@@ -388,7 +375,7 @@ pub fn calc_expansion_coeff_attraction_int(
         (0, _, _) => {
             if u > 1 {
                 result += (u - 1) as f64
-                    * calc_expansion_coeff_attraction_int(
+                    * calc_expansion_coeff_attr_int(
                         t,
                         u - 2,
                         v,
@@ -400,7 +387,7 @@ pub fn calc_expansion_coeff_attraction_int(
                     );
             }
             result += P_C_vec[1]
-                * calc_expansion_coeff_attraction_int(
+                * calc_expansion_coeff_attr_int(
                     t,
                     u - 1,
                     v,
@@ -414,7 +401,7 @@ pub fn calc_expansion_coeff_attraction_int(
         (_, _, _) => {
             if t > 1 {
                 result += (t - 1) as f64
-                    * calc_expansion_coeff_attraction_int(
+                    * calc_expansion_coeff_attr_int(
                         t - 2,
                         u,
                         v,
@@ -426,7 +413,7 @@ pub fn calc_expansion_coeff_attraction_int(
                     );
             }
             result += P_C_vec[0]
-                * calc_expansion_coeff_attraction_int(
+                * calc_expansion_coeff_attr_int(
                     t - 1,
                     u,
                     v,
@@ -509,7 +496,7 @@ pub fn calc_nuc_attr_int_prim(
                     )
                 }
                 result += result_tmp
-                    * calc_expansion_coeff_attraction_int(
+                    * calc_expansion_coeff_attr_int(
                         t,
                         u,
                         v,
@@ -554,7 +541,7 @@ pub fn calc_nuc_attr_int_cgto(
     nuc_attr_int_val
 }
 
-pub fn calc_elec_elec_repulsion_prim(
+pub fn calc_elec_elec_repul_prim(
     alpha1: &f64,
     alpha2: &f64,
     alpha3: &f64,
@@ -642,7 +629,7 @@ pub fn calc_elec_elec_repulsion_prim(
                                     alpha3,
                                     alpha4,
                                 )
-                                * calc_expansion_coeff_attraction_int(
+                                * calc_expansion_coeff_attr_int(
                                     t + tau,
                                     u + nu,
                                     v + phi,
@@ -663,7 +650,7 @@ pub fn calc_elec_elec_repulsion_prim(
     ERI_result
 }
 
-pub fn calc_elec_elec_repulsion_cgto(
+pub fn calc_elec_elec_repul_cgto(
     ContrGaus1: &ContractedGaussian,
     ContrGaus2: &ContractedGaussian,
     ContrGaus3: &ContractedGaussian,
@@ -683,7 +670,7 @@ pub fn calc_elec_elec_repulsion_cgto(
                         * ContrGaus2.PrimGauss_vec[idx2].cgto_coeff
                         * ContrGaus3.PrimGauss_vec[idx3].cgto_coeff
                         * ContrGaus4.PrimGauss_vec[idx4].cgto_coeff
-                        * calc_elec_elec_repulsion_prim(
+                        * calc_elec_elec_repul_prim(
                             &prim1.alpha,
                             &prim2.alpha,
                             &prim3.alpha,
@@ -703,4 +690,18 @@ pub fn calc_elec_elec_repulsion_cgto(
     }
 
     ERI_val
+}
+
+pub fn calc_E_nn_val(geom_matr: &Array2<f64>) -> f64 {
+    let mut E_nn_val: f64 = 0.0;
+    for (i, atom1_pos) in geom_matr.axis_iter(ndarray::Axis(0)).enumerate() {
+        for (j, atom2_pos) in geom_matr.axis_iter(ndarray::Axis(0)).enumerate() {
+            if i == j {
+                continue;
+            }
+            E_nn_val += calc_r_ij_general(&atom1_pos.to_owned(), &atom2_pos.to_owned());
+        }
+    }
+
+    E_nn_val
 }

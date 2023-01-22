@@ -3,7 +3,7 @@ use ndarray::prelude::*;
 use crate::molecule;
 //* For testing:
 use crate::molecule::wfn::ints::{
-    calc_kinetic_energy_int_cgto, calc_nuc_attr_int_cgto, calc_overlap_int_cgto, calc_elec_elec_repulsion_cgto,
+    calc_kin_energy_int_cgto, calc_nuc_attr_int_cgto, calc_overlap_int_cgto, calc_elec_elec_repul_cgto,
 };
 use crate::molecule::wfn::*;
 
@@ -207,7 +207,6 @@ pub fn run_project3_2() {
     println!("\n****************************************");
     println!("           TESTS FOR INTEGRALS         ");
     println!("****************************************");
-    println!("****************************************");
     println!("Basis: 6-311G");
     println!("\nOverlap integrals (S matrix):");
     let mut S_matr_test = Array2::<f64>::zeros((
@@ -231,7 +230,7 @@ pub fn run_project3_2() {
     ));
     for i in 0..mol_6_311g.wfn_total.no_of_contr_gauss {
         for j in 0..mol_6_311g.wfn_total.no_of_contr_gauss {
-            T_matr_test[(i, j)] = calc_kinetic_energy_int_cgto(
+            T_matr_test[(i, j)] = calc_kin_energy_int_cgto(
                 &mol_6_311g.wfn_total.ContrGauss_vec[i],
                 &mol_6_311g.wfn_total.ContrGauss_vec[j],
             );
@@ -275,7 +274,7 @@ pub fn run_project3_2() {
         for j in 0..mol_6_311g.wfn_total.no_of_contr_gauss {
             for k in 0..mol_6_311g.wfn_total.no_of_contr_gauss {
                 for l in 0..mol_6_311g.wfn_total.no_of_contr_gauss {
-                    V_ee_matr_test[(i,j,k,l)] = calc_elec_elec_repulsion_cgto(
+                    V_ee_matr_test[(i,j,k,l)] = calc_elec_elec_repul_cgto(
                         &mol_6_311g.wfn_total.ContrGauss_vec[i],
                         &mol_6_311g.wfn_total.ContrGauss_vec[j],
                         &mol_6_311g.wfn_total.ContrGauss_vec[k],

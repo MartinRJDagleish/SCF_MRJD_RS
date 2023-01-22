@@ -26,6 +26,8 @@ pub struct HFMatrices {
     pub V_ne_matr: Array2<f64>,
     pub H_core_matr: Array2<f64>,
     pub ERI_arr1: Array1<f64>,
+    pub ERI_tensor: Array4<f64>,
+    pub V_nn_val: f64
 }
 
 
@@ -47,6 +49,8 @@ impl HFMatrices {
         let V_ne_matr: Array2<f64> = Array2::zeros((1, 1));
         let H_core_matr: Array2<f64> = Array2::zeros((1, 1));
         let ERI_arr1: Array1<f64> = Array1::zeros(1);
+        let ERI_tensor: Array4<f64> = Array4::zeros((1, 1, 1, 1));
+        let V_nn_val: f64 = 0.0;
 
         HFMatrices {
             S_matr,
@@ -54,16 +58,9 @@ impl HFMatrices {
             V_ne_matr,
             H_core_matr,
             ERI_arr1,
+            ERI_tensor,
+            V_nn_val
         }
-    }
-
-    pub fn calc_S_matr(&mut self, basis_set: &Vec<PrimitiveGaussian>) {
-        let no_basis_funcs: usize = basis_set.len();
-        let mut S_matr: Array2<f64> = Array2::zeros((no_basis_funcs, no_basis_funcs));
-        //TODO: calculate S_matr -> need to give mol (coords) and PrimGaus (alpha, norm_const, position, angular_momentum_vec)
-        //TODO: more Rust knowledge how to do this: Wavefunction_total should be part of mol
-
-        self.S_matr = S_matr;
     }
 }
 
