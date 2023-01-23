@@ -1,7 +1,7 @@
 # SCF_MRJD_RS
 This project started out of curiosity to understand the 
-fundamentals of Hartree-Fock (HF) calculations. As we only had an "overview" lecture which 
-did not include the necessary details for a broader understanding of the subject, I decided
+fundamentals of Hartree-Fock (HF) calculations. As I only had an "overview" lecture in my 
+Bachelor's degree which did not include the necessary details for a broader understanding of the subject, I decided
 to combine my interest in Rust and computational chemistry and implement a "simple" HF 
 programme.
 
@@ -18,6 +18,7 @@ The code for the Crawford's group tutorials can be found in `src/Crawford_projec
 # Dependencies
 - `Rust`
 -  `OpenBLAS` (including the LAPACK implementation)
+
     ```bash
     # Arch based Linux distro:
     yay -S openblas-lapack
@@ -26,6 +27,7 @@ The code for the Crawford's group tutorials can be found in `src/Crawford_projec
     sudo apt install libopenblas-dev
     ```
 - `libgls-dev` 
+
     ```bash
     # Arch based Linux distro:
     yay -S gsl
