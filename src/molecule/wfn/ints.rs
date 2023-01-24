@@ -4,6 +4,7 @@ use boys::micb25::boys;
 use ndarray::{Array1, Array2};
 use ndarray_linalg::Scalar;
 use std::f64::consts::PI;
+use rayon::prelude::*;
 
 use crate::molecule::geometry::calc_r_ij_general;
 

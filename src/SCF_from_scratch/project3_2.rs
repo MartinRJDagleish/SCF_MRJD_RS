@@ -3,7 +3,8 @@ use ndarray::prelude::*;
 use crate::molecule;
 //* For testing:
 use crate::molecule::wfn::ints::{
-    calc_kin_energy_int_cgto, calc_nuc_attr_int_cgto, calc_overlap_int_cgto, calc_elec_elec_repul_cgto,
+    calc_elec_elec_repul_cgto, calc_kin_energy_int_cgto, calc_nuc_attr_int_cgto,
+    calc_overlap_int_cgto,
 };
 use crate::molecule::wfn::*;
 
@@ -257,7 +258,6 @@ pub fn run_project3_2() {
                         &mol_6_311g.wfn_total.ContrGauss_vec[j],
                         &atom_pos.to_owned(),
                     );
-                // V_ne_matr_test[(i, j)] *= (- mol_6_311g.geom_obj.Z_vals[idx] as f64);
             }
         }
     }
@@ -274,7 +274,7 @@ pub fn run_project3_2() {
         for j in 0..mol_6_311g.wfn_total.no_of_contr_gauss {
             for k in 0..mol_6_311g.wfn_total.no_of_contr_gauss {
                 for l in 0..mol_6_311g.wfn_total.no_of_contr_gauss {
-                    V_ee_matr_test[(i,j,k,l)] = calc_elec_elec_repul_cgto(
+                    V_ee_matr_test[(i, j, k, l)] = calc_elec_elec_repul_cgto(
                         &mol_6_311g.wfn_total.ContrGauss_vec[i],
                         &mol_6_311g.wfn_total.ContrGauss_vec[j],
                         &mol_6_311g.wfn_total.ContrGauss_vec[k],
