@@ -10,16 +10,18 @@ pub struct PrimitiveGaussian {
     pub alpha: f64,
     pub cgto_coeff: f64,
     pub gauss_center_pos: Array1<f64>,
-    pub angular_momentum_vec: Array1<i32>,
+    pub ang_mom_vec: Array1<i32>,
     pub norm_const: f64,
 }
 
 #[derive(Debug)]
+#[allow(non_snake_case)]
 pub struct ContractedGaussian {
     pub PrimGauss_vec: Vec<PrimitiveGaussian>,
 }
 
 #[derive(Debug)]
+#[allow(non_snake_case)]
 pub struct HFMatrices {
     pub S_matr: Array2<f64>,
     pub T_matr: Array2<f64>,
@@ -27,11 +29,11 @@ pub struct HFMatrices {
     pub H_core_matr: Array2<f64>,
     pub ERI_arr1: Array1<f64>,
     pub ERI_tensor: Array4<f64>,
-    pub V_nn_val: f64
+    pub V_nn_val: f64,
 }
 
-
 #[derive(Debug)]
+#[allow(non_snake_case)]
 pub struct WfnTotal {
     pub ContrGauss_vec: Vec<ContractedGaussian>,
     pub no_of_contr_gauss: usize,
@@ -59,7 +61,7 @@ impl HFMatrices {
             H_core_matr,
             ERI_arr1,
             ERI_tensor,
-            V_nn_val
+            V_nn_val,
         }
     }
 }
@@ -70,28 +72,28 @@ impl PrimitiveGaussian {
         alpha: f64,
         cgto_coeff: f64,
         position: Array1<f64>,
-        angular_momentum_vec: Array1<i32>,
+        ang_mom_vec: Array1<i32>,
     ) -> Self {
         // let alpha: f64 = 0.0;
         // let cgto_coeff: f64 = 0.0;
         // let position: Array1<f64> = Array1::zeros(3);
         // let angular_momentum_vec: Array1<u8> = Array1::zeros(3);
 
-        let norm_const: f64 = Self::calc_cart_norm_const(&alpha, &angular_momentum_vec);
+        let norm_const: f64 = Self::calc_cart_norm_const(&alpha, &ang_mom_vec);
 
         PrimitiveGaussian {
             alpha,
             cgto_coeff,
             gauss_center_pos: position,
-            angular_momentum_vec,
+            ang_mom_vec,
             norm_const,
         }
     }
 
-    pub fn calc_cart_norm_const(alpha: &f64, angular_momentum_vec: &Array1<i32>) -> f64 {
+    pub fn calc_cart_norm_const(alpha: &f64, ang_mom_vec: &Array1<i32>) -> f64 {
         let numerator: f64 =
-            (2.0 * alpha / PI).powf(1.5) * (4.0 * alpha).powi(angular_momentum_vec.sum() as i32);
-        let denom: i32 = angular_momentum_vec
+            (2.0 * alpha / PI).powf(1.5) * (4.0 * alpha).powi(ang_mom_vec.sum() as i32);
+        let denom: i32 = ang_mom_vec
             .mapv(|x| Self::double_factorial(2 * x - 1))
             .product();
 
@@ -120,7 +122,7 @@ impl PrimitiveGaussian {
 #[allow(non_snake_case)]
 impl ContractedGaussian {
     pub fn new(list_of_prim_gauss: Vec<PrimitiveGaussian>) -> Self {
-        let mut PrimGauss_vec = list_of_prim_gauss;
+        let PrimGauss_vec = list_of_prim_gauss;
 
         ContractedGaussian { PrimGauss_vec }
     }
@@ -129,14 +131,14 @@ impl ContractedGaussian {
 #[allow(non_snake_case)]
 impl WfnTotal {
     pub fn new() -> Self {
-        let mut ContrGauss_vec: Vec<ContractedGaussian> = vec![]; // Vec::new();
+        let ContrGauss_vec: Vec<ContractedGaussian> = vec![]; // Vec::new();
         let HFMatrices = HFMatrices::new();
-        let mut no_of_contr_gauss: usize = ContrGauss_vec.len();
+        let no_of_contr_gauss: usize = ContrGauss_vec.len();
 
         WfnTotal {
             ContrGauss_vec,
             HFMatrices,
-            no_of_contr_gauss
+            no_of_contr_gauss,
         }
     }
 
@@ -225,8 +227,8 @@ impl WfnTotal {
                             + &self.ContrGauss_vec[j].PrimGauss_vec[l].gauss_center_pos
                                 * self.ContrGauss_vec[j].PrimGauss_vec[l].alpha; //* This is P
                         let new_center_pos: Array1<f64> = new_center_pos * sum_alphas_recip; //* This is Pp
-                        let new_center_pos_diff_2nd: Array1<f64> =
-                            &new_center_pos - &self.ContrGauss_vec[j].PrimGauss_vec[l].gauss_center_pos; //* This is PG = Pp - Pi
+                        let new_center_pos_diff_2nd: Array1<f64> = &new_center_pos
+                            - &self.ContrGauss_vec[j].PrimGauss_vec[l].gauss_center_pos; //* This is PG = Pp - Pi
                         let new_center_pos_diff_2nd_elem_squ: Array1<f64> =
                             new_center_pos_diff_2nd.mapv(|x| x.powi(2)); //* This is PG^2
 
@@ -301,10 +303,10 @@ impl WfnTotal {
                         for atom in 0..no_atoms {
                             let diff_pos_atom: Array1<f64> = &new_center_pos
                                 - &self.ContrGauss_vec[atom].PrimGauss_vec[0].gauss_center_pos; //* This is PA
-                                                                                        //TODO: ↑ this is not correct -> only if one CGTO per atom
-                                                                                        //TODO: -> fix this for right code
-                                                                                        //TODO: this is why STO-3G is working, but not 6-311G
-                                                                                        //* the atom index is not correct
+                                                                                                //TODO: ↑ this is not correct -> only if one CGTO per atom
+                                                                                                //TODO: -> fix this for right code
+                                                                                                //TODO: this is why STO-3G is working, but not 6-311G
+                                                                                                //* the atom index is not correct
                             let diff_pos_atom_squ: f64 = diff_pos_atom.dot(&diff_pos_atom); //* This is PA^2
                             V_ne_matr[(i, j)] += norm_const
                                 * (-Z_val_list[atom] as f64)
@@ -375,16 +377,20 @@ impl WfnTotal {
                                                 * sum_alphas_recip_kl; //* This is q_kl
 
                                         let mut new_center_pos_ij: Array1<f64> =
-                                            &self.ContrGauss_vec[i].PrimGauss_vec[m].gauss_center_pos
+                                            &self.ContrGauss_vec[i].PrimGauss_vec[m]
+                                                .gauss_center_pos
                                                 * self.ContrGauss_vec[i].PrimGauss_vec[m].alpha
-                                                + &self.ContrGauss_vec[j].PrimGauss_vec[n].gauss_center_pos
+                                                + &self.ContrGauss_vec[j].PrimGauss_vec[n]
+                                                    .gauss_center_pos
                                                     * self.ContrGauss_vec[j].PrimGauss_vec[n].alpha; //* This is P_ij
                                         new_center_pos_ij *= sum_alphas_recip_ij; //* This is Pp_ij
 
                                         let mut new_center_pos_kl: Array1<f64> =
-                                            &self.ContrGauss_vec[k].PrimGauss_vec[o].gauss_center_pos
+                                            &self.ContrGauss_vec[k].PrimGauss_vec[o]
+                                                .gauss_center_pos
                                                 * self.ContrGauss_vec[k].PrimGauss_vec[o].alpha
-                                                + &self.ContrGauss_vec[l].PrimGauss_vec[p].gauss_center_pos
+                                                + &self.ContrGauss_vec[l].PrimGauss_vec[p]
+                                                    .gauss_center_pos
                                                     * self.ContrGauss_vec[l].PrimGauss_vec[p].alpha; //* This is P_kl
                                         new_center_pos_kl *= sum_alphas_recip_kl; //* This is Pp_kl
 
@@ -397,12 +403,16 @@ impl WfnTotal {
                                             (sum_alphas_ij + sum_alphas_kl)
                                                 * (sum_alphas_ij * sum_alphas_kl).recip(); //* This is (p_kl + p_ij) / (p_ij * p_kl)
 
-                                        let diff_pos_ij: Array1<f64> =
-                                            &self.ContrGauss_vec[i].PrimGauss_vec[m].gauss_center_pos
-                                                - &self.ContrGauss_vec[j].PrimGauss_vec[n].gauss_center_pos; //* This is Q_ij
-                                        let diff_pos_kl: Array1<f64> =
-                                            &self.ContrGauss_vec[k].PrimGauss_vec[o].gauss_center_pos
-                                                - &self.ContrGauss_vec[l].PrimGauss_vec[p].gauss_center_pos; //* This is Q_kl
+                                        let diff_pos_ij: Array1<f64> = &self.ContrGauss_vec[i]
+                                            .PrimGauss_vec[m]
+                                            .gauss_center_pos
+                                            - &self.ContrGauss_vec[j].PrimGauss_vec[n]
+                                                .gauss_center_pos; //* This is Q_ij
+                                        let diff_pos_kl: Array1<f64> = &self.ContrGauss_vec[k]
+                                            .PrimGauss_vec[o]
+                                            .gauss_center_pos
+                                            - &self.ContrGauss_vec[l].PrimGauss_vec[p]
+                                                .gauss_center_pos; //* This is Q_kl
                                         let diff_pos_ij_squ: f64 = diff_pos_ij.dot(&diff_pos_ij); //* This is Q_ij^2
                                         let diff_pos_kl_squ: f64 = diff_pos_kl.dot(&diff_pos_kl); //* This is Q_kl^2
 

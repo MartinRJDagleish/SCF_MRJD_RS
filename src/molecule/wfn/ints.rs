@@ -4,7 +4,7 @@ use boys::micb25::boys;
 use ndarray::{Array1, Array2};
 use ndarray_linalg::Scalar;
 use std::f64::consts::PI;
-use rayon::prelude::*;
+// use rayon::prelude::*;
 
 use crate::molecule::geometry::calc_r_ij_general;
 
@@ -181,8 +181,8 @@ pub fn calc_overlap_int_cgto(
                 * calc_overlap_int_prim(
                     &prim1.alpha,
                     &prim2.alpha,
-                    &prim1.angular_momentum_vec,
-                    &prim2.angular_momentum_vec,
+                    &prim1.ang_mom_vec,
+                    &prim2.ang_mom_vec,
                     &prim1.gauss_center_pos,
                     &prim2.gauss_center_pos,
                 );
@@ -297,8 +297,8 @@ pub fn calc_kin_energy_int_cgto(
                 * calc_kin_energy_int_prim(
                     &prim1.alpha,
                     &prim2.alpha,
-                    &prim1.angular_momentum_vec,
-                    &prim2.angular_momentum_vec,
+                    &prim1.ang_mom_vec,
+                    &prim2.ang_mom_vec,
                     &prim1.gauss_center_pos,
                     &prim2.gauss_center_pos,
                 );
@@ -530,8 +530,8 @@ pub fn calc_nuc_attr_int_cgto(
                 * calc_nuc_attr_int_prim(
                     &prim1.alpha,
                     &prim2.alpha,
-                    &prim1.angular_momentum_vec,
-                    &prim2.angular_momentum_vec,
+                    &prim1.ang_mom_vec,
+                    &prim2.ang_mom_vec,
                     &prim1.gauss_center_pos,
                     &prim2.gauss_center_pos,
                     &nuc_center,
@@ -676,10 +676,10 @@ pub fn calc_elec_elec_repul_cgto(
                             &prim2.alpha,
                             &prim3.alpha,
                             &prim4.alpha,
-                            &prim1.angular_momentum_vec,
-                            &prim2.angular_momentum_vec,
-                            &prim3.angular_momentum_vec,
-                            &prim4.angular_momentum_vec,
+                            &prim1.ang_mom_vec,
+                            &prim2.ang_mom_vec,
+                            &prim3.ang_mom_vec,
+                            &prim4.ang_mom_vec,
                             &prim1.gauss_center_pos,
                             &prim2.gauss_center_pos,
                             &prim3.gauss_center_pos,
