@@ -48,8 +48,8 @@ fn main() {
     let _is_run_project1: bool = false; //* General molecule geometry stuff
     let _is_run_project2: bool = false; //* Hessian -> eigenfreqs from file
     let _is_run_project3_1: bool = false; //* SCF from precomputed integrals
-    let is_run_project3_2: bool = false; //* Ints for SCF from "scratch"
-    let is_run_project3_3: bool = true; //* actual SCF from "scratch" 
+    let is_run_project3_2: bool = true; //* Ints for SCF from "scratch"
+    let is_run_project3_3: bool = false; //* actual SCF from "scratch" 
     let _is_run_project4: bool = false; //* MP2 from precomputed integrals
 
     // if is_run_project1 {

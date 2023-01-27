@@ -190,7 +190,8 @@ pub fn run_project3_2() {
         )]));
 
     mol_6_311g.wfn_total.update_no_of_contr_gauss();
-
+    
+    
     //* Tests:
     let S_matr = mol_6_311g.wfn_total.calc_S_matr_l_eq_0();
     println!("S_matr:\n{:^5.6}\n", &S_matr);
@@ -208,6 +209,7 @@ pub fn run_project3_2() {
     println!("\n****************************************");
     println!("           TESTS FOR INTEGRALS         ");
     println!("****************************************");
+    // println!("mol_6_311g : {:?}", &mol_6_311g.wfn_total);
     println!("Basis: 6-311G");
     println!("\nOverlap integrals (S matrix):");
     let mut S_matr_test = Array2::<f64>::zeros((
