@@ -438,7 +438,8 @@ impl Geometry {
     pub fn translate_mol_to_center_mass(&mut self) {
         let center_mass_vec: Array1<f64> = self.calc_center_mass();
 
-        for (geom_val, center_mass_vec_val) in self.geom_matr.iter_mut().zip(center_mass_vec.iter()) {
+        for (geom_val, center_mass_vec_val) in self.geom_matr.iter_mut().zip(center_mass_vec.iter())
+        {
             *geom_val -= center_mass_vec_val;
         }
     }
@@ -461,7 +462,8 @@ impl Geometry {
                             Self::inertia_other_two_idx(i)[1],
                         );
                         inertia_tensor[(i, j)] += mass_Z_val
-                            * (self.geom_matr[(idx, i1)].powi(2) + self.geom_matr[(idx, i2)].powi(2));
+                            * (self.geom_matr[(idx, i1)].powi(2)
+                                + self.geom_matr[(idx, i2)].powi(2));
                     } else {
                         inertia_tensor[(i, j)] -=
                             mass_Z_val * self.geom_matr[(idx, i)] * self.geom_matr[(idx, j)];
@@ -472,11 +474,18 @@ impl Geometry {
 
         return inertia_tensor;
     }
-    
+
     pub fn get_mass_Z_val(&self, Z_val: &i32) -> f64 {
         // return self.mass_map.get(Z_val).unwrap().clone();
         //* new impl with mass_array
         return self.mass_array.get(*Z_val as usize).unwrap().clone();
     }
+}
 
+pub fn calc_r_ij_general(vec1: &Array1<f64>, vec2: &Array1<f64>) -> f64 {
+    let mut r_ij: f64 = 0.0;
+    for cart_coord in 0..3 {
+        r_ij += (&vec2[cart_coord] - &vec1[cart_coord]).powi(2);
+    }
+    return r_ij.sqrt();
 }

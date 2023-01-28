@@ -28,7 +28,7 @@ pub fn run_project3_1(mut mol: Molecule, is_run_project4: bool) {
         S_matr[(row, col)] = val;
         S_matr[(col, row)] = val;
     }
-    println!("Overlap matrix S:\n{:1.5}\n", S_matr);
+    println!("Overlap matrix S:\n{:1.5}\n", &S_matr);
 
     //* Step 2.2: Read the kinetic energy matrix
     let mut T_matr: Array2<f64> = Array2::zeros((no_basis_funcs, no_basis_funcs));
@@ -43,7 +43,7 @@ pub fn run_project3_1(mut mol: Molecule, is_run_project4: bool) {
         T_matr[(row, col)] = val;
         T_matr[(col, row)] = val;
     }
-    println!("Kinetic energy matrix T:\n{:1.5}\n", T_matr);
+    println!("Kinetic energy matrix T:\n{:1.5}\n", &T_matr);
 
     //* Step 2.3: Read the nuclear attraction matrix
     let mut V_matr: Array2<f64> = Array2::zeros((no_basis_funcs, no_basis_funcs));
@@ -58,11 +58,11 @@ pub fn run_project3_1(mut mol: Molecule, is_run_project4: bool) {
         V_matr[(row, col)] = val;
         V_matr[(col, row)] = val;
     }
-    println!("Nuclear attraction:\n{:1.5}\n", V_matr);
+    println!("Nuclear attraction:\n{:1.5}\n", &V_matr);
 
     //* Step 2.4: Form core Hamiltonian H_core = T + V
     let H_core_matr: Array2<f64> = &T_matr + &V_matr;
-    println!("Core Hamiltonian:\n{:^1.5}\n", H_core_matr);
+    println!("Core Hamiltonian:\n{:^1.5}\n", &H_core_matr);
 
     //* Step 3: Read the 2-electron integrals -> ERI tensor
     //* Test with Psi4
@@ -162,7 +162,7 @@ pub fn run_project3_1(mut mol: Molecule, is_run_project4: bool) {
     // ! THIS IS ONLY VALID FOR RHF -> QUICK FIX
     // ! QUICK FIX FOR WATER
     //TODO: Add a calculation of the number of occupied orbitals
-    let no_occ_orb: usize = (8 + 1 + 1) / 2;
+    let no_occ_orb: usize = (8 + 1 + 1) / 2; //* only correct for STO-3G -> 1 CGTO per orbital
 
     let mut D_matr: Array2<f64> = Array2::zeros((no_basis_funcs, no_basis_funcs));
 

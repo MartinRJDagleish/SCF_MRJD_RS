@@ -1,5 +1,4 @@
 use humantime::format_duration;
-use ndarray::prelude::*;
 use std::time::Instant;
 
 use crate::{molecule::Molecule};
@@ -49,7 +48,8 @@ fn main() {
     let _is_run_project1: bool = false; //* General molecule geometry stuff
     let _is_run_project2: bool = false; //* Hessian -> eigenfreqs from file
     let _is_run_project3_1: bool = false; //* SCF from precomputed integrals
-    let is_run_project3_2: bool = true; //* SCF from "scratch"
+    let is_run_project3_2: bool = true; //* Ints for SCF from "scratch"
+    let is_run_project3_3: bool = false; //* actual SCF from "scratch" 
     let _is_run_project4: bool = false; //* MP2 from precomputed integrals
 
     // if is_run_project1 {
@@ -67,6 +67,11 @@ fn main() {
     if is_run_project3_2 {
         use crate::SCF_from_scratch::project3_2::*;
         run_project3_2();
+    }
+
+    if is_run_project3_3 {
+        use crate::SCF_from_scratch::project3_3::*;
+        run_project3_3();
     }
     //*****************************************************************
     //*****************************************************************

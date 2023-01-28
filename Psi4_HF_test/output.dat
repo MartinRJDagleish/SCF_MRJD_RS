@@ -1,0 +1,245 @@
+   => Loading Basis Set <=
+
+    Name: STO-3G
+    Role: ORBITAL
+    Keyword: BASIS
+    atoms 1-2 entry H          line    19 file /home/mrjd/psi4conda/share/psi4/basis/sto-3g.gbs 
+
+   => Loading Basis Set <=
+
+    Name: 6-311G
+    Role: ORBITAL
+    Keyword: BASIS
+    atoms 1-2 entry H          line    21 file /home/mrjd/psi4conda/share/psi4/basis/6-311g.gbs 
+
+
+Scratch directory: /tmp/
+
+*** tstart() called on DESKTOP-K785EKD
+*** at Fri Jan 27 21:10:52 2023
+
+   => Loading Basis Set <=
+
+    Name: 6-311G
+    Role: ORBITAL
+    Keyword: BASIS
+    atoms 1-2 entry H          line    21 file /home/mrjd/psi4conda/share/psi4/basis/6-311g.gbs 
+
+
+         ---------------------------------------------------------
+                                   SCF
+               by Justin Turney, Rob Parrish, Andy Simmonett
+                          and Daniel G. A. Smith
+                              RHF Reference
+                        1 Threads,   3814 MiB Core
+         ---------------------------------------------------------
+
+  ==> Geometry <==
+
+    Molecular point group: d2h
+    Full point group: D_inf_h
+
+    Geometry (in Bohr), charge = 0, multiplicity = 1:
+
+       Center              X                  Y                   Z               Mass       
+    ------------   -----------------  -----------------  -----------------  -----------------
+         H            0.000000000000     0.000000000000    -0.700000000000     1.007825032230
+         H            0.000000000000     0.000000000000     0.700000000000     1.007825032230
+
+  Running in d2h symmetry.
+
+  Rotational constants: A = ************  B =     60.95131  C =     60.95131 [cm^-1]
+  Rotational constants: A = ************  B = 1827274.17774  C = 1827274.17774 [MHz]
+  Nuclear repulsion =    0.714285714285714
+
+  Charge       = 0
+  Multiplicity = 1
+  Electrons    = 2
+  Nalpha       = 1
+  Nbeta        = 1
+
+  ==> Algorithm <==
+
+  SCF Algorithm Type is DF.
+  DIIS disabled.
+  MOM disabled.
+  Fractional occupation disabled.
+  Guess Type is CORE.
+  Energy threshold   = 1.00e-08
+  Density threshold  = 1.00e-06
+  Integral threshold = 1.00e-12
+
+  ==> Primary Basis <==
+
+  Basis Set: 6-311G
+    Blend: 6-311G
+    Number of shells: 6
+    Number of basis functions: 6
+    Number of Cartesian functions: 6
+    Spherical Harmonics?: true
+    Max angular momentum: 0
+
+   => Loading Basis Set <=
+
+    Name: (6-311G AUX)
+    Role: JKFIT
+    Keyword: DF_BASIS_SCF
+    atoms 1-2 entry H          line    51 file /home/mrjd/psi4conda/share/psi4/basis/cc-pvtz-jkfit.gbs 
+
+  -AO BASIS SET INFORMATION:
+    Name                   = 6-311G
+    Blend                  = 6-311G
+    Total number of shells = 6
+    Number of primitives   = 10
+    Number of AO           = 6
+    Number of SO           = 6
+    Maximum AM             = 0
+    Spherical Harmonics    = TRUE
+
+  -Contraction Scheme:
+    Atom   Type   All Primitives // Shells:
+   ------ ------ --------------------------
+       1     H     5s // 3s 
+       2     H     5s // 3s 
+
+  ==> AO Basis Functions <==
+
+    [ 6-311G ]
+    spherical
+    ****
+    H   1
+    S   3 1.00
+                        33.86500000           0.02549380
+                         5.09479000           0.19037300
+                         1.15879000           0.85216100
+    S   1 1.00
+                         0.32584000           1.00000000
+    S   1 1.00
+                         0.10274100           1.00000000
+    ****
+
+  ==> Integral Setup <==
+
+  DFHelper Memory: AOs need 0.000 GiB; user supplied 2.794 GiB. Using in-core AOs.
+
+  ==> MemDFJK: Density-Fitted J/K Matrices <==
+
+    J tasked:                   Yes
+    K tasked:                   Yes
+    wK tasked:                   No
+    OpenMP threads:               1
+    Memory [MiB]:              2861
+    Algorithm:                 Core
+    Schwarz Cutoff:           1E-12
+    Mask sparsity (%):       0.0000
+    Fitting Condition:        1E-10
+
+   => Auxiliary Basis Set <=
+
+  Basis Set: (6-311G AUX)
+    Blend: CC-PVTZ-JKFIT
+    Number of shells: 20
+    Number of basis functions: 60
+    Number of Cartesian functions: 70
+    Spherical Harmonics?: true
+    Max angular momentum: 3
+
+  Minimum eigenvalue in the overlap matrix is 8.5041858052E-02.
+  Reciprocal condition number of the overlap matrix is 3.6129011954E-02.
+    Using symmetric orthogonalization.
+
+  ==> Pre-Iterations <==
+
+  SCF Guess: Core (One-Electron) Hamiltonian.
+
+   -------------------------------------------------------
+    Irrep   Nso     Nmo     Nalpha   Nbeta   Ndocc  Nsocc
+   -------------------------------------------------------
+     Ag         3       3       1       1       1       0
+     B1g        0       0       0       0       0       0
+     B2g        0       0       0       0       0       0
+     B3g        0       0       0       0       0       0
+     Au         0       0       0       0       0       0
+     B1u        3       3       0       0       0       0
+     B2u        0       0       0       0       0       0
+     B3u        0       0       0       0       0       0
+   -------------------------------------------------------
+    Total       6       6       1       1       1       0
+   -------------------------------------------------------
+
+  ==> Iterations <==
+
+                           Total Energy        Delta E     RMS |[F,P]|
+
+   @DF-RHF iter   1:    -1.08036453681298   -1.08036e+00   5.78204e-02 
+   @DF-RHF iter   2:    -1.12609632234971   -4.57318e-02   9.32856e-03 
+   @DF-RHF iter   3:    -1.12789136519043   -1.79504e-03   1.84471e-03 
+   @DF-RHF iter   4:    -1.12797414617545   -8.27810e-05   4.16371e-04 
+   @DF-RHF iter   5:    -1.12797831062302   -4.16445e-06   9.68430e-05 
+   @DF-RHF iter   6:    -1.12797852675452   -2.16132e-07   2.24920e-05 
+   @DF-RHF iter   7:    -1.12797853807448   -1.13200e-08   5.19726e-06 
+   @DF-RHF iter   8:    -1.12797853866883   -5.94352e-10   1.19660e-06 
+   @DF-RHF iter   9:    -1.12797853870006   -3.12264e-11   2.74928e-07 
+  Energy and wave function converged.
+
+
+  ==> Post-Iterations <==
+
+    Orbital Energies [Eh]
+    ---------------------
+
+    Doubly Occupied:                                                      
+
+       1Ag    -0.595673  
+
+    Virtual:                                                              
+
+       1B1u    0.168698     2Ag     0.306211     2B1u    0.651035  
+       3Ag     2.415401     3B1u    2.747674  
+
+    Final Occupation by Irrep:
+             Ag   B1g   B2g   B3g    Au   B1u   B2u   B3u 
+    DOCC [     1,    0,    0,    0,    0,    0,    0,    0 ]
+    NA   [     1,    0,    0,    0,    0,    0,    0,    0 ]
+    NB   [     1,    0,    0,    0,    0,    0,    0,    0 ]
+
+  @DF-RHF Final Energy:    -1.12797853870006
+
+   => Energetics <=
+
+    Nuclear Repulsion Energy =              0.7142857142857142
+    One-Electron Energy =                  -2.4931821767772693
+    Two-Electron Energy =                   0.6509179237914984
+    Total Energy =                         -1.1279785387000567
+
+Computation Completed
+
+
+Properties will be evaluated at   0.000000,   0.000000,   0.000000 [a0]
+
+Properties computed using the SCF density matrix
+
+
+ Multipole Moments:
+
+ ------------------------------------------------------------------------------------
+     Multipole            Electronic (a.u.)      Nuclear  (a.u.)        Total (a.u.)
+ ------------------------------------------------------------------------------------
+
+ L = 1.  Multiply by 2.5417464519 to convert [e a0] to [Debye]
+ Dipole X            :          0.0000000            0.0000000            0.0000000
+ Dipole Y            :          0.0000000            0.0000000            0.0000000
+ Dipole Z            :          0.0000000            0.0000000            0.0000000
+ Magnitude           :                                                    0.0000000
+
+ ------------------------------------------------------------------------------------
+
+*** tstop() called on DESKTOP-K785EKD at Fri Jan 27 21:10:52 2023
+Module time:
+	user time   =       0.09 seconds =       0.00 minutes
+	system time =       0.03 seconds =       0.00 minutes
+	total time  =          0 seconds =       0.00 minutes
+Total time:
+	user time   =       6.05 seconds =       0.10 minutes
+	system time =       6.15 seconds =       0.10 minutes
+	total time  =       1126 seconds =      18.77 minutes
