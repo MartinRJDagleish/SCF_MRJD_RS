@@ -1,3 +1,4 @@
+use core::panic;
 use std::{
     collections::HashMap,
     fs,
@@ -15,11 +16,28 @@ pub struct BasisSetTotal {
 }
 
 //TODO: maybe combine PrimitiveGaussian and BasisSet into one struct?
+pub enum L_letter {
+    S,
+    P,
+    D,
+    F,
+    G,
+    H,
+    I,
+    J,
+    K,
+    L,
+    M,
+    N,
+    O,
+    SP,
+}
+
 pub struct BasisSet {
     pub element_sym: String,
-    pub angular_mom: Vec<char>,
     pub alphas: Vec<f64>,
-    pub coeffs: Vec<f64>,
+    pub cgto_coeffs: Vec<f64>,
+    pub L_and_no_prim_tup: Vec<(L_letter, usize)>,
 }
 
 impl BasisSetTotal {
@@ -35,14 +53,14 @@ impl BasisSet {
     pub fn new() -> Self {
         Self {
             element_sym: String::new(),
-            angular_mom: vec![],
             alphas: Vec::new(),
-            coeffs: Vec::new(),
+            cgto_coeffs: Vec::new(),
+            L_and_no_prim_tup: Vec::new(),
         }
     }
 }
 
-pub fn parse_basis_set_file_gaussian(basis_set_name: &str) {
+pub fn parse_basis_set_file_gaussian(basis_set_name: &str) -> BasisSetTotal {
     let mut basis_set_total: BasisSetTotal = BasisSetTotal {
         name: basis_set_name.to_string(),
         ListofBasisSets: Vec::new(),
@@ -70,12 +88,12 @@ pub fn parse_basis_set_file_gaussian(basis_set_name: &str) {
     let basis_set_file = fs::File::open(basis_set_file_path).expect("Basis set file not found!");
     let basis_set_reader = BufReader::new(basis_set_file);
 
-    let SPDF_str: &str = "SPDFGHIKLMN"; //* With L or without?
-    let mut SPDF_HashMap: HashMap<char, usize> = HashMap::new();
+    // let SPDF_str: &str = "SPDFGHIKLMN"; //* With L or without?
+    // let mut SPDF_HashMap: HashMap<char, usize> = HashMap::new();
 
-    for (i, c) in SPDF_str.chars().enumerate() {
-        SPDF_HashMap.insert(c, i);
-    }
+    // for (i, c) in SPDF_str.chars().enumerate() {
+    //     SPDF_HashMap.insert(c, i);
+    // }
 
     let block_delimiter: &str = "****";
 
@@ -90,16 +108,11 @@ pub fn parse_basis_set_file_gaussian(basis_set_name: &str) {
         if !data.is_empty() {
             line_start = data.chars().nth(0).unwrap();
         }
-        // let line_start: Option<char>;
-        // match data.chars().nth(0) {
-        //     Some(c) => line_start = Some(c),
-        //     None => line_start = None,
-        // }
-        // * Skip comments and empty lines
         if data.starts_with("!") || data.is_empty() {
             continue;
         } else if data.starts_with(block_delimiter) {
             if !basis_set.alphas.is_empty() {
+                //* Check if BasisSet is not empty
                 basis_set_total.ListofBasisSets.push(basis_set);
             }
             basis_set = BasisSet::new();
@@ -107,21 +120,36 @@ pub fn parse_basis_set_file_gaussian(basis_set_name: &str) {
         } else if line_start.is_alphabetic() {
             let line_split: Vec<&str> = data.split_whitespace().collect();
             if line_split.len() == 2 {
-                basis_set.element_sym = line_split[0].to_string(); //* This overwrites the previous element symbol
-                                                                   //* -> different definition of basis set struct needed
-                                                                   //TODO: change the basis set struct
+                basis_set.element_sym = line_split[0].to_string();
                 continue;
             } else if line_split[0] == "SP" {
-                todo!("Add the values for SP basis sets");
+                let no_prim1: usize = line_split[1].parse::<usize>().unwrap();
+                basis_set.L_and_no_prim_tup.push((L_letter::SP, no_prim1));
+                // basis_set.L_and_no_prim_tup.push((L_letter::SP, no_prim1.clone()));
             } else if line_split[0].len() > 2
                 && (line_split[0].starts_with("l=") || line_split[0].starts_with("L="))
             {
                 todo!("Add the values for L basis sets");
             } else {
-                let L_val: &usize = SPDF_HashMap
-                    .get(&line_split[0].chars().nth(0).unwrap())
-                    .unwrap();
-                todo!("Get the L value for the SPDF letter");
+                let L_letter_val = match line_split[0] {
+                    "S" => L_letter::S,
+                    "P" => L_letter::P,
+                    "D" => L_letter::D,
+                    "F" => L_letter::F,
+                    "G" => L_letter::G,
+                    "H" => L_letter::H,
+                    "I" => L_letter::I,
+                    "J" => L_letter::J,
+                    "K" => L_letter::K,
+                    "L" => L_letter::L,
+                    "M" => L_letter::M,
+                    "N" => L_letter::N,
+                    "O" => L_letter::O,
+                    _ => panic!("This letter is not supported!"),
+                };
+                // let L_val: usize = SPDF_HashMap.get(&L_val_char).unwrap().clone();
+                let no_prim: usize = line_split[1].parse::<usize>().unwrap();
+                basis_set.L_and_no_prim_tup.push((L_letter_val, no_prim));
             }
         } else {
             let parameters_vec = data
@@ -129,22 +157,19 @@ pub fn parse_basis_set_file_gaussian(basis_set_name: &str) {
                 .split_whitespace()
                 .map(|x| x.parse::<f64>().unwrap())
                 .collect::<Vec<f64>>();
-            todo!("Add the values to the struct");
+            if parameters_vec.len() > 2 {
+                //* This is the SP basis case
+                basis_set.alphas.push(parameters_vec[0]);
+                basis_set.cgto_coeffs.push(parameters_vec[1]);
+                basis_set.cgto_coeffs.push(parameters_vec[2]);
+            } else {
+                basis_set.alphas.push(parameters_vec[0]);
+                basis_set.cgto_coeffs.push(parameters_vec[1]);
+            }
         }
     }
 
-    //     if line.starts_with("****") {
-    //         block_count += 1;
-    //         continue;
-    //     } else if line.starts_with(" ") {
-    //         let mut values: Vec<f64> = Vec::new();
-    //         line.trim()
-    //             .split_whitespace()
-    //             .for_each(|val| values.push(val.parse::<f64>().unwrap()));
-    //         println!("{:?}", values);
-    //     }
-    // }
-    // println!("{}", &block_count);
+    basis_set_total
 }
 // ChatGPT
 // struct ChemElem {
