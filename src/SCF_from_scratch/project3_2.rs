@@ -7,12 +7,18 @@ use crate::molecule::wfn::ints::{
     calc_overlap_int_cgto,
 };
 use crate::molecule::wfn::*;
+use crate::molecule::wfn::parse_BSSE_basis_set::*;
 
 pub fn run_project3_2() {
     println!("\nRunning project 3.2 (SCF from 'scratch')");
 
     let mut mol_sto_3g = molecule::Molecule::new("inp/Project3_2/geom/h2.xyz", 0);
     let mut mol_6_311g = molecule::Molecule::new("inp/Project3_2/geom/h2.xyz", 0);
+
+    // * Parse the basis set file
+    let basis_set_name = "sto-3g";
+    parse_basis_set_file_gaussian(basis_set_name);
+
 
     // let mol = molecule::Molecule::new("H2O", "sto-3g", "h2o.xyz");
     //* Define the primitive gaussians
