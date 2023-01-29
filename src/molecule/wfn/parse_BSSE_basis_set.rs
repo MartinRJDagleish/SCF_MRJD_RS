@@ -1,6 +1,5 @@
 use core::panic;
 use std::{
-    collections::HashMap,
     fs,
     io::{BufRead, BufReader},
 };
