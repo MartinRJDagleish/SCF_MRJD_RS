@@ -7,7 +7,7 @@ use crate::molecule::wfn::ints::{
     calc_overlap_int_cgto,
 };
 use crate::molecule::wfn::*;
-use crate::molecule::wfn::parse_BSSE_basis_set::*;
+use crate::molecule::wfn::basisset::*;
 
 pub fn run_project3_2() {
     println!("\nRunning project 3.2 (SCF from 'scratch')");

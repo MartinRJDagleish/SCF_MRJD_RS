@@ -3,7 +3,7 @@ use ndarray::prelude::*;
 use std::f64::consts::PI;
 
 pub mod ints;
-pub mod parse_BSSE_basis_set;
+pub mod basisset;
 
 
 #[derive(Debug)]

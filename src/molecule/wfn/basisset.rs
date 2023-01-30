@@ -7,11 +7,6 @@ use std::{
 pub struct BasisSetTotal {
     pub name: String,
     pub ListofBasisSets: Vec<BasisSet>,
-    // chem_elem: String,
-    // angular_mom: String,
-    // no_primitives: u32,
-    // scaling_factor: f64,
-    // values: Vec<(f64, f64)>,
 }
 
 //TODO: maybe combine PrimitiveGaussian and BasisSet into one struct?
