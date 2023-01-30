@@ -3,7 +3,7 @@ use ndarray_linalg::{Eigh, Inverse, SymmetricSqrt};
 
 use crate::molecule::{
     self,
-    wfn::{ints::*, ContractedGaussian, PrimitiveGaussian},
+    wfn::{ints::*, CGTO, PGTO},
 };
 
 pub fn run_project3_3() {
@@ -17,24 +17,24 @@ pub fn run_project3_3() {
     let mut mol_6_311g = molecule::Molecule::new("inp/Project3_2/geom/h2.xyz", 0);
     //* The first H atom -> H1
     // H1_contr_gauss_1s
-    mol_6_311g.wfn_total.ContrGauss_vec =
-        vec![ContractedGaussian::new(vec![PrimitiveGaussian::new(
+    mol_6_311g.wfn_total.basis_set_total.basis_set_cgtos =
+        vec![CGTO::new(vec![PGTO::new(
             33.86500,
             0.0254938,
             Array1::from_vec(vec![0.0, 0.0, 0.0]),
             Array1::from_vec(vec![0, 0, 0]),
         )])];
-    mol_6_311g.wfn_total.ContrGauss_vec[0]
-        .PrimGauss_vec
-        .push(PrimitiveGaussian::new(
+    mol_6_311g.wfn_total.basis_set_total.basis_set_cgtos[0]
+        .pgto_vec
+        .push(PGTO::new(
             5.094790,
             0.190373,
             Array1::from_vec(vec![0.0, 0.0, 0.0]),
             Array1::from_vec(vec![0, 0, 0]),
         ));
-    mol_6_311g.wfn_total.ContrGauss_vec[0]
-        .PrimGauss_vec
-        .push(PrimitiveGaussian::new(
+    mol_6_311g.wfn_total.basis_set_total.basis_set_cgtos[0]
+        .pgto_vec
+        .push(PGTO::new(
             1.158790,
             0.852161,
             Array1::from_vec(vec![0.0, 0.0, 0.0]),
@@ -44,8 +44,8 @@ pub fn run_project3_3() {
     // H1_contr_gauss_2s
     mol_6_311g
         .wfn_total
-        .ContrGauss_vec
-        .push(ContractedGaussian::new(vec![PrimitiveGaussian::new(
+        .basis_set_total.basis_set_cgtos
+        .push(CGTO::new(vec![PGTO::new(
             0.325840,
             1.000000,
             Array1::from_vec(vec![0.0, 0.0, 0.0]),
@@ -55,8 +55,8 @@ pub fn run_project3_3() {
     // H1_contr_gauss_3s
     mol_6_311g
         .wfn_total
-        .ContrGauss_vec
-        .push(ContractedGaussian::new(vec![PrimitiveGaussian::new(
+        .basis_set_total.basis_set_cgtos
+        .push(CGTO::new(vec![PGTO::new(
             0.102741,
             1.000000,
             Array1::from_vec(vec![0.0, 0.0, 0.0]),
@@ -67,24 +67,24 @@ pub fn run_project3_3() {
     // H2_contr_gauss_1s
     mol_6_311g
         .wfn_total
-        .ContrGauss_vec
-        .push(ContractedGaussian::new(vec![PrimitiveGaussian::new(
+        .basis_set_total.basis_set_cgtos
+        .push(CGTO::new(vec![PGTO::new(
             33.86500,
             0.0254938,
             Array1::from_vec(vec![0.0, 0.0, 1.4]),
             Array1::from_vec(vec![0, 0, 0]),
         )]));
-    mol_6_311g.wfn_total.ContrGauss_vec[3]
-        .PrimGauss_vec
-        .push(PrimitiveGaussian::new(
+    mol_6_311g.wfn_total.basis_set_total.basis_set_cgtos[3]
+        .pgto_vec
+        .push(PGTO::new(
             5.094790,
             0.190373,
             Array1::from_vec(vec![0.0, 0.0, 1.4]),
             Array1::from_vec(vec![0, 0, 0]),
         ));
-    mol_6_311g.wfn_total.ContrGauss_vec[3]
-        .PrimGauss_vec
-        .push(PrimitiveGaussian::new(
+    mol_6_311g.wfn_total.basis_set_total.basis_set_cgtos[3]
+        .pgto_vec
+        .push(PGTO::new(
             1.158790,
             0.852161,
             Array1::from_vec(vec![0.0, 0.0, 1.4]),
@@ -94,8 +94,8 @@ pub fn run_project3_3() {
     // H2_contr_gauss_2s
     mol_6_311g
         .wfn_total
-        .ContrGauss_vec
-        .push(ContractedGaussian::new(vec![PrimitiveGaussian::new(
+        .basis_set_total.basis_set_cgtos
+        .push(CGTO::new(vec![PGTO::new(
             0.325840,
             1.000000,
             Array1::from_vec(vec![0.0, 0.0, 1.4]),
@@ -105,15 +105,15 @@ pub fn run_project3_3() {
     // H2_contr_gauss_3s
     mol_6_311g
         .wfn_total
-        .ContrGauss_vec
-        .push(ContractedGaussian::new(vec![PrimitiveGaussian::new(
+        .basis_set_total.basis_set_cgtos
+        .push(CGTO::new(vec![PGTO::new(
             0.102741,
             1.000000,
             Array1::from_vec(vec![0.0, 0.0, 1.4]),
             Array1::from_vec(vec![0, 0, 0]),
         )]));
 
-    mol_6_311g.wfn_total.update_no_of_contr_gauss();
+    // mol_6_311g.wfn_total.update_no_of_contr_gauss();
     //***************************************************************************************/
     println!("\nSCF from scratch:\n");
     //* Project 3: SCF from scratch
@@ -122,18 +122,18 @@ pub fn run_project3_3() {
 
     //* Step 2.1: Calculate the overlap matrix S
     mol_6_311g.wfn_total.HFMatrices.S_matr = Array2::<f64>::zeros((
-        mol_6_311g.wfn_total.no_of_contr_gauss,
-        mol_6_311g.wfn_total.no_of_contr_gauss,
+        mol_6_311g.wfn_total.basis_set_total.no_cgtos,
+        mol_6_311g.wfn_total.basis_set_total.no_cgtos,
     ));
-    for i in 0..mol_6_311g.wfn_total.no_of_contr_gauss {
+    for i in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
         for j in 0..=i {
             if i == j {
                 mol_6_311g.wfn_total.HFMatrices.S_matr[(i, j)] = 1.0;
                 continue;
             }
             mol_6_311g.wfn_total.HFMatrices.S_matr[(i, j)] = calc_overlap_int_cgto(
-                &mol_6_311g.wfn_total.ContrGauss_vec[i],
-                &mol_6_311g.wfn_total.ContrGauss_vec[j],
+                &mol_6_311g.wfn_total.basis_set_total.basis_set_cgtos[i],
+                &mol_6_311g.wfn_total.basis_set_total.basis_set_cgtos[j],
             );
             mol_6_311g.wfn_total.HFMatrices.S_matr[(j, i)] =
                 mol_6_311g.wfn_total.HFMatrices.S_matr[(i, j)].clone();
@@ -147,15 +147,15 @@ pub fn run_project3_3() {
 
     //* Step 2.2: Calculate the kinetic energy matrix T
     mol_6_311g.wfn_total.HFMatrices.T_matr = Array2::<f64>::zeros((
-        mol_6_311g.wfn_total.no_of_contr_gauss,
-        mol_6_311g.wfn_total.no_of_contr_gauss,
+        mol_6_311g.wfn_total.basis_set_total.no_cgtos,
+        mol_6_311g.wfn_total.basis_set_total.no_cgtos,
     ));
 
-    for i in 0..mol_6_311g.wfn_total.no_of_contr_gauss {
-        for j in 0..mol_6_311g.wfn_total.no_of_contr_gauss {
+    for i in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
+        for j in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
             mol_6_311g.wfn_total.HFMatrices.T_matr[(i, j)] = calc_kin_energy_int_cgto(
-                &mol_6_311g.wfn_total.ContrGauss_vec[i],
-                &mol_6_311g.wfn_total.ContrGauss_vec[j],
+                &mol_6_311g.wfn_total.basis_set_total.basis_set_cgtos[i],
+                &mol_6_311g.wfn_total.basis_set_total.basis_set_cgtos[j],
             );
             // mol_6_311g.wfn_total.HFMatrices.T_matr[(j, i)] =
             //     mol_6_311g.wfn_total.HFMatrices.T_matr[(i, j)].clone();
@@ -168,12 +168,12 @@ pub fn run_project3_3() {
 
     //* Step 2.3: Calculate the nuclear attraction matrix V_ne
     mol_6_311g.wfn_total.HFMatrices.V_ne_matr = Array2::<f64>::zeros((
-        mol_6_311g.wfn_total.no_of_contr_gauss,
-        mol_6_311g.wfn_total.no_of_contr_gauss,
+        mol_6_311g.wfn_total.basis_set_total.no_cgtos,
+        mol_6_311g.wfn_total.basis_set_total.no_cgtos,
     ));
 
-    for i in 0..mol_6_311g.wfn_total.no_of_contr_gauss {
-        for j in 0..mol_6_311g.wfn_total.no_of_contr_gauss {
+    for i in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
+        for j in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
             for (idx, atom_pos) in mol_6_311g
                 .geom_obj
                 .geom_matr
@@ -183,8 +183,8 @@ pub fn run_project3_3() {
                 mol_6_311g.wfn_total.HFMatrices.V_ne_matr[(i, j)] -=
                     (mol_6_311g.geom_obj.Z_vals[idx] as f64)
                         * calc_nuc_attr_int_cgto(
-                            &mol_6_311g.wfn_total.ContrGauss_vec[i],
-                            &mol_6_311g.wfn_total.ContrGauss_vec[j],
+                            &mol_6_311g.wfn_total.basis_set_total.basis_set_cgtos[i],
+                            &mol_6_311g.wfn_total.basis_set_total.basis_set_cgtos[j],
                             &atom_pos.to_owned(),
                         );
             }
@@ -197,8 +197,8 @@ pub fn run_project3_3() {
     );
     //* Step 2.4: Form the core Hamiltonian matrix H_core
     mol_6_311g.wfn_total.HFMatrices.H_core_matr = Array2::<f64>::zeros((
-        mol_6_311g.wfn_total.no_of_contr_gauss,
-        mol_6_311g.wfn_total.no_of_contr_gauss,
+        mol_6_311g.wfn_total.basis_set_total.no_cgtos,
+        mol_6_311g.wfn_total.basis_set_total.no_cgtos,
     ));
     mol_6_311g.wfn_total.HFMatrices.H_core_matr =
         &mol_6_311g.wfn_total.HFMatrices.T_matr + &mol_6_311g.wfn_total.HFMatrices.V_ne_matr;
@@ -212,21 +212,21 @@ pub fn run_project3_3() {
 
     println!("Electron-electron repulsion integrals (V_ee / ERI matrix):");
     mol_6_311g.wfn_total.HFMatrices.ERI_tensor = Array4::<f64>::zeros((
-        mol_6_311g.wfn_total.no_of_contr_gauss,
-        mol_6_311g.wfn_total.no_of_contr_gauss,
-        mol_6_311g.wfn_total.no_of_contr_gauss,
-        mol_6_311g.wfn_total.no_of_contr_gauss,
+        mol_6_311g.wfn_total.basis_set_total.no_cgtos,
+        mol_6_311g.wfn_total.basis_set_total.no_cgtos,
+        mol_6_311g.wfn_total.basis_set_total.no_cgtos,
+        mol_6_311g.wfn_total.basis_set_total.no_cgtos,
     ));
-    for i in 0..mol_6_311g.wfn_total.no_of_contr_gauss {
-        for j in 0..mol_6_311g.wfn_total.no_of_contr_gauss {
-            for k in 0..mol_6_311g.wfn_total.no_of_contr_gauss {
-                for l in 0..mol_6_311g.wfn_total.no_of_contr_gauss {
+    for i in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
+        for j in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
+            for k in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
+                for l in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
                     mol_6_311g.wfn_total.HFMatrices.ERI_tensor[(i, j, k, l)] =
                         calc_elec_elec_repul_cgto(
-                            &mol_6_311g.wfn_total.ContrGauss_vec[i],
-                            &mol_6_311g.wfn_total.ContrGauss_vec[j],
-                            &mol_6_311g.wfn_total.ContrGauss_vec[k],
-                            &mol_6_311g.wfn_total.ContrGauss_vec[l],
+                            &mol_6_311g.wfn_total.basis_set_total.basis_set_cgtos[i],
+                            &mol_6_311g.wfn_total.basis_set_total.basis_set_cgtos[j],
+                            &mol_6_311g.wfn_total.basis_set_total.basis_set_cgtos[k],
+                            &mol_6_311g.wfn_total.basis_set_total.basis_set_cgtos[l],
                         );
                 }
             }
@@ -270,12 +270,12 @@ pub fn run_project3_3() {
     let no_occ_orb: usize = 3; // * QUICK FIX: 3 CGTO describe 1sσ orbital
 
     let mut D_matr: Array2<f64> = Array2::<f64>::zeros((
-        mol_6_311g.wfn_total.no_of_contr_gauss,
-        mol_6_311g.wfn_total.no_of_contr_gauss,
+        mol_6_311g.wfn_total.basis_set_total.no_cgtos,
+        mol_6_311g.wfn_total.basis_set_total.no_cgtos,
     ));
 
-    for mu in 0..mol_6_311g.wfn_total.no_of_contr_gauss {
-        for nu in 0..mol_6_311g.wfn_total.no_of_contr_gauss {
+    for mu in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
+        for nu in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
             for m in 0..no_occ_orb {
                 D_matr[(mu, nu)] += C_matr_AO_basis[(mu, m)] * C_matr_AO_basis[(nu, m)];
             }
@@ -290,8 +290,8 @@ pub fn run_project3_3() {
 
     //* Here the Fock matrix is guessed to be the core Hamiltonian matrix
     //* That's why the initial SCF energy differs from the other SCF energy calcs
-    for mu in 0..mol_6_311g.wfn_total.no_of_contr_gauss {
-        for nu in 0..mol_6_311g.wfn_total.no_of_contr_gauss {
+    for mu in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
+        for nu in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
             E_scf +=
                 D_matr[(mu, nu)] * 2.0 * (mol_6_311g.wfn_total.HFMatrices.H_core_matr[(mu, nu)]);
         }
@@ -307,14 +307,14 @@ pub fn run_project3_3() {
     for scf_iter in 0..scf_maxiter {
         //* Step 6: Form the Fock matrix F in the AO basis
         let mut F_matr: Array2<f64> = Array2::<f64>::zeros((
-            mol_6_311g.wfn_total.no_of_contr_gauss,
-            mol_6_311g.wfn_total.no_of_contr_gauss,
+            mol_6_311g.wfn_total.basis_set_total.no_cgtos,
+            mol_6_311g.wfn_total.basis_set_total.no_cgtos,
         ));
 
-        for mu in 0..mol_6_311g.wfn_total.no_of_contr_gauss {
-            for nu in 0..mol_6_311g.wfn_total.no_of_contr_gauss {
-                for lambda in 0..mol_6_311g.wfn_total.no_of_contr_gauss {
-                    for sigma in 0..mol_6_311g.wfn_total.no_of_contr_gauss {
+        for mu in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
+            for nu in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
+                for lambda in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
+                    for sigma in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
                         F_matr[(mu, nu)] += D_matr[(lambda, sigma)]
                             * (2.0
                                 * mol_6_311g.wfn_total.HFMatrices.ERI_tensor
@@ -339,8 +339,8 @@ pub fn run_project3_3() {
         let C_matr_AO_basis: Array2<f64> = S_matr_sqrt_inv.dot(&C_matr_MO_basis);
         let D_matr_prev: Array2<f64> = D_matr.clone();
 
-        for mu in 0..mol_6_311g.wfn_total.no_of_contr_gauss {
-            for nu in 0..mol_6_311g.wfn_total.no_of_contr_gauss {
+        for mu in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
+            for nu in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
                 D_matr[(mu, nu)] = 0.0;
                 for m in 0..no_occ_orb {
                     D_matr[(mu, nu)] += C_matr_AO_basis[(mu, m)] * C_matr_AO_basis[(nu, m)];
@@ -349,8 +349,8 @@ pub fn run_project3_3() {
         }
 
         E_scf = 0.0;
-        for mu in 0..mol_6_311g.wfn_total.no_of_contr_gauss {
-            for nu in 0..mol_6_311g.wfn_total.no_of_contr_gauss {
+        for mu in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
+            for nu in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
                 E_scf += D_matr[(mu, nu)]
                     * (mol_6_311g.wfn_total.HFMatrices.H_core_matr[(mu, nu)] + F_matr[(mu, nu)]);
             }
@@ -361,8 +361,8 @@ pub fn run_project3_3() {
         E_tot_vec.push(E_tot);
 
         let mut rms_d_val: f64 = 0.0;
-        for mu in 0..mol_6_311g.wfn_total.no_of_contr_gauss {
-            for nu in 0..mol_6_311g.wfn_total.no_of_contr_gauss {
+        for mu in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
+            for nu in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
                 rms_d_val += (D_matr[(mu, nu)] - D_matr_prev[(mu, nu)]).powi(2);
             }
         }

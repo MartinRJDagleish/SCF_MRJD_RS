@@ -41,7 +41,7 @@ fn main() {
              ____________\///________\///_____\///////////_____  
         "#,
     );
-    println!("{}", ASCII_art_logo); // test
+    println!("{}", ASCII_art_logo);
 
     let mut mol: Molecule = Molecule::new("inp/Project3_1/STO-3G/h2o_v2.xyz", 0);
 
