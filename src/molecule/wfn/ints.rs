@@ -1,4 +1,4 @@
-use crate::molecule::wfn::ContractedGaussian;
+use crate::molecule::wfn::CGTO;
 use boys::micb25::boys;
 // use boys::exact::boys;
 use ndarray::{Array1, Array2};
@@ -153,8 +153,8 @@ pub fn calc_overlap_int_prim(
 }
 
 pub fn calc_overlap_int_cgto(
-    ContrGauss1: &ContractedGaussian,
-    ContrGauss2: &ContractedGaussian,
+    ContrGauss1: &CGTO,
+    ContrGauss2: &CGTO,
 ) -> f64 {
     // Calculate the overlap integral between two contracted Gaussian functions.
     //
@@ -172,8 +172,8 @@ pub fn calc_overlap_int_cgto(
     //
 
     let mut overlap_int_val: f64 = 0.0;
-    for prim1 in ContrGauss1.PrimGauss_vec.iter() {
-        for prim2 in ContrGauss2.PrimGauss_vec.iter() {
+    for prim1 in ContrGauss1.pgto_vec.iter() {
+        for prim2 in ContrGauss2.pgto_vec.iter() {
             overlap_int_val += prim1.norm_const
                 * prim2.norm_const
                 * prim1.cgto_coeff
@@ -269,8 +269,8 @@ pub fn calc_kin_energy_int_prim(
 }
 
 pub fn calc_kin_energy_int_cgto(
-    ContrGauss1: &ContractedGaussian,
-    ContrGauss2: &ContractedGaussian,
+    ContrGauss1: &CGTO,
+    ContrGauss2: &CGTO,
 ) -> f64 {
     // Calculate the kinetic energy integral between two contracted Gaussian functions.
     //
@@ -288,8 +288,8 @@ pub fn calc_kin_energy_int_cgto(
     //
 
     let mut kinetic_energy_int_val: f64 = 0.0;
-    for prim1 in ContrGauss1.PrimGauss_vec.iter() {
-        for prim2 in ContrGauss2.PrimGauss_vec.iter() {
+    for prim1 in ContrGauss1.pgto_vec.iter() {
+        for prim2 in ContrGauss2.pgto_vec.iter() {
             kinetic_energy_int_val += prim1.norm_const
                 * prim2.norm_const
                 * prim1.cgto_coeff
@@ -516,13 +516,13 @@ pub fn calc_nuc_attr_int_prim(
 }
 
 pub fn calc_nuc_attr_int_cgto(
-    ContrGaus1: &ContractedGaussian,
-    ContrGaus2: &ContractedGaussian,
+    ContrGaus1: &CGTO,
+    ContrGaus2: &CGTO,
     nuc_center: &Array1<f64>,
 ) -> f64 {
     let mut nuc_attr_int_val: f64 = 0.0;
-    for prim1 in ContrGaus1.PrimGauss_vec.iter() {
-        for prim2 in ContrGaus2.PrimGauss_vec.iter() {
+    for prim1 in ContrGaus1.pgto_vec.iter() {
+        for prim2 in ContrGaus2.pgto_vec.iter() {
             nuc_attr_int_val += prim1.norm_const
                 * prim2.norm_const
                 * prim1.cgto_coeff
@@ -652,17 +652,17 @@ pub fn calc_elec_elec_repul_prim(
 }
 
 pub fn calc_elec_elec_repul_cgto(
-    ContrGaus1: &ContractedGaussian,
-    ContrGaus2: &ContractedGaussian,
-    ContrGaus3: &ContractedGaussian,
-    ContrGaus4: &ContractedGaussian,
+    ContrGaus1: &CGTO,
+    ContrGaus2: &CGTO,
+    ContrGaus3: &CGTO,
+    ContrGaus4: &CGTO,
 ) -> f64 {
     let mut ERI_val: f64 = 0.0;
 
-    for prim1 in ContrGaus1.PrimGauss_vec.iter() {
-        for prim2 in ContrGaus2.PrimGauss_vec.iter() {
-            for prim3 in ContrGaus3.PrimGauss_vec.iter() {
-                for prim4 in ContrGaus4.PrimGauss_vec.iter() {
+    for prim1 in ContrGaus1.pgto_vec.iter() {
+        for prim2 in ContrGaus2.pgto_vec.iter() {
+            for prim3 in ContrGaus3.pgto_vec.iter() {
+                for prim4 in ContrGaus4.pgto_vec.iter() {
                     ERI_val += prim1.norm_const
                         * prim2.norm_const
                         * prim3.norm_const

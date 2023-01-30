@@ -1,16 +1,15 @@
-use core::panic;
 use std::{
     fs,
     io::{BufRead, BufReader},
 };
 
-pub struct BasisSetTotal {
+pub struct TotalBasisSetDef {
     pub name: String,
-    pub ListofBasisSets: Vec<BasisSet>,
+    pub list_of_basis_sets_defs: Vec<BasisSetDef>,
 }
 
 //TODO: maybe combine PrimitiveGaussian and BasisSet into one struct?
-pub enum L_letter {
+pub enum L_char {
     S,
     P,
     D,
@@ -27,23 +26,23 @@ pub enum L_letter {
     SP,
 }
 
-pub struct BasisSet {
+pub struct BasisSetDef {
     pub element_sym: String,
     pub alphas: Vec<f64>,
     pub cgto_coeffs: Vec<f64>,
-    pub L_and_no_prim_tup: Vec<(L_letter, usize)>,
+    pub L_and_no_prim_tup: Vec<(L_char, usize)>,
 }
 
-impl BasisSetTotal {
+impl TotalBasisSetDef {
     pub fn new() -> Self {
         Self {
             name: String::new(),
-            ListofBasisSets: Vec::new(),
+            list_of_basis_sets_defs: Vec::new(),
         }
     }
 }
 
-impl BasisSet {
+impl BasisSetDef {
     pub fn new() -> Self {
         Self {
             element_sym: String::new(),
@@ -54,10 +53,10 @@ impl BasisSet {
     }
 }
 
-pub fn parse_basis_set_file_gaussian(basis_set_name: &str) -> BasisSetTotal {
-    let mut basis_set_total: BasisSetTotal = BasisSetTotal {
+pub fn parse_basis_set_file_gaussian(basis_set_name: &str) -> TotalBasisSetDef {
+    let mut basis_set_total_def: TotalBasisSetDef = TotalBasisSetDef {
         name: basis_set_name.to_string(),
-        ListofBasisSets: Vec::new(),
+        list_of_basis_sets_defs: Vec::new(),
     };
 
     let basis_set_file_path: &str;
@@ -93,7 +92,7 @@ pub fn parse_basis_set_file_gaussian(basis_set_name: &str) -> BasisSetTotal {
 
     // let mut block_count: u32 = 0;
 
-    let mut basis_set: BasisSet = BasisSet::new();
+    let mut basis_set: BasisSetDef = BasisSetDef::new();
 
     for line in basis_set_reader.lines() {
         let line = line.unwrap();
@@ -107,9 +106,9 @@ pub fn parse_basis_set_file_gaussian(basis_set_name: &str) -> BasisSetTotal {
         } else if data.starts_with(block_delimiter) {
             if !basis_set.alphas.is_empty() {
                 //* Check if BasisSet is not empty
-                basis_set_total.ListofBasisSets.push(basis_set);
+                basis_set_total_def.list_of_basis_sets_defs.push(basis_set);
             }
-            basis_set = BasisSet::new();
+            basis_set = BasisSetDef::new();
             continue;
         } else if line_start.is_alphabetic() {
             let line_split: Vec<&str> = data.split_whitespace().collect();
@@ -118,7 +117,7 @@ pub fn parse_basis_set_file_gaussian(basis_set_name: &str) -> BasisSetTotal {
                 continue;
             } else if line_split[0] == "SP" {
                 let no_prim1: usize = line_split[1].parse::<usize>().unwrap();
-                basis_set.L_and_no_prim_tup.push((L_letter::SP, no_prim1));
+                basis_set.L_and_no_prim_tup.push((L_char::SP, no_prim1));
                 // basis_set.L_and_no_prim_tup.push((L_letter::SP, no_prim1.clone()));
             } else if line_split[0].len() > 2
                 && (line_split[0].starts_with("l=") || line_split[0].starts_with("L="))
@@ -126,19 +125,19 @@ pub fn parse_basis_set_file_gaussian(basis_set_name: &str) -> BasisSetTotal {
                 todo!("Add the values for L basis sets");
             } else {
                 let L_letter_val = match line_split[0] {
-                    "S" => L_letter::S,
-                    "P" => L_letter::P,
-                    "D" => L_letter::D,
-                    "F" => L_letter::F,
-                    "G" => L_letter::G,
-                    "H" => L_letter::H,
-                    "I" => L_letter::I,
-                    "J" => L_letter::J,
-                    "K" => L_letter::K,
-                    "L" => L_letter::L,
-                    "M" => L_letter::M,
-                    "N" => L_letter::N,
-                    "O" => L_letter::O,
+                    "S" => L_char::S,
+                    "P" => L_char::P,
+                    "D" => L_char::D,
+                    "F" => L_char::F,
+                    "G" => L_char::G,
+                    "H" => L_char::H,
+                    "I" => L_char::I,
+                    "J" => L_char::J,
+                    "K" => L_char::K,
+                    "L" => L_char::L,
+                    "M" => L_char::M,
+                    "N" => L_char::N,
+                    "O" => L_char::O,
                     _ => panic!("This letter is not supported!"),
                 };
                 // let L_val: usize = SPDF_HashMap.get(&L_val_char).unwrap().clone();
@@ -163,7 +162,7 @@ pub fn parse_basis_set_file_gaussian(basis_set_name: &str) -> BasisSetTotal {
         }
     }
 
-    basis_set_total
+    basis_set_total_def
 }
 // ChatGPT
 // struct ChemElem {
