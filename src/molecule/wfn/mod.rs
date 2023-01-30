@@ -18,14 +18,14 @@ pub struct PGTO {
 #[allow(non_snake_case)]
 pub struct CGTO {
     pub pgto_vec: Vec<PGTO>,
-    pub no_pgto: usize,
+    pub no_pgtos: usize,
 }
 
 #[derive(Debug)]
 #[allow(non_snake_case)]
 pub struct BasisSetTotal {
     pub basis_set_cgtos: Vec<CGTO>,
-    pub no_cgto: usize,
+    pub no_cgtos: usize,
 }
 
 #[derive(Debug)]
@@ -43,14 +43,9 @@ pub struct HFMatrices {
 #[derive(Debug)]
 #[allow(non_snake_case)]
 pub struct WfnTotal {
-    // pub cgto_vec: Vec<CGTO>,
     pub basis_set_total: BasisSetTotal,
-    // pub no_cgto: usize, //TODO: remove this after correct impl of BasisSetTotal
     pub HFMatrices: HFMatrices,
-    // pub name: String,
 }
-
-// mod parse_BSSE_data;
 
 #[allow(non_snake_case)]
 impl HFMatrices {
@@ -132,13 +127,13 @@ impl PGTO {
 impl CGTO {
     pub fn new(pgto_vec: Vec<PGTO>) -> Self {
         let pgto_vec = pgto_vec;
-        let no_pgto: usize = pgto_vec.len();
+        let no_pgtos: usize = pgto_vec.len();
 
-        CGTO { pgto_vec, no_pgto }
+        CGTO { pgto_vec, no_pgtos }
     }
 
     pub fn update_no_pgtos(&mut self) {
-        self.no_pgto = self.pgto_vec.len();
+        self.no_pgtos = self.pgto_vec.len();
     }
 }
 
@@ -146,20 +141,17 @@ impl CGTO {
 impl BasisSetTotal {
     fn new() -> Self {
         let basis_set_cgtos: Vec<CGTO> = Vec::new();
-        let no_cgto: usize = 0;
+        let no_cgtos: usize = 0;
 
         BasisSetTotal {
             basis_set_cgtos,
-            no_cgto,
+            no_cgtos,
         }
     }
 
     pub fn update_no_cgtos(&mut self) {
-        self.no_cgto = self.basis_set_cgtos.len();
+        self.no_cgtos = self.basis_set_cgtos.len();
     }
-    // fn construct_basis_set_total() {
-
-    // }
 }
 
 #[allow(non_snake_case)]
@@ -176,24 +168,20 @@ impl WfnTotal {
         }
     }
 
-    // pub fn update_no_of_contr_gauss(&mut self) {
-    //     self.no_cgto = self.cgto_vec.len();
-    // }
-
     pub fn calc_S_matr_l_eq_0(&self) -> Array2<f64> {
-        let no_basis_funcs: usize = self.basis_set_total.no_cgto;
+        let no_basis_funcs: usize = self.basis_set_total.no_cgtos;
         let mut S_matr: Array2<f64> = Array2::zeros((no_basis_funcs, no_basis_funcs));
 
         for i in 0..no_basis_funcs {
             for j in 0..=i {
-                let no_pgto_i: usize = self.basis_set_total.basis_set_cgtos[i].no_pgto;
-                let no_pgto_j: usize = self.basis_set_total.basis_set_cgtos[j].no_pgto;
+                let no_pgto_i: usize = self.basis_set_total.basis_set_cgtos[i].no_pgtos;
+                let no_pgto_j: usize = self.basis_set_total.basis_set_cgtos[j].no_pgtos;
                 //* Skips over diagonal elements -> reduces computation time
                 //* COMMENT OUT IF YOU WANT TO CALCULATE DIAGONAL ELEMENTS
-                // if i == j {
-                //     S_matr[(i, j)] = 1.0;
-                //     continue;
-                // }
+                if i == j {
+                    S_matr[(i, j)] = 1.0;
+                    continue;
+                }
                 for k in 0..no_pgto_i {
                     for l in 0..no_pgto_j {
                         let norm_const: f64 = &self.basis_set_total.basis_set_cgtos[i].pgto_vec[k]
@@ -228,16 +216,13 @@ impl WfnTotal {
     }
 
     pub fn calc_T_matr_l_eq_0(&self) -> Array2<f64> {
-        let no_basis_funcs: usize = self.basis_set_total.no_cgto;
-        let mut T_matr: Array2<f64> = Array2::zeros((
-            no_basis_funcs,
-            no_basis_funcs
-        ));
+        let no_basis_funcs: usize = self.basis_set_total.no_cgtos;
+        let mut T_matr: Array2<f64> = Array2::zeros((no_basis_funcs, no_basis_funcs));
 
         for i in 0..no_basis_funcs {
             for j in 0..=i {
-                let no_prim_gauss_i: usize = self.basis_set_total.basis_set_cgtos[i].no_pgto;
-                let no_prim_gauss_j: usize = self.basis_set_total.basis_set_cgtos[j].no_pgto;
+                let no_prim_gauss_i: usize = self.basis_set_total.basis_set_cgtos[i].no_pgtos;
+                let no_prim_gauss_j: usize = self.basis_set_total.basis_set_cgtos[j].no_pgtos;
 
                 for k in 0..no_prim_gauss_i {
                     for l in 0..no_prim_gauss_j {
@@ -316,8 +301,8 @@ impl WfnTotal {
 
         for i in 0..no_basis_funcs {
             for j in 0..=i {
-                let no_prim_gauss_i: usize = self.basis_set_total.basis_set_cgtos[i].no_pgto;
-                let no_prim_gauss_j: usize = self.basis_set_total.basis_set_cgtos[j].no_pgto;
+                let no_prim_gauss_i: usize = self.basis_set_total.basis_set_cgtos[i].no_pgtos;
+                let no_prim_gauss_j: usize = self.basis_set_total.basis_set_cgtos[j].no_pgtos;
 
                 for k in 0..no_prim_gauss_i {
                     for l in 0..no_prim_gauss_j {
@@ -389,13 +374,13 @@ impl WfnTotal {
                 for k in 0..no_basis_funcs {
                     for l in 0..no_basis_funcs {
                         let no_prim_gauss_i: usize =
-                            self.basis_set_total.basis_set_cgtos[i].no_pgto;
+                            self.basis_set_total.basis_set_cgtos[i].no_pgtos;
                         let no_prim_gauss_j: usize =
-                            self.basis_set_total.basis_set_cgtos[j].no_pgto;
+                            self.basis_set_total.basis_set_cgtos[j].no_pgtos;
                         let no_prim_gauss_k: usize =
-                            self.basis_set_total.basis_set_cgtos[k].no_pgto;
+                            self.basis_set_total.basis_set_cgtos[k].no_pgtos;
                         let no_prim_gauss_l: usize =
-                            self.basis_set_total.basis_set_cgtos[l].no_pgto;
+                            self.basis_set_total.basis_set_cgtos[l].no_pgtos;
 
                         for m in 0..no_prim_gauss_i {
                             for n in 0..no_prim_gauss_j {
@@ -529,4 +514,3 @@ impl WfnTotal {
         V_ee_matr
     }
 }
-

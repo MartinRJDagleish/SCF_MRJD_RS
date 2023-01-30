@@ -122,10 +122,10 @@ pub fn run_project3_3() {
 
     //* Step 2.1: Calculate the overlap matrix S
     mol_6_311g.wfn_total.HFMatrices.S_matr = Array2::<f64>::zeros((
-        mol_6_311g.wfn_total.basis_set_total.no_cgto,
-        mol_6_311g.wfn_total.basis_set_total.no_cgto,
+        mol_6_311g.wfn_total.basis_set_total.no_cgtos,
+        mol_6_311g.wfn_total.basis_set_total.no_cgtos,
     ));
-    for i in 0..mol_6_311g.wfn_total.basis_set_total.no_cgto {
+    for i in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
         for j in 0..=i {
             if i == j {
                 mol_6_311g.wfn_total.HFMatrices.S_matr[(i, j)] = 1.0;
@@ -147,12 +147,12 @@ pub fn run_project3_3() {
 
     //* Step 2.2: Calculate the kinetic energy matrix T
     mol_6_311g.wfn_total.HFMatrices.T_matr = Array2::<f64>::zeros((
-        mol_6_311g.wfn_total.basis_set_total.no_cgto,
-        mol_6_311g.wfn_total.basis_set_total.no_cgto,
+        mol_6_311g.wfn_total.basis_set_total.no_cgtos,
+        mol_6_311g.wfn_total.basis_set_total.no_cgtos,
     ));
 
-    for i in 0..mol_6_311g.wfn_total.basis_set_total.no_cgto {
-        for j in 0..mol_6_311g.wfn_total.basis_set_total.no_cgto {
+    for i in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
+        for j in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
             mol_6_311g.wfn_total.HFMatrices.T_matr[(i, j)] = calc_kin_energy_int_cgto(
                 &mol_6_311g.wfn_total.basis_set_total.basis_set_cgtos[i],
                 &mol_6_311g.wfn_total.basis_set_total.basis_set_cgtos[j],
@@ -168,12 +168,12 @@ pub fn run_project3_3() {
 
     //* Step 2.3: Calculate the nuclear attraction matrix V_ne
     mol_6_311g.wfn_total.HFMatrices.V_ne_matr = Array2::<f64>::zeros((
-        mol_6_311g.wfn_total.basis_set_total.no_cgto,
-        mol_6_311g.wfn_total.basis_set_total.no_cgto,
+        mol_6_311g.wfn_total.basis_set_total.no_cgtos,
+        mol_6_311g.wfn_total.basis_set_total.no_cgtos,
     ));
 
-    for i in 0..mol_6_311g.wfn_total.basis_set_total.no_cgto {
-        for j in 0..mol_6_311g.wfn_total.basis_set_total.no_cgto {
+    for i in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
+        for j in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
             for (idx, atom_pos) in mol_6_311g
                 .geom_obj
                 .geom_matr
@@ -197,8 +197,8 @@ pub fn run_project3_3() {
     );
     //* Step 2.4: Form the core Hamiltonian matrix H_core
     mol_6_311g.wfn_total.HFMatrices.H_core_matr = Array2::<f64>::zeros((
-        mol_6_311g.wfn_total.basis_set_total.no_cgto,
-        mol_6_311g.wfn_total.basis_set_total.no_cgto,
+        mol_6_311g.wfn_total.basis_set_total.no_cgtos,
+        mol_6_311g.wfn_total.basis_set_total.no_cgtos,
     ));
     mol_6_311g.wfn_total.HFMatrices.H_core_matr =
         &mol_6_311g.wfn_total.HFMatrices.T_matr + &mol_6_311g.wfn_total.HFMatrices.V_ne_matr;
@@ -212,15 +212,15 @@ pub fn run_project3_3() {
 
     println!("Electron-electron repulsion integrals (V_ee / ERI matrix):");
     mol_6_311g.wfn_total.HFMatrices.ERI_tensor = Array4::<f64>::zeros((
-        mol_6_311g.wfn_total.basis_set_total.no_cgto,
-        mol_6_311g.wfn_total.basis_set_total.no_cgto,
-        mol_6_311g.wfn_total.basis_set_total.no_cgto,
-        mol_6_311g.wfn_total.basis_set_total.no_cgto,
+        mol_6_311g.wfn_total.basis_set_total.no_cgtos,
+        mol_6_311g.wfn_total.basis_set_total.no_cgtos,
+        mol_6_311g.wfn_total.basis_set_total.no_cgtos,
+        mol_6_311g.wfn_total.basis_set_total.no_cgtos,
     ));
-    for i in 0..mol_6_311g.wfn_total.basis_set_total.no_cgto {
-        for j in 0..mol_6_311g.wfn_total.basis_set_total.no_cgto {
-            for k in 0..mol_6_311g.wfn_total.basis_set_total.no_cgto {
-                for l in 0..mol_6_311g.wfn_total.basis_set_total.no_cgto {
+    for i in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
+        for j in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
+            for k in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
+                for l in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
                     mol_6_311g.wfn_total.HFMatrices.ERI_tensor[(i, j, k, l)] =
                         calc_elec_elec_repul_cgto(
                             &mol_6_311g.wfn_total.basis_set_total.basis_set_cgtos[i],
@@ -270,12 +270,12 @@ pub fn run_project3_3() {
     let no_occ_orb: usize = 3; // * QUICK FIX: 3 CGTO describe 1sσ orbital
 
     let mut D_matr: Array2<f64> = Array2::<f64>::zeros((
-        mol_6_311g.wfn_total.basis_set_total.no_cgto,
-        mol_6_311g.wfn_total.basis_set_total.no_cgto,
+        mol_6_311g.wfn_total.basis_set_total.no_cgtos,
+        mol_6_311g.wfn_total.basis_set_total.no_cgtos,
     ));
 
-    for mu in 0..mol_6_311g.wfn_total.basis_set_total.no_cgto {
-        for nu in 0..mol_6_311g.wfn_total.basis_set_total.no_cgto {
+    for mu in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
+        for nu in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
             for m in 0..no_occ_orb {
                 D_matr[(mu, nu)] += C_matr_AO_basis[(mu, m)] * C_matr_AO_basis[(nu, m)];
             }
@@ -290,8 +290,8 @@ pub fn run_project3_3() {
 
     //* Here the Fock matrix is guessed to be the core Hamiltonian matrix
     //* That's why the initial SCF energy differs from the other SCF energy calcs
-    for mu in 0..mol_6_311g.wfn_total.basis_set_total.no_cgto {
-        for nu in 0..mol_6_311g.wfn_total.basis_set_total.no_cgto {
+    for mu in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
+        for nu in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
             E_scf +=
                 D_matr[(mu, nu)] * 2.0 * (mol_6_311g.wfn_total.HFMatrices.H_core_matr[(mu, nu)]);
         }
@@ -307,14 +307,14 @@ pub fn run_project3_3() {
     for scf_iter in 0..scf_maxiter {
         //* Step 6: Form the Fock matrix F in the AO basis
         let mut F_matr: Array2<f64> = Array2::<f64>::zeros((
-            mol_6_311g.wfn_total.basis_set_total.no_cgto,
-            mol_6_311g.wfn_total.basis_set_total.no_cgto,
+            mol_6_311g.wfn_total.basis_set_total.no_cgtos,
+            mol_6_311g.wfn_total.basis_set_total.no_cgtos,
         ));
 
-        for mu in 0..mol_6_311g.wfn_total.basis_set_total.no_cgto {
-            for nu in 0..mol_6_311g.wfn_total.basis_set_total.no_cgto {
-                for lambda in 0..mol_6_311g.wfn_total.basis_set_total.no_cgto {
-                    for sigma in 0..mol_6_311g.wfn_total.basis_set_total.no_cgto {
+        for mu in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
+            for nu in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
+                for lambda in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
+                    for sigma in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
                         F_matr[(mu, nu)] += D_matr[(lambda, sigma)]
                             * (2.0
                                 * mol_6_311g.wfn_total.HFMatrices.ERI_tensor
@@ -339,8 +339,8 @@ pub fn run_project3_3() {
         let C_matr_AO_basis: Array2<f64> = S_matr_sqrt_inv.dot(&C_matr_MO_basis);
         let D_matr_prev: Array2<f64> = D_matr.clone();
 
-        for mu in 0..mol_6_311g.wfn_total.basis_set_total.no_cgto {
-            for nu in 0..mol_6_311g.wfn_total.basis_set_total.no_cgto {
+        for mu in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
+            for nu in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
                 D_matr[(mu, nu)] = 0.0;
                 for m in 0..no_occ_orb {
                     D_matr[(mu, nu)] += C_matr_AO_basis[(mu, m)] * C_matr_AO_basis[(nu, m)];
@@ -349,8 +349,8 @@ pub fn run_project3_3() {
         }
 
         E_scf = 0.0;
-        for mu in 0..mol_6_311g.wfn_total.basis_set_total.no_cgto {
-            for nu in 0..mol_6_311g.wfn_total.basis_set_total.no_cgto {
+        for mu in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
+            for nu in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
                 E_scf += D_matr[(mu, nu)]
                     * (mol_6_311g.wfn_total.HFMatrices.H_core_matr[(mu, nu)] + F_matr[(mu, nu)]);
             }
@@ -361,8 +361,8 @@ pub fn run_project3_3() {
         E_tot_vec.push(E_tot);
 
         let mut rms_d_val: f64 = 0.0;
-        for mu in 0..mol_6_311g.wfn_total.basis_set_total.no_cgto {
-            for nu in 0..mol_6_311g.wfn_total.basis_set_total.no_cgto {
+        for mu in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
+            for nu in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
                 rms_d_val += (D_matr[(mu, nu)] - D_matr_prev[(mu, nu)]).powi(2);
             }
         }

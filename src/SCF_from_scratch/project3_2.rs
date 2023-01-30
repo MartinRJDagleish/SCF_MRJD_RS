@@ -221,78 +221,78 @@ pub fn run_project3_2() {
     println!("V_ee_matr:\n{:^5.6}\n", &V_ee_matr);
 
     //* Test new code for overlap_int:
-    // use crate::molecule::wfn::ints::*; //* for testing
+    use crate::molecule::wfn::ints::*; //* for testing
 
-    // println!("\n****************************************");
-    // println!("           TESTS FOR INTEGRALS         ");
-    // println!("****************************************");
-    // // println!("mol_6_311g : {:?}", &mol_6_311g.wfn_total);
-    // println!("Basis: 6-311G");
-    // println!("\nOverlap integrals (S matrix):");
-    // let mut S_matr_test = Array2::<f64>::zeros((
-    //     mol_6_311g.wfn_total.no_cgto,
-    //     mol_6_311g.wfn_total.no_cgto,
-    // ));
-    // for i in 0..mol_6_311g.wfn_total.no_cgto {
-    //     for j in 0..mol_6_311g.wfn_total.no_cgto {
-    //         S_matr_test[(i, j)] = calc_overlap_int_cgto(
-    //             &mol_6_311g.wfn_total.basis_set_total.basis_set_cgtos[i],
-    //             &mol_6_311g.wfn_total.basis_set_total.basis_set_cgtos[j],
-    //         );
-    //     }
-    // }
-    // println!("{:^5.6}\n", &S_matr_test);
+    println!("\n****************************************");
+    println!("           TESTS FOR INTEGRALS         ");
+    println!("****************************************");
+    // println!("mol_6_311g : {:?}", &mol_6_311g.wfn_total);
+    println!("Basis: 6-311G");
+    println!("\nOverlap integrals (S matrix):");
+    let mut S_matr_test = Array2::<f64>::zeros((
+        mol_6_311g.wfn_total.basis_set_total.no_cgtos,
+        mol_6_311g.wfn_total.basis_set_total.no_cgtos,
+    ));
+    for i in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
+        for j in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
+            S_matr_test[(i, j)] = calc_overlap_int_cgto(
+                &mol_6_311g.wfn_total.basis_set_total.basis_set_cgtos[i],
+                &mol_6_311g.wfn_total.basis_set_total.basis_set_cgtos[j],
+            );
+        }
+    }
+    println!("{:^5.6}\n", &S_matr_test);
 
-    // println!("Kinetic energy integrals (T matrix):");
-    // let mut T_matr_test = Array2::<f64>::zeros((
-    //     mol_6_311g.wfn_total.no_cgto,
-    //     mol_6_311g.wfn_total.no_cgto,
-    // ));
-    // for i in 0..mol_6_311g.wfn_total.no_cgto {
-    //     for j in 0..mol_6_311g.wfn_total.no_cgto {
-    //         T_matr_test[(i, j)] = calc_kin_energy_int_cgto(
-    //             &mol_6_311g.wfn_total.basis_set_total.basis_set_cgtos[i],
-    //             &mol_6_311g.wfn_total.basis_set_total.basis_set_cgtos[j],
-    //         );
-    //     }
-    // }
-    // println!("{:^5.6}\n", &T_matr_test);
+    println!("Kinetic energy integrals (T matrix):");
+    let mut T_matr_test = Array2::<f64>::zeros((
+        mol_6_311g.wfn_total.basis_set_total.no_cgtos,
+        mol_6_311g.wfn_total.basis_set_total.no_cgtos,
+    ));
+    for i in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
+        for j in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
+            T_matr_test[(i, j)] = calc_kin_energy_int_cgto(
+                &mol_6_311g.wfn_total.basis_set_total.basis_set_cgtos[i],
+                &mol_6_311g.wfn_total.basis_set_total.basis_set_cgtos[j],
+            );
+        }
+    }
+    println!("{:^5.6}\n", &T_matr_test);
 
-    // println!("Nuclear attraction integrals (V_ne matrix):");
-    // let mut V_ne_matr_test = Array2::<f64>::zeros((
-    //     mol_6_311g.wfn_total.no_cgto,
-    //     mol_6_311g.wfn_total.no_cgto,
-    // ));
-    // for i in 0..mol_6_311g.wfn_total.no_cgto {
-    //     for j in 0..mol_6_311g.wfn_total.no_cgto {
-    //         for (idx, atom_pos) in mol_6_311g
-    //             .geom_obj
-    //             .geom_matr
-    //             .axis_iter(ndarray::Axis(0))
-    //             .enumerate()
-    //         {
-    //             V_ne_matr_test[(i, j)] -= (mol_6_311g.geom_obj.Z_vals[idx] as f64)
-    //                 * calc_nuc_attr_int_cgto(
-    //                     &mol_6_311g.wfn_total.basis_set_total.basis_set_cgtos[i],
-    //                     &mol_6_311g.wfn_total.basis_set_total.basis_set_cgtos[j],
-    //                     &atom_pos.to_owned(),
-    //                 );
-    //         }
-    //     }
-    // }
-    // println!("{:^5.6}\n", &V_ne_matr_test);
+    println!("Nuclear attraction integrals (V_ne matrix):");
+    let mut V_ne_matr_test = Array2::<f64>::zeros((
+        mol_6_311g.wfn_total.basis_set_total.no_cgtos,
+        mol_6_311g.wfn_total.basis_set_total.no_cgtos,
+    ));
+    for i in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
+        for j in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
+            for (idx, atom_pos) in mol_6_311g
+                .geom_obj
+                .geom_matr
+                .axis_iter(ndarray::Axis(0))
+                .enumerate()
+            {
+                V_ne_matr_test[(i, j)] -= (mol_6_311g.geom_obj.Z_vals[idx] as f64)
+                    * calc_nuc_attr_int_cgto(
+                        &mol_6_311g.wfn_total.basis_set_total.basis_set_cgtos[i],
+                        &mol_6_311g.wfn_total.basis_set_total.basis_set_cgtos[j],
+                        &atom_pos.to_owned(),
+                    );
+            }
+        }
+    }
+    println!("{:^5.6}\n", &V_ne_matr_test);
 
     // println!("Electron-electron repulsion integrals (V_ee / ERI matrix):");
     // let mut V_ee_matr_test = Array4::<f64>::zeros((
-    //     mol_6_311g.wfn_total.no_cgto,
-    //     mol_6_311g.wfn_total.no_cgto,
-    //     mol_6_311g.wfn_total.no_cgto,
-    //     mol_6_311g.wfn_total.no_cgto,
+    //     mol_6_311g.wfn_total.basis_set_total.no_cgtos,
+    //     mol_6_311g.wfn_total.basis_set_total.no_cgtos,
+    //     mol_6_311g.wfn_total.basis_set_total.no_cgtos,
+    //     mol_6_311g.wfn_total.basis_set_total.no_cgtos,
     // ));
-    // for i in 0..mol_6_311g.wfn_total.no_cgto {
-    //     for j in 0..mol_6_311g.wfn_total.no_cgto {
-    //         for k in 0..mol_6_311g.wfn_total.no_cgto {
-    //             for l in 0..mol_6_311g.wfn_total.no_cgto {
+    // for i in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
+    //     for j in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
+    //         for k in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
+    //             for l in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
     //                 V_ee_matr_test[(i, j, k, l)] = calc_elec_elec_repul_cgto(
     //                     &mol_6_311g.wfn_total.basis_set_total.basis_set_cgtos[i],
     //                     &mol_6_311g.wfn_total.basis_set_total.basis_set_cgtos[j],
