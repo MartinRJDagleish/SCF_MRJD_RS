@@ -1,14 +1,141 @@
 use std::{
+    collections::HashMap,
     fs,
     io::{BufRead, BufReader},
 };
+use strum::IntoEnumIterator;
+use strum_macros::EnumIter;
 
-pub struct TotalBasisSetDef {
-    pub name: String,
-    pub list_of_basis_sets_defs: Vec<BasisSetDef>,
+use ndarray::{Array1, Array2};
+
+use crate::molecule::wfn::{BasisSetTotal, CGTO, PGTO};
+
+
+
+#[derive(Eq, Hash, PartialEq, Clone, Copy, EnumIter)]
+pub enum PSE_element_sym {
+    DUMMY,
+    H,
+    He,
+    Li,
+    Be,
+    B,
+    C,
+    N,
+    O,
+    F,
+    Ne,
+    Na,
+    Mg,
+    Al,
+    Si,
+    P,
+    S,
+    Cl,
+    Ar,
+    K,
+    Ca,
+    Sc,
+    Ti,
+    V,
+    Cr,
+    Mn,
+    Fe,
+    Co,
+    Ni,
+    Cu,
+    Zn,
+    Ga,
+    Ge,
+    As,
+    Se,
+    Br,
+    Kr,
+    Rb,
+    Sr,
+    Y,
+    Zr,
+    Nb,
+    Mo,
+    Tc,
+    Ru,
+    Rh,
+    Pd,
+    Ag,
+    Cd,
+    In,
+    Sn,
+    Sb,
+    Te,
+    I,
+    Xe,
+    Cs,
+    Ba,
+    La,
+    Ce,
+    Pr,
+    Nd,
+    Pm,
+    Sm,
+    Eu,
+    Gd,
+    Tb,
+    Dy,
+    Ho,
+    Er,
+    Tm,
+    Yb,
+    Lu,
+    Hf,
+    Ta,
+    W,
+    Re,
+    Os,
+    Ir,
+    Pt,
+    Au,
+    Hg,
+    Tl,
+    Pb,
+    Bi,
+    Po,
+    At,
+    Rn,
+    Fr,
+    Ra,
+    Ac,
+    Th,
+    Pa,
+    U,
+    Np,
+    Pu,
+    Am,
+    Cm,
+    Bk,
+    Cf,
+    Es,
+    Fm,
+    Md,
+    No,
+    Lr,
+    Rf,
+    Db,
+    Sg,
+    Bh,
+    Hs,
+    Mt,
+    Ds,
+    Rg,
+    Cn,
+    Nh,
+    Fl,
+    Mc,
+    Lv,
+    Ts,
+    Og,
 }
 
-//TODO: maybe combine PrimitiveGaussian and BasisSet into one struct?
+
 pub enum L_char {
     S,
     P,
@@ -26,26 +153,36 @@ pub enum L_char {
     SP,
 }
 
+pub struct BasisSetAtom {
+    pub element_sym: PSE_element_sym,
+    pub cgto_list: Vec<CGTO>,
+}
+
 pub struct BasisSetDef {
-    pub element_sym: String,
+    pub element_sym: PSE_element_sym,
     pub alphas: Vec<f64>,
     pub cgto_coeffs: Vec<f64>,
     pub L_and_no_prim_tup: Vec<(L_char, usize)>,
 }
 
-impl TotalBasisSetDef {
+pub struct BasisSetTotalDef {
+    pub name: String,
+    pub basis_set_defs_dict: HashMap<PSE_element_sym, BasisSetDef>,
+}
+
+impl BasisSetTotalDef {
     pub fn new() -> Self {
         Self {
             name: String::new(),
-            list_of_basis_sets_defs: Vec::new(),
+            basis_set_defs_dict: HashMap::new(),
         }
     }
 }
 
 impl BasisSetDef {
-    pub fn new() -> Self {
+    pub fn new(element_sym: PSE_element_sym) -> Self {
         Self {
-            element_sym: String::new(),
+            element_sym,
             alphas: Vec::new(),
             cgto_coeffs: Vec::new(),
             L_and_no_prim_tup: Vec::new(),
@@ -53,10 +190,144 @@ impl BasisSetDef {
     }
 }
 
-pub fn parse_basis_set_file_gaussian(basis_set_name: &str) -> TotalBasisSetDef {
-    let mut basis_set_total_def: TotalBasisSetDef = TotalBasisSetDef {
+pub fn match_pse_symb(match_string: &str) -> PSE_element_sym {
+    // let mut PSE_element_sym_HashMap = HashMap::<&str,PSE_element_sym>::new();
+
+    let PSE_element_sym_HashMap = [
+        ("H", PSE_element_sym::H),
+        ("He", PSE_element_sym::He),
+        ("Li", PSE_element_sym::Li),
+        ("Be", PSE_element_sym::Be),
+        ("B", PSE_element_sym::B),
+        ("C", PSE_element_sym::C),
+        ("N", PSE_element_sym::N),
+        ("O", PSE_element_sym::O),
+        ("F", PSE_element_sym::F),
+        ("Ne", PSE_element_sym::Ne),
+        ("Na", PSE_element_sym::Na),
+        ("Mg", PSE_element_sym::Mg),
+        ("Al", PSE_element_sym::Al),
+        ("Si", PSE_element_sym::Si),
+        ("P", PSE_element_sym::P),
+        ("S", PSE_element_sym::S),
+        ("Cl", PSE_element_sym::Cl),
+        ("Ar", PSE_element_sym::Ar),
+        ("K", PSE_element_sym::K),
+        ("Ca", PSE_element_sym::Ca),
+        ("Sc", PSE_element_sym::Sc),
+        ("Ti", PSE_element_sym::Ti),
+        ("V", PSE_element_sym::V),
+        ("Cr", PSE_element_sym::Cr),
+        ("Mn", PSE_element_sym::Mn),
+        ("Fe", PSE_element_sym::Fe),
+        ("Co", PSE_element_sym::Co),
+        ("Ni", PSE_element_sym::Ni),
+        ("Cu", PSE_element_sym::Cu),
+        ("Zn", PSE_element_sym::Zn),
+        ("Ga", PSE_element_sym::Ga),
+        ("Ge", PSE_element_sym::Ge),
+        ("As", PSE_element_sym::As),
+        ("Se", PSE_element_sym::Se),
+        ("Br", PSE_element_sym::Br),
+        ("Kr", PSE_element_sym::Kr),
+        ("Rb", PSE_element_sym::Rb),
+        ("Sr", PSE_element_sym::Sr),
+        ("Y", PSE_element_sym::Y),
+        ("Zr", PSE_element_sym::Zr),
+        ("Nb", PSE_element_sym::Nb),
+        ("Mo", PSE_element_sym::Mo),
+        ("Tc", PSE_element_sym::Tc),
+        ("Ru", PSE_element_sym::Ru),
+        ("Rh", PSE_element_sym::Rh),
+        ("Pd", PSE_element_sym::Pd),
+        ("Ag", PSE_element_sym::Ag),
+        ("Cd", PSE_element_sym::Cd),
+        ("In", PSE_element_sym::In),
+        ("Sn", PSE_element_sym::Sn),
+        ("Sb", PSE_element_sym::Sb),
+        ("Te", PSE_element_sym::Te),
+        ("I", PSE_element_sym::I),
+        ("Xe", PSE_element_sym::Xe),
+        ("Cs", PSE_element_sym::Cs),
+        ("Ba", PSE_element_sym::Ba),
+        ("La", PSE_element_sym::La),
+        ("Ce", PSE_element_sym::Ce),
+        ("Pr", PSE_element_sym::Pr),
+        ("Nd", PSE_element_sym::Nd),
+        ("Pm", PSE_element_sym::Pm),
+        ("Sm", PSE_element_sym::Sm),
+        ("Eu", PSE_element_sym::Eu),
+        ("Gd", PSE_element_sym::Gd),
+        ("Tb", PSE_element_sym::Tb),
+        ("Dy", PSE_element_sym::Dy),
+        ("Ho", PSE_element_sym::Ho),
+        ("Er", PSE_element_sym::Er),
+        ("Tm", PSE_element_sym::Tm),
+        ("Yb", PSE_element_sym::Yb),
+        ("Lu", PSE_element_sym::Lu),
+        ("Hf", PSE_element_sym::Hf),
+        ("Ta", PSE_element_sym::Ta),
+        ("W", PSE_element_sym::W),
+        ("Re", PSE_element_sym::Re),
+        ("Os", PSE_element_sym::Os),
+        ("Ir", PSE_element_sym::Ir),
+        ("Pt", PSE_element_sym::Pt),
+        ("Au", PSE_element_sym::Au),
+        ("Hg", PSE_element_sym::Hg),
+        ("Tl", PSE_element_sym::Tl),
+        ("Pb", PSE_element_sym::Pb),
+        ("Bi", PSE_element_sym::Bi),
+        ("Po", PSE_element_sym::Po),
+        ("At", PSE_element_sym::At),
+        ("Rn", PSE_element_sym::Rn),
+        ("Fr", PSE_element_sym::Fr),
+        ("Ra", PSE_element_sym::Ra),
+        ("Ac", PSE_element_sym::Ac),
+        ("Th", PSE_element_sym::Th),
+        ("Pa", PSE_element_sym::Pa),
+        ("U", PSE_element_sym::U),
+        ("Np", PSE_element_sym::Np),
+        ("Pu", PSE_element_sym::Pu),
+        ("Am", PSE_element_sym::Am),
+        ("Cm", PSE_element_sym::Cm),
+        ("Bk", PSE_element_sym::Bk),
+        ("Cf", PSE_element_sym::Cf),
+        ("Es", PSE_element_sym::Es),
+        ("Fm", PSE_element_sym::Fm),
+        ("Md", PSE_element_sym::Md),
+        ("No", PSE_element_sym::No),
+        ("Lr", PSE_element_sym::Lr),
+        ("Rf", PSE_element_sym::Rf),
+        ("Db", PSE_element_sym::Db),
+        ("Sg", PSE_element_sym::Sg),
+        ("Bh", PSE_element_sym::Bh),
+        ("Hs", PSE_element_sym::Hs),
+        ("Mt", PSE_element_sym::Mt),
+        ("Ds", PSE_element_sym::Ds),
+        ("Rg", PSE_element_sym::Rg),
+        ("Cn", PSE_element_sym::Cn),
+        ("Nh", PSE_element_sym::Nh),
+        ("Fl", PSE_element_sym::Fl),
+        ("Mc", PSE_element_sym::Mc),
+        ("Lv", PSE_element_sym::Lv),
+        ("Ts", PSE_element_sym::Ts),
+        ("Og", PSE_element_sym::Og),
+    ]
+    .into_iter()
+    .collect::<HashMap<_, _>>();
+
+    let pse_symb = match PSE_element_sym_HashMap.get(match_string) {
+        Some(value) => *value,
+        None => panic!("Element symbol not found!"),
+    };
+
+    pse_symb
+}
+
+pub fn parse_basis_set_file_gaussian(basis_set_name: &str) -> BasisSetTotalDef {
+    let mut basis_set_total_def: BasisSetTotalDef = BasisSetTotalDef {
         name: basis_set_name.to_string(),
-        list_of_basis_sets_defs: Vec::new(),
+        basis_set_defs_dict: HashMap::new(),
     };
 
     let basis_set_file_path: &str;
@@ -92,7 +363,7 @@ pub fn parse_basis_set_file_gaussian(basis_set_name: &str) -> TotalBasisSetDef {
 
     // let mut block_count: u32 = 0;
 
-    let mut basis_set: BasisSetDef = BasisSetDef::new();
+    let mut basis_set: BasisSetDef = BasisSetDef::new(PSE_element_sym::DUMMY); //* using dummy element symbol
 
     for line in basis_set_reader.lines() {
         let line = line.unwrap();
@@ -106,14 +377,20 @@ pub fn parse_basis_set_file_gaussian(basis_set_name: &str) -> TotalBasisSetDef {
         } else if data.starts_with(block_delimiter) {
             if !basis_set.alphas.is_empty() {
                 //* Check if BasisSet is not empty
-                basis_set_total_def.list_of_basis_sets_defs.push(basis_set);
+                //* Add the basis using the element symbol as key
+                basis_set_total_def
+                    .basis_set_defs_dict
+                    .insert(basis_set.element_sym.clone(), basis_set);
             }
-            basis_set = BasisSetDef::new();
+            basis_set = BasisSetDef::new(PSE_element_sym::DUMMY);
             continue;
         } else if line_start.is_alphabetic() {
             let line_split: Vec<&str> = data.split_whitespace().collect();
             if line_split.len() == 2 {
-                basis_set.element_sym = line_split[0].to_string();
+                //* Old version with string -> new version with enum
+                // basis_set.element_sym = line_split[0].to_string();
+                //* New version with enum
+                basis_set.element_sym = match_pse_symb(line_split[0]);
                 continue;
             } else if line_split[0] == "SP" {
                 let no_prim1: usize = line_split[1].parse::<usize>().unwrap();
@@ -164,6 +441,69 @@ pub fn parse_basis_set_file_gaussian(basis_set_name: &str) -> TotalBasisSetDef {
 
     basis_set_total_def
 }
+
+pub fn create_basis_set_total(
+    basis_set_total_def: BasisSetTotalDef,
+    geom_matr: Array2<f64>,
+    Z_vals: Vec<i32>,
+) -> BasisSetTotal {
+    let mut basis_set_total = BasisSetTotal::new();
+
+    // fn build_pgto(Z_val: i32) -> PGTO {
+    //     let mut pgto = PGTO::new();
+    //     let elem_sym: PSE_element_sym = translate_Z_val_to_sym(Z_vals[0]);
+
+    //     pgto
+    // }
+
+    // fn build_cgto() -> CGTO {
+    //     let mut cgto = CGTO::new();
+    //     for 
+
+    //     cgto
+    // }
+
+
+    // fn build_basis_for_atom() {
+    //     let mut basis_set_atom = BasisSetAtom::new();
+    //     basis_for_atom
+    // }
+
+    basis_set_total
+}
+
+pub fn translate_Z_val_to_sym(Z_val: i32) -> PSE_element_sym {
+    let mut Z_to_sym: HashMap<i32, PSE_element_sym> = HashMap::new();
+
+    for (idx, sym) in PSE_element_sym::iter().enumerate() {
+        let idx = (idx + 1) as i32;
+        Z_to_sym.insert(idx, sym);
+    }
+
+    let pse_symb = match Z_to_sym.get(&Z_val) {
+        Some(value) => *value,
+        None => panic!("Element symbol not found!"),
+    };
+
+    pse_symb
+}
+
+pub fn translate_sym_to_Z_val(sym: PSE_element_sym) -> i32 {
+    let mut sym_to_Z: HashMap<PSE_element_sym, i32> = HashMap::new();
+
+    for (idx, sym) in PSE_element_sym::iter().enumerate() {
+        let idx = (idx + 1) as i32;
+        sym_to_Z.insert(sym, idx);
+    }
+
+    let Z_val = match sym_to_Z.get(&sym) {
+        Some(value) => *value,
+        None => panic!("Element symbol not found!"),
+    };
+
+    Z_val
+}
+
 // ChatGPT
 // struct ChemElem {
 //     chem_elem: String,
