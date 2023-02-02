@@ -27,7 +27,7 @@ impl Molecule {
             Self::read_inputfile(geom_file);
 
         let geom_obj: geometry::Geometry =
-            geometry::Geometry::new(no_atoms.clone(), geom_matr, Z_vals.clone());
+            geometry::Geometry::new(no_atoms, geom_matr, Z_vals.clone());
 
         //* Define a 0-matrix which can be edited later on ?
         let hessian: Array2<f64> = Array2::zeros((3 * no_atoms, 3 * no_atoms));
@@ -46,7 +46,7 @@ impl Molecule {
 
     fn read_inputfile(geom_filename: &str) -> (Vec<i32>, Array2<f64>, usize) {
         //* Step 1: Read the coord data from input
-        println!("Inputfile: {}", geom_filename);
+        println!("Inputfile: {geom_filename}");
 
         let geom_file = fs::File::open(geom_filename).expect("Geometry file not found!");
         let geom_file_reader = BufReader::new(geom_file);
@@ -63,7 +63,7 @@ impl Molecule {
         let mut Z_vals: Vec<i32> = Vec::new();
         let mut geom_matr: Array2<f64> = Array2::zeros((no_atoms, 3));
 
-        for line in geom_file_lines[1..].into_iter() {
+        for line in geom_file_lines[1..].iter() { //* into_iter would do the same
             let line_split: Vec<&str> = line.split_whitespace().collect();
 
             Z_vals.push(line_split[0].parse().unwrap());
@@ -74,14 +74,14 @@ impl Molecule {
                 }
             }
         }
-        return (Z_vals, geom_matr, no_atoms);
+
+        (Z_vals, geom_matr, no_atoms)
     }
 
     pub fn mass_weight_hessian(&mut self) {
         for i in 0..self.no_atoms * 3 {
             for j in 0..self.no_atoms * 3 {
-                self.hessian[(i, j)] = self.hessian[(i, j)]
-                    / (self.geom_obj.get_mass_Z_val(&self.Z_vals[i / 3]) //* this uses integer div by default 
+                self.hessian[(i, j)] /= (self.geom_obj.get_mass_Z_val(&self.Z_vals[i / 3]) //* this uses integer div by default 
                     * self.geom_obj.get_mass_Z_val(&self.Z_vals[j / 3])) //* -> neat trick to get right index
                     .sqrt();
             }

@@ -13,7 +13,7 @@ pub fn run_project3_2() {
 
     // * Parse the basis set file
     let basis_set_name = "sto-3g";
-    let basis_set_tot: BasisSetTotalDef = parse_basis_set_file_gaussian(basis_set_name);
+    let basis_set_tot_def: BasisSetTotalDef = parse_basis_set_file_gaussian(basis_set_name);
 
 
     // let mol = molecule::Molecule::new("H2O", "sto-3g", "h2o.xyz");

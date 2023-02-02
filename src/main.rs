@@ -1,3 +1,5 @@
+#![allow(non_snake_case)] 
+
 use humantime::format_duration;
 use std::time::Instant;
 
@@ -7,7 +9,7 @@ use crate::{molecule::Molecule};
 pub mod molecule;
 pub mod SCF_from_scratch;
 
-#[allow(non_snake_case)] // * -> I need this due to QM naming conventions
+// #[allow(non_snake_case)] // * -> I need this due to QM naming conventions
 fn main() {
     let start_exec_time = Instant::now();
     let ASCII_art_logo: String = String::from(
@@ -41,7 +43,7 @@ fn main() {
              ____________\///________\///_____\///////////_____  
         "#,
     );
-    println!("{}", ASCII_art_logo);
+    println!("{ASCII_art_logo}");
 
     let mut mol: Molecule = Molecule::new("inp/Project3_1/STO-3G/h2o_v2.xyz", 0);
 
@@ -78,13 +80,12 @@ fn main() {
     //*****************************************************************
     let end_of_calc_string: String = format!("{:^29}", "RUN ENDED SUCCESSFULLY!");
     println!("\n{}", "*".repeat(31));
-    println!("*{}*", end_of_calc_string);
+    println!("*{end_of_calc_string}*");
     println!("{}", "*".repeat(31));
     let end_exec_time = Instant::now();
     let duration_exec_time = end_exec_time.duration_since(start_exec_time);
     let formatted_duration_exec_time = format_duration(duration_exec_time).to_string();
     println!(
-        "\nTime elapsed in execution is: {}",
-        formatted_duration_exec_time
+        "\nTime elapsed in execution is: {formatted_duration_exec_time}"
     );
 }

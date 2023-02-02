@@ -6,11 +6,9 @@ use std::{
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
-use ndarray::{Array1, Array2};
+use ndarray::Array2;
 
 use crate::molecule::wfn::{BasisSetTotal, CGTO, PGTO};
-
-
 
 #[derive(Eq, Hash, PartialEq, Clone, Copy, EnumIter)]
 pub enum PSE_element_sym {
@@ -134,7 +132,6 @@ pub enum PSE_element_sym {
     Ts,
     Og,
 }
-
 
 pub enum L_char {
     S,
@@ -451,7 +448,7 @@ pub fn parse_basis_set_file_gaussian(basis_set_name: &str) -> BasisSetTotalDef {
     basis_set_total_def
 }
 
-//TODO: THIS WHOLE FUNCTION DOES NOT WORK YET -> complicated process 
+//TODO: THIS WHOLE FUNCTION DOES NOT WORK YET -> complicated process
 pub fn create_basis_set_total(
     basis_set_total_def: BasisSetTotalDef,
     geom_matr: Array2<f64>,
@@ -459,40 +456,38 @@ pub fn create_basis_set_total(
 ) -> BasisSetTotal {
     let mut basis_set_total = BasisSetTotal::new();
 
-    fn build_pgto(Z_val: i32) -> PGTO {
-        let mut pgto = PGTO::new();
-        let elem_sym: PSE_element_sym = translate_Z_val_to_sym(Z_vals[0]);
+    // fn build_pgto(Z_val: i32) -> PGTO {
+    //     let mut pgto = PGTO::new();
+    //     let elem_sym: PSE_element_sym = translate_Z_val_to_sym(Z_vals[0]);
 
-        pgto
-    }
+    //     pgto
+    // }
 
-    fn build_cgto() -> CGTO {
-        let mut cgto = CGTO::new();
+    // fn build_cgto() -> CGTO {
+    //     let mut cgto = CGTO::new();
 
-        build_pgto();
+    //     build_pgto();
 
-        cgto
-    }
+    //     cgto
+    // }
 
-    for (idx, Z_val) in Z_vals.iter().enumerate() {
-        let mut basis_set_atom = BasisSetAtom::new(PSE_element_sym::DUMMY);
-        let elem_sym: PSE_element_sym = translate_Z_val_to_sym(*Z_val);
-        basis_set_atom.element_sym = elem_sym;
+    // for (idx, Z_val) in Z_vals.iter().enumerate() {
+    //     let mut basis_set_atom = BasisSetAtom::new(PSE_element_sym::DUMMY);
+    //     let elem_sym: PSE_element_sym = translate_Z_val_to_sym(*Z_val);
+    //     basis_set_atom.element_sym = elem_sym;
 
-        let basis_set_def = basis_set_total_def
-            .basis_set_defs_dict
-            .get(&elem_sym)
-            .unwrap();
-        
-        let cgto: CGTO = build_cgto();
+    //     let basis_set_def = basis_set_total_def
+    //         .basis_set_defs_dict
+    //         .get(&elem_sym)
+    //         .unwrap();
 
-        for (L_val, no_prim) in basis_set_def.L_and_no_prim_tup.iter() {
-                        
-        }
+    //     let cgto: CGTO = build_cgto();
 
+    //     for (L_val, no_prim) in basis_set_def.L_and_no_prim_tup.iter() {
 
+    //     }
 
-    }
+    // }
 
     basis_set_total
 }
