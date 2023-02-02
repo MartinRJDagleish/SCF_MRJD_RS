@@ -47,6 +47,7 @@ pub struct WfnTotal {
     pub HFMatrices: HFMatrices,
 }
 
+
 #[allow(non_snake_case)]
 impl HFMatrices {
     pub fn new() -> HFMatrices {

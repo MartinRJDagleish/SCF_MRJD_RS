@@ -17,13 +17,12 @@ pub fn run_project3_3() {
     let mut mol_6_311g = molecule::Molecule::new("inp/Project3_2/geom/h2.xyz", 0);
     //* The first H atom -> H1
     // H1_contr_gauss_1s
-    mol_6_311g.wfn_total.basis_set_total.basis_set_cgtos =
-        vec![CGTO::new(vec![PGTO::new(
-            33.86500,
-            0.0254938,
-            Array1::from_vec(vec![0.0, 0.0, 0.0]),
-            Array1::from_vec(vec![0, 0, 0]),
-        )])];
+    mol_6_311g.wfn_total.basis_set_total.basis_set_cgtos = vec![CGTO::new(vec![PGTO::new(
+        33.86500,
+        0.0254938,
+        Array1::from_vec(vec![0.0, 0.0, 0.0]),
+        Array1::from_vec(vec![0, 0, 0]),
+    )])];
     mol_6_311g.wfn_total.basis_set_total.basis_set_cgtos[0]
         .pgto_vec
         .push(PGTO::new(
@@ -44,7 +43,8 @@ pub fn run_project3_3() {
     // H1_contr_gauss_2s
     mol_6_311g
         .wfn_total
-        .basis_set_total.basis_set_cgtos
+        .basis_set_total
+        .basis_set_cgtos
         .push(CGTO::new(vec![PGTO::new(
             0.325840,
             1.000000,
@@ -55,7 +55,8 @@ pub fn run_project3_3() {
     // H1_contr_gauss_3s
     mol_6_311g
         .wfn_total
-        .basis_set_total.basis_set_cgtos
+        .basis_set_total
+        .basis_set_cgtos
         .push(CGTO::new(vec![PGTO::new(
             0.102741,
             1.000000,
@@ -67,7 +68,8 @@ pub fn run_project3_3() {
     // H2_contr_gauss_1s
     mol_6_311g
         .wfn_total
-        .basis_set_total.basis_set_cgtos
+        .basis_set_total
+        .basis_set_cgtos
         .push(CGTO::new(vec![PGTO::new(
             33.86500,
             0.0254938,
@@ -94,7 +96,8 @@ pub fn run_project3_3() {
     // H2_contr_gauss_2s
     mol_6_311g
         .wfn_total
-        .basis_set_total.basis_set_cgtos
+        .basis_set_total
+        .basis_set_cgtos
         .push(CGTO::new(vec![PGTO::new(
             0.325840,
             1.000000,
@@ -105,7 +108,8 @@ pub fn run_project3_3() {
     // H2_contr_gauss_3s
     mol_6_311g
         .wfn_total
-        .basis_set_total.basis_set_cgtos
+        .basis_set_total
+        .basis_set_cgtos
         .push(CGTO::new(vec![PGTO::new(
             0.102741,
             1.000000,
@@ -115,10 +119,15 @@ pub fn run_project3_3() {
 
     // mol_6_311g.wfn_total.update_no_of_contr_gauss();
     //***************************************************************************************/
+
+    // * Trying to use my Basisset parser to build molecule from gbs file info
+    let mol_6_311g_from_gbs = molecule::Molecule::new("inp/Project3_2/geom/h2.xyz", 0);
+
+
     println!("\nSCF from scratch:\n");
     //* Project 3: SCF from scratch
     //* Step 1: Read Nuclear Repulsion Energy (enuc) from file
-    let E_nn_val: f64 = calc_E_nn_val(&mol_6_311g.geom_obj.geom_matr);
+    mol_6_311g.wfn_total.HFMatrices.V_nn_val = calc_E_nn_val(&mol_6_311g.geom_obj.geom_matr);
 
     //* Step 2.1: Calculate the overlap matrix S
     mol_6_311g.wfn_total.HFMatrices.S_matr = Array2::<f64>::zeros((
@@ -130,13 +139,14 @@ pub fn run_project3_3() {
             if i == j {
                 mol_6_311g.wfn_total.HFMatrices.S_matr[(i, j)] = 1.0;
                 continue;
+            } else {
+                mol_6_311g.wfn_total.HFMatrices.S_matr[(i, j)] = calc_overlap_int_cgto(
+                    &mol_6_311g.wfn_total.basis_set_total.basis_set_cgtos[i],
+                    &mol_6_311g.wfn_total.basis_set_total.basis_set_cgtos[j],
+                );
+                mol_6_311g.wfn_total.HFMatrices.S_matr[(j, i)] =
+                    mol_6_311g.wfn_total.HFMatrices.S_matr[(i, j)].clone();
             }
-            mol_6_311g.wfn_total.HFMatrices.S_matr[(i, j)] = calc_overlap_int_cgto(
-                &mol_6_311g.wfn_total.basis_set_total.basis_set_cgtos[i],
-                &mol_6_311g.wfn_total.basis_set_total.basis_set_cgtos[j],
-            );
-            mol_6_311g.wfn_total.HFMatrices.S_matr[(j, i)] =
-                mol_6_311g.wfn_total.HFMatrices.S_matr[(i, j)].clone();
         }
     }
 

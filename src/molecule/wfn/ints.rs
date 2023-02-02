@@ -152,10 +152,7 @@ pub fn calc_overlap_int_prim(
     S_cart_total * PI.powf(1.5) * (alpha1 + alpha2).recip().powf(1.5)
 }
 
-pub fn calc_overlap_int_cgto(
-    ContrGauss1: &CGTO,
-    ContrGauss2: &CGTO,
-) -> f64 {
+pub fn calc_overlap_int_cgto(ContrGauss1: &CGTO, ContrGauss2: &CGTO) -> f64 {
     // Calculate the overlap integral between two contracted Gaussian functions.
     //
     // # Arguments
@@ -268,10 +265,7 @@ pub fn calc_kin_energy_int_prim(
     part1 + part2_2 + part3
 }
 
-pub fn calc_kin_energy_int_cgto(
-    ContrGauss1: &CGTO,
-    ContrGauss2: &CGTO,
-) -> f64 {
+pub fn calc_kin_energy_int_cgto(ContrGauss1: &CGTO, ContrGauss2: &CGTO) -> f64 {
     // Calculate the kinetic energy integral between two contracted Gaussian functions.
     //
     // # Arguments

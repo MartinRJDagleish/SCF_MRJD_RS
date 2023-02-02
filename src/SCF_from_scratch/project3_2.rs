@@ -2,10 +2,6 @@ use ndarray::prelude::*;
 
 use crate::molecule;
 //* For testing:
-use crate::molecule::wfn::ints::{
-    calc_elec_elec_repul_cgto, calc_kin_energy_int_cgto, calc_nuc_attr_int_cgto,
-    calc_overlap_int_cgto,
-};
 use crate::molecule::wfn::*;
 use crate::molecule::wfn::basisset::*;
 

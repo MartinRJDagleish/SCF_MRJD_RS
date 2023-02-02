@@ -17,7 +17,7 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-      - name: Test with the basic apt install for openblas
+      - name: Apt-get install for GLS and OpenBLAS 
         run : sudo apt-get install -y libopenblas-dev libgsl-dev 
         shell: bash
       # - name: Install and test OpenBLAS using my script
