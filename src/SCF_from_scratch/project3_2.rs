@@ -230,11 +230,18 @@ pub fn run_project3_2() {
         mol_6_311g.wfn_total.basis_set_total.no_cgtos,
     ));
     for i in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
-        for j in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
-            S_matr_test[(i, j)] = calc_overlap_int_cgto(
-                &mol_6_311g.wfn_total.basis_set_total.basis_set_cgtos[i],
-                &mol_6_311g.wfn_total.basis_set_total.basis_set_cgtos[j],
-            );
+        for j in 0..=i {
+            if i == j {
+                S_matr_test[(i, j)] = 1.0;
+                continue;
+            } else {
+                S_matr_test[(i, j)] = calc_overlap_int_cgto(
+                    &mol_6_311g.wfn_total.basis_set_total.basis_set_cgtos[i],
+                    &mol_6_311g.wfn_total.basis_set_total.basis_set_cgtos[j],
+                );
+
+                S_matr_test[(j, i)] = S_matr_test[(i, j)];
+            }
         }
     }
     println!("{:^5.6}\n", &S_matr_test);

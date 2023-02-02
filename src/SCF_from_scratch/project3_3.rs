@@ -145,7 +145,7 @@ pub fn run_project3_3() {
                     &mol_6_311g.wfn_total.basis_set_total.basis_set_cgtos[j],
                 );
                 mol_6_311g.wfn_total.HFMatrices.S_matr[(j, i)] =
-                    mol_6_311g.wfn_total.HFMatrices.S_matr[(i, j)].clone();
+                    mol_6_311g.wfn_total.HFMatrices.S_matr[(i, j)];
             }
         }
     }
