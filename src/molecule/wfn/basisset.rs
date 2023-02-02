@@ -170,6 +170,15 @@ pub struct BasisSetTotalDef {
     pub basis_set_defs_dict: HashMap<PSE_element_sym, BasisSetDef>,
 }
 
+impl BasisSetAtom {
+    pub fn new(element_sym: PSE_element_sym) -> Self {
+        Self {
+            element_sym,
+            cgto_list: Vec::new(),
+        }
+    }
+}
+
 impl BasisSetTotalDef {
     pub fn new() -> Self {
         Self {
@@ -442,6 +451,7 @@ pub fn parse_basis_set_file_gaussian(basis_set_name: &str) -> BasisSetTotalDef {
     basis_set_total_def
 }
 
+//TODO: THIS WHOLE FUNCTION DOES NOT WORK YET -> complicated process 
 pub fn create_basis_set_total(
     basis_set_total_def: BasisSetTotalDef,
     geom_matr: Array2<f64>,
@@ -449,25 +459,40 @@ pub fn create_basis_set_total(
 ) -> BasisSetTotal {
     let mut basis_set_total = BasisSetTotal::new();
 
-    // fn build_pgto(Z_val: i32) -> PGTO {
-    //     let mut pgto = PGTO::new();
-    //     let elem_sym: PSE_element_sym = translate_Z_val_to_sym(Z_vals[0]);
+    fn build_pgto(Z_val: i32) -> PGTO {
+        let mut pgto = PGTO::new();
+        let elem_sym: PSE_element_sym = translate_Z_val_to_sym(Z_vals[0]);
 
-    //     pgto
-    // }
+        pgto
+    }
 
-    // fn build_cgto() -> CGTO {
-    //     let mut cgto = CGTO::new();
-    //     for 
+    fn build_cgto() -> CGTO {
+        let mut cgto = CGTO::new();
 
-    //     cgto
-    // }
+        build_pgto();
+
+        cgto
+    }
+
+    for (idx, Z_val) in Z_vals.iter().enumerate() {
+        let mut basis_set_atom = BasisSetAtom::new(PSE_element_sym::DUMMY);
+        let elem_sym: PSE_element_sym = translate_Z_val_to_sym(*Z_val);
+        basis_set_atom.element_sym = elem_sym;
+
+        let basis_set_def = basis_set_total_def
+            .basis_set_defs_dict
+            .get(&elem_sym)
+            .unwrap();
+        
+        let cgto: CGTO = build_cgto();
+
+        for (L_val, no_prim) in basis_set_def.L_and_no_prim_tup.iter() {
+                        
+        }
 
 
-    // fn build_basis_for_atom() {
-    //     let mut basis_set_atom = BasisSetAtom::new();
-    //     basis_for_atom
-    // }
+
+    }
 
     basis_set_total
 }
