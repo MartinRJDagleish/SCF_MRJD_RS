@@ -150,11 +150,13 @@ pub enum L_char {
     SP,
 }
 
+#[derive(Default)]
 pub struct BasisSetAtom {
     pub element_sym: PSE_element_sym,
     pub cgto_list: Vec<CGTO>,
 }
 
+#[derive(Default)]
 pub struct BasisSetDef {
     pub element_sym: PSE_element_sym,
     pub alphas: Vec<f64>,
@@ -162,39 +164,46 @@ pub struct BasisSetDef {
     pub L_and_no_prim_tup: Vec<(L_char, usize)>,
 }
 
+#[derive(Default)]
 pub struct BasisSetTotalDef {
     pub name: String,
     pub basis_set_defs_dict: HashMap<PSE_element_sym, BasisSetDef>,
 }
 
-impl BasisSetAtom {
-    pub fn new(element_sym: PSE_element_sym) -> Self {
-        Self {
-            element_sym,
-            cgto_list: Vec::new(),
-        }
+impl Default for PSE_element_sym {
+    fn default() -> Self {
+        PSE_element_sym::DUMMY
     }
 }
 
-impl BasisSetTotalDef {
-    pub fn new() -> Self {
-        Self {
-            name: String::new(),
-            basis_set_defs_dict: HashMap::new(),
-        }
-    }
-}
+// impl BasisSetAtom {
+//     pub fn new(element_sym: PSE_element_sym) -> Self {
+//         Self {
+//             element_sym,
+//             cgto_list: Vec::new(),
+//         }
+//     }
+// }
 
-impl BasisSetDef {
-    pub fn new(element_sym: PSE_element_sym) -> Self {
-        Self {
-            element_sym,
-            alphas: Vec::new(),
-            cgto_coeffs: Vec::new(),
-            L_and_no_prim_tup: Vec::new(),
-        }
-    }
-}
+// impl BasisSetTotalDef {
+//     pub fn new() -> Self {
+//         Self {
+//             name: String::new(),
+//             basis_set_defs_dict: HashMap::new(),
+//         }
+//     }
+// }
+
+// impl BasisSetDef {
+//     pub fn new(element_sym: PSE_element_sym) -> Self {
+//         Self {
+//             element_sym,
+//             alphas: Vec::new(),
+//             cgto_coeffs: Vec::new(),
+//             L_and_no_prim_tup: Vec::new(),
+//         }
+//     }
+// }
 
 pub fn match_pse_symb(match_string: &str) -> PSE_element_sym {
     // let mut PSE_element_sym_HashMap = HashMap::<&str,PSE_element_sym>::new();
@@ -336,24 +345,23 @@ pub fn parse_basis_set_file_gaussian(basis_set_name: &str) -> BasisSetTotalDef {
         basis_set_defs_dict: HashMap::new(),
     };
 
-    let basis_set_file_path: &str;
-    match basis_set_name.to_ascii_lowercase().as_str() {
+    let basis_set_file_path: &str = match basis_set_name.to_ascii_lowercase().as_str() {
         "sto-3g" => {
-            basis_set_file_path = "inp/Project3_2/basis_sets/sto-3g.gbs";
+            "inp/Project3_2/basis_sets/sto-3g.gbs"
         }
         "6-311g" => {
-            basis_set_file_path = "inp/Project3_2/basis_sets/6-311g.gbs";
+            "inp/Project3_2/basis_sets/6-311g.gbs"
         }
         "def2-svp" => {
-            basis_set_file_path = "inp/Project3_2/basis_sets/def2-svp.gbs";
+            "inp/Project3_2/basis_sets/def2-svp.gbs"
         }
         "def2-tzvp" => {
-            basis_set_file_path = "inp/Project3_2/basis_sets/def2-tzvp.gbs";
+            "inp/Project3_2/basis_sets/def2-tzvp.gbs"
         }
         _ => {
-            panic!("Basis set not implemented yet!");
+            panic!("Basis set not yet implemented!");
         }
-    }
+    };
 
     let basis_set_file = fs::File::open(basis_set_file_path).expect("Basis set file not found!");
     let basis_set_reader = BufReader::new(basis_set_file);
@@ -369,16 +377,16 @@ pub fn parse_basis_set_file_gaussian(basis_set_name: &str) -> BasisSetTotalDef {
 
     // let mut block_count: u32 = 0;
 
-    let mut basis_set: BasisSetDef = BasisSetDef::new(PSE_element_sym::DUMMY); //* using dummy element symbol
+    let mut basis_set: BasisSetDef = BasisSetDef::default(); //* using dummy element symbol
 
     for line in basis_set_reader.lines() {
         let line = line.unwrap();
         let data = line.trim();
         let mut line_start: char = 0 as char;
         if !data.is_empty() {
-            line_start = data.chars().nth(0).unwrap();
+            line_start = data.chars().next().unwrap();
         }
-        if data.starts_with("!") || data.is_empty() {
+        if data.starts_with('!') || data.is_empty() {
             continue;
         } else if data.starts_with(block_delimiter) {
             if !basis_set.alphas.is_empty() {
@@ -386,9 +394,9 @@ pub fn parse_basis_set_file_gaussian(basis_set_name: &str) -> BasisSetTotalDef {
                 //* Add the basis using the element symbol as key
                 basis_set_total_def
                     .basis_set_defs_dict
-                    .insert(basis_set.element_sym.clone(), basis_set);
+                    .insert(basis_set.element_sym, basis_set);
             }
-            basis_set = BasisSetDef::new(PSE_element_sym::DUMMY);
+            basis_set = BasisSetDef::default();
             continue;
         } else if line_start.is_alphabetic() {
             let line_split: Vec<&str> = data.split_whitespace().collect();
@@ -523,56 +531,3 @@ pub fn translate_sym_to_Z_val(sym: PSE_element_sym) -> i32 {
 
     Z_val
 }
-
-// ChatGPT
-// struct ChemElem {
-//     chem_elem: String,
-//     angular_mom: String,
-//     no_primitives: u32,
-//     scaling_factor: f64,
-//     values: Vec<(f64, f64)>,
-// }
-
-// fn read_text_block(text: &str) -> Vec<ChemElem> {
-//     let mut elements = vec![];
-//     let lines = text.split("\n");
-//     let mut current_elem = ChemElem {
-//         chem_elem: String::new(),
-//         angular_mom: String::new(),
-//         no_primitives: 0,
-//         scaling_factor: 0.0,
-//         values: vec![],
-//     };
-//     for line in lines {
-//         if line.starts_with("****") {
-//             continue;
-//         } else if line.starts_with(" ") {
-//             let parts: Vec<&str> = line.split(" ").collect();
-//             let value1 = parts[0].parse::<f64>().unwrap();
-//             let value2 = parts[1].parse::<f64>().unwrap();
-//             current_elem.values.push((value1, value2));
-//         } else {
-//             let parts: Vec<&str> = line.split(" ").collect();
-//             if parts.len() == 2 {
-//                 current_elem.chem_elem = parts[0].to_string();
-//             } else if parts.len() == 3 {
-//                 current_elem.angular_mom = parts[0].to_string();
-//                 current_elem.no_primitives = parts[1].parse::<u32>().unwrap();
-//                 current_elem.scaling_factor = 0.0;
-//             } else {
-//                 if !current_elem.chem_elem.is_empty() {
-//                     elements.push(current_elem);
-//                 }
-//                 current_elem = ChemElem {
-//                     chem_elem: String::new(),
-//                     angular_mom: String::new(),
-//                     no_primitives: 0,
-//                     scaling_factor: 0.0,
-//                     values: vec![],
-//                 };
-//             }
-//         }
-//     }
-//     elements.push(current_elem);
-//     elements
-// }

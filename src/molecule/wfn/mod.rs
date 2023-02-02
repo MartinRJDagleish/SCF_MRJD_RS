@@ -15,21 +15,18 @@ pub struct PGTO {
 }
 
 #[derive(Debug)]
-#[allow(non_snake_case)]
 pub struct CGTO {
     pub pgto_vec: Vec<PGTO>,
     pub no_pgtos: usize,
 }
 
-#[derive(Debug)]
-#[allow(non_snake_case)]
+#[derive(Debug,Default)]
 pub struct BasisSetTotal {
     pub basis_set_cgtos: Vec<CGTO>,
     pub no_cgtos: usize,
 }
 
-#[derive(Debug)]
-#[allow(non_snake_case)]
+#[derive(Debug,Default)]
 pub struct HFMatrices {
     pub S_matr: Array2<f64>,
     pub T_matr: Array2<f64>,
@@ -40,36 +37,39 @@ pub struct HFMatrices {
     pub V_nn_val: f64,
 }
 
-#[derive(Debug)]
-#[allow(non_snake_case)]
+#[derive(Debug,Default)]
 pub struct WfnTotal {
     pub basis_set_total: BasisSetTotal,
     pub HFMatrices: HFMatrices,
 }
 
+// impl Default for HFMatrices {
+//     fn default() -> Self {
+//         Self::new()
+//     }
+// }
 
-#[allow(non_snake_case)]
-impl HFMatrices {
-    pub fn new() -> HFMatrices {
-        let S_matr: Array2<f64> = Array2::zeros((1, 1));
-        let T_matr: Array2<f64> = Array2::zeros((1, 1));
-        let V_ne_matr: Array2<f64> = Array2::zeros((1, 1));
-        let H_core_matr: Array2<f64> = Array2::zeros((1, 1));
-        let ERI_arr1: Array1<f64> = Array1::zeros(1);
-        let ERI_tensor: Array4<f64> = Array4::zeros((1, 1, 1, 1));
-        let V_nn_val: f64 = 0.0;
+// impl HFMatrices {
+//     pub fn new() -> HFMatrices {
+//         let S_matr: Array2<f64> = Array2::zeros((1, 1));
+//         let T_matr: Array2<f64> = Array2::zeros((1, 1));
+//         let V_ne_matr: Array2<f64> = Array2::zeros((1, 1));
+//         let H_core_matr: Array2<f64> = Array2::zeros((1, 1));
+//         let ERI_arr1: Array1<f64> = Array1::zeros(1);
+//         let ERI_tensor: Array4<f64> = Array4::zeros((1, 1, 1, 1));
+//         let V_nn_val: f64 = 0.0;
 
-        HFMatrices {
-            S_matr,
-            T_matr,
-            V_ne_matr,
-            H_core_matr,
-            ERI_arr1,
-            ERI_tensor,
-            V_nn_val,
-        }
-    }
-}
+//         HFMatrices {
+//             S_matr,
+//             T_matr,
+//             V_ne_matr,
+//             H_core_matr,
+//             ERI_arr1,
+//             ERI_tensor,
+//             V_nn_val,
+//         }
+//     }
+// }
 
 #[allow(non_snake_case)]
 impl PGTO {
@@ -97,7 +97,7 @@ impl PGTO {
 
     pub fn calc_cart_norm_const(alpha: &f64, ang_mom_vec: &Array1<i32>) -> f64 {
         let numerator: f64 =
-            (2.0 * alpha / PI).powf(1.5) * (4.0 * alpha).powi(ang_mom_vec.sum() as i32);
+            (2.0 * alpha / PI).powf(1.5) * (4.0 * alpha).powi(ang_mom_vec.sum());
         let denom: i32 = ang_mom_vec
             .mapv(|x| Self::double_factorial(2 * x - 1))
             .product();
@@ -124,7 +124,6 @@ impl PGTO {
     // }
 }
 
-#[allow(non_snake_case)]
 impl CGTO {
     pub fn new(pgto_vec: Vec<PGTO>) -> Self {
         let pgto_vec = pgto_vec;
@@ -138,7 +137,6 @@ impl CGTO {
     }
 }
 
-#[allow(non_snake_case)]
 impl BasisSetTotal {
     fn new() -> Self {
         let basis_set_cgtos: Vec<CGTO> = Vec::new();
@@ -155,16 +153,13 @@ impl BasisSetTotal {
     }
 }
 
-#[allow(non_snake_case)]
 impl WfnTotal {
     pub fn new() -> Self {
-        let HFMatrices = HFMatrices::new();
+        let HFMatrices = HFMatrices::default();
         let basis_set_total = BasisSetTotal::new();
 
         WfnTotal {
-            // cgto_vec,
             HFMatrices,
-            // no_cgto,
             basis_set_total,
         }
     }
@@ -185,16 +180,16 @@ impl WfnTotal {
                 }
                 for k in 0..no_pgto_i {
                     for l in 0..no_pgto_j {
-                        let norm_const: f64 = &self.basis_set_total.basis_set_cgtos[i].pgto_vec[k]
+                        let norm_const: f64 = self.basis_set_total.basis_set_cgtos[i].pgto_vec[k]
                             .norm_const
-                            * &self.basis_set_total.basis_set_cgtos[j].pgto_vec[l].norm_const; //* This is N
+                            * self.basis_set_total.basis_set_cgtos[j].pgto_vec[l].norm_const; //* This is N
                         let sum_alphas_recip: f64 =
-                            (&self.basis_set_total.basis_set_cgtos[i].pgto_vec[k].alpha
-                                + &self.basis_set_total.basis_set_cgtos[j].pgto_vec[l].alpha)
+                            (self.basis_set_total.basis_set_cgtos[i].pgto_vec[k].alpha
+                                + self.basis_set_total.basis_set_cgtos[j].pgto_vec[l].alpha)
                                 .recip(); //* This is p^-1
                         let prod_alphas_div_sum: f64 =
-                            &self.basis_set_total.basis_set_cgtos[i].pgto_vec[k].alpha
-                                * &self.basis_set_total.basis_set_cgtos[j].pgto_vec[l].alpha
+                            self.basis_set_total.basis_set_cgtos[i].pgto_vec[k].alpha
+                                * self.basis_set_total.basis_set_cgtos[j].pgto_vec[l].alpha
                                 * sum_alphas_recip; //* This is q
                         let diff_pos: Array1<f64> = &self.basis_set_total.basis_set_cgtos[i]
                             .pgto_vec[k]

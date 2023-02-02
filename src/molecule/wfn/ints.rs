@@ -39,12 +39,11 @@ pub fn calc_expansion_coeff_overlap_int(
     let p_recip = (alpha1 + alpha2).recip();
     let q = alpha1 * alpha2 * p_recip;
     match (no_nodes, l1, l2) {
-        (x, _, _) if x < 0 || x > (l1 + l2) => return 0.0,
-        (0, 0, 0) => return (-q * gauss_dist.powi(2)).exp(),
+        (x, _, _) if x < 0 || x > (l1 + l2) => 0.0,
+        (0, 0, 0) => (-q * gauss_dist.powi(2)).exp(),
         (_, _, 0) => {
             //* decrement index l1
-            return 0.5
-                * p_recip
+            0.5 * p_recip
                 * calc_expansion_coeff_overlap_int(
                     l1 - 1,
                     l2,
@@ -70,12 +69,11 @@ pub fn calc_expansion_coeff_overlap_int(
                         gauss_dist,
                         alpha1,
                         alpha2,
-                    );
+                    )
         }
         (_, _, _) => {
             //* decrement index l2
-            return 0.5
-                * p_recip
+            0.5 * p_recip
                 * calc_expansion_coeff_overlap_int(
                     l1,
                     l2 - 1,
@@ -101,7 +99,7 @@ pub fn calc_expansion_coeff_overlap_int(
                         gauss_dist,
                         alpha1,
                         alpha2,
-                    );
+                    )
         }
     }
 }
@@ -138,16 +136,16 @@ pub fn calc_overlap_int_prim(
     //
 
     let mut S_cart_total: f64 = 1.0; //* Start with 1, otherwise it will be 0
-    for cart_coord in 0..3 {
+    (0..3).for_each(|cart_coord| {
         S_cart_total *= calc_expansion_coeff_overlap_int(
             ang_mom_vec1[cart_coord],
             ang_mom_vec2[cart_coord],
             0,
             &gauss1_center_pos[cart_coord] - &gauss2_center_pos[cart_coord], //* abs does not fix the problem
-            &alpha1,
-            &alpha2,
+            alpha1,
+            alpha2,
         );
-    }
+    });
 
     S_cart_total * PI.powf(1.5) * (alpha1 + alpha2).recip().powf(1.5)
 }
@@ -222,47 +220,49 @@ pub fn calc_kin_energy_int_prim(
     //* This is the clone in the outside scoop.
     let mut ang_mom_vec2_tmp = ang_mom_vec2.clone();
     let part1: f64 = alpha2
-        * (2.0 * ang_mom_vec2.sum() as f64 + 3.0)
+        * (2.0 * ang_mom_vec2_tmp.sum() as f64 + 3.0)
         * calc_overlap_int_prim(
-            &alpha1,
-            &alpha2,
-            &ang_mom_vec1,
-            &ang_mom_vec2,
-            &gauss1_center_pos,
-            &gauss2_center_pos,
+            alpha1,
+            alpha2,
+            ang_mom_vec1,
+            ang_mom_vec2,
+            gauss1_center_pos,
+            gauss2_center_pos,
         );
-    let mut part2_1: f64 = 0.0;
-    for i in 0..3 {
+
+    let mut part2: f64 = 0.0;
+    (0..3).for_each(|i| {
         ang_mom_vec2_tmp[i] += 2;
-        part2_1 += calc_overlap_int_prim(
-            &alpha1,
-            &alpha2,
-            &ang_mom_vec1,
+        part2 += calc_overlap_int_prim(
+            alpha1,
+            alpha2,
+            ang_mom_vec1,
             &ang_mom_vec2_tmp,
-            &gauss1_center_pos,
-            &gauss2_center_pos,
+            gauss1_center_pos,
+            gauss2_center_pos,
         );
         ang_mom_vec2_tmp[i] -= 2;
-    }
-    let part2_2: f64 = -2.0 * alpha2.powi(2) * part2_1;
+    });
+    part2 *= -2.0 * alpha2.powi(2);
+
     let mut part3: f64 = 0.0;
-    for i in 0..3 {
+    (0..3).for_each(|i| {
         ang_mom_vec2_tmp[i] -= 2;
         part3 += ((ang_mom_vec2_tmp[i] + 1) as f64) //* this is l * (l-1) effectively 
             * ((ang_mom_vec2_tmp[i] + 2) as f64)
             * calc_overlap_int_prim(
-                &alpha1,
-                &alpha2,
-                &ang_mom_vec1,
+                alpha1,
+                alpha2,
+                ang_mom_vec1,
                 &ang_mom_vec2_tmp,
-                &gauss1_center_pos,
-                &gauss2_center_pos,
+                gauss1_center_pos,
+                gauss2_center_pos,
             );
         ang_mom_vec2_tmp[i] += 2;
-    }
+    });
     part3 *= -0.5;
 
-    part1 + part2_2 + part3
+    part1 + part2 + part3
 }
 
 pub fn calc_kin_energy_int_cgto(ContrGauss1: &CGTO, ContrGauss2: &CGTO) -> f64 {
@@ -466,13 +466,13 @@ pub fn calc_nuc_attr_int_prim(
     nuc_center: &Array1<f64>,
 ) -> f64 {
     let gaussian_prod_center: Array1<f64> = calc_gaussian_prod_center(
-        alpha1.clone(),
-        alpha2.clone(),
+        alpha1.to_owned(),
+        alpha2.to_owned(),
         gauss1_center_pos,
         gauss2_center_pos,
     );
     let p_recip = (alpha1 + alpha2).recip();
-    let dist_P_C: f64 = calc_r_ij_general(&gaussian_prod_center, &nuc_center);
+    let dist_P_C: f64 = calc_r_ij_general(&gaussian_prod_center, nuc_center);
 
     let mut result: f64 = 0.0;
 
@@ -528,7 +528,7 @@ pub fn calc_nuc_attr_int_cgto(
                     &prim2.ang_mom_vec,
                     &prim1.gauss_center_pos,
                     &prim2.gauss_center_pos,
-                    &nuc_center,
+                    nuc_center,
                 );
         }
     }
@@ -553,14 +553,14 @@ pub fn calc_elec_elec_repul_prim(
     let p = alpha1 + alpha2;
     let q = alpha3 + alpha4;
     let P: Array1<f64> = calc_gaussian_prod_center(
-        alpha1.clone(),
-        alpha2.clone(),
+        alpha1.to_owned(),
+        alpha2.to_owned(),
         gauss1_center_pos,
         gauss2_center_pos,
     );
     let Q: Array1<f64> = calc_gaussian_prod_center(
-        alpha3.clone(),
-        alpha4.clone(),
+        alpha3.to_owned(),
+        alpha4.to_owned(),
         gauss3_center_pos,
         gauss4_center_pos,
     );
