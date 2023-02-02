@@ -2,10 +2,6 @@ use ndarray::prelude::*;
 
 use crate::molecule;
 //* For testing:
-use crate::molecule::wfn::ints::{
-    calc_elec_elec_repul_cgto, calc_kin_energy_int_cgto, calc_nuc_attr_int_cgto,
-    calc_overlap_int_cgto,
-};
 use crate::molecule::wfn::*;
 use crate::molecule::wfn::basisset::*;
 
@@ -17,7 +13,7 @@ pub fn run_project3_2() {
 
     // * Parse the basis set file
     let basis_set_name = "sto-3g";
-    let basis_set_tot: TotalBasisSetDef = parse_basis_set_file_gaussian(basis_set_name);
+    let basis_set_tot_def: BasisSetTotalDef = parse_basis_set_file_gaussian(basis_set_name);
 
 
     // let mol = molecule::Molecule::new("H2O", "sto-3g", "h2o.xyz");
@@ -234,11 +230,18 @@ pub fn run_project3_2() {
         mol_6_311g.wfn_total.basis_set_total.no_cgtos,
     ));
     for i in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
-        for j in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
-            S_matr_test[(i, j)] = calc_overlap_int_cgto(
-                &mol_6_311g.wfn_total.basis_set_total.basis_set_cgtos[i],
-                &mol_6_311g.wfn_total.basis_set_total.basis_set_cgtos[j],
-            );
+        for j in 0..=i {
+            if i == j {
+                S_matr_test[(i, j)] = 1.0;
+                continue;
+            } else {
+                S_matr_test[(i, j)] = calc_overlap_int_cgto(
+                    &mol_6_311g.wfn_total.basis_set_total.basis_set_cgtos[i],
+                    &mol_6_311g.wfn_total.basis_set_total.basis_set_cgtos[j],
+                );
+
+                S_matr_test[(j, i)] = S_matr_test[(i, j)];
+            }
         }
     }
     println!("{:^5.6}\n", &S_matr_test);
