@@ -285,29 +285,29 @@ pub fn run_project3_2() {
     }
     println!("{:^5.6}\n", &V_ne_matr_test);
 
-    // println!("Electron-electron repulsion integrals (V_ee / ERI matrix):");
-    // let mut V_ee_matr_test = Array4::<f64>::zeros((
-    //     mol_6_311g.wfn_total.basis_set_total.no_cgtos,
-    //     mol_6_311g.wfn_total.basis_set_total.no_cgtos,
-    //     mol_6_311g.wfn_total.basis_set_total.no_cgtos,
-    //     mol_6_311g.wfn_total.basis_set_total.no_cgtos,
-    // ));
-    // for i in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
-    //     for j in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
-    //         for k in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
-    //             for l in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
-    //                 V_ee_matr_test[(i, j, k, l)] = calc_elec_elec_repul_cgto(
-    //                     &mol_6_311g.wfn_total.basis_set_total.basis_set_cgtos[i],
-    //                     &mol_6_311g.wfn_total.basis_set_total.basis_set_cgtos[j],
-    //                     &mol_6_311g.wfn_total.basis_set_total.basis_set_cgtos[k],
-    //                     &mol_6_311g.wfn_total.basis_set_total.basis_set_cgtos[l],
-    //                 );
-    //             }
-    //         }
-    //     }
-    // }
+    println!("Electron-electron repulsion integrals (V_ee / ERI matrix):");
+    let mut V_ee_matr_test = Array4::<f64>::zeros((
+        mol_6_311g.wfn_total.basis_set_total.no_cgtos,
+        mol_6_311g.wfn_total.basis_set_total.no_cgtos,
+        mol_6_311g.wfn_total.basis_set_total.no_cgtos,
+        mol_6_311g.wfn_total.basis_set_total.no_cgtos,
+    ));
+    for i in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
+        for j in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
+            for k in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
+                for l in 0..mol_6_311g.wfn_total.basis_set_total.no_cgtos {
+                    V_ee_matr_test[(i, j, k, l)] = calc_elec_elec_repul_cgto(
+                        &mol_6_311g.wfn_total.basis_set_total.basis_set_cgtos[i],
+                        &mol_6_311g.wfn_total.basis_set_total.basis_set_cgtos[j],
+                        &mol_6_311g.wfn_total.basis_set_total.basis_set_cgtos[k],
+                        &mol_6_311g.wfn_total.basis_set_total.basis_set_cgtos[l],
+                    );
+                }
+            }
+        }
+    }
 
-    // println!("{:^5.6}\n", &V_ee_matr_test);
+    println!("{:^5.6}\n", &V_ee_matr_test);
 
     //* Test new code for parse_basis_set_file
     {
