@@ -56,23 +56,20 @@ impl Molecule {
             .collect();
 
         //* Read no of atoms first for array size
-        let no_atoms: usize = geom_file_lines[0]
-            .parse()
-            .unwrap();
+        let no_atoms: usize = geom_file_lines[0].parse().unwrap();
 
         let mut Z_vals: Vec<i32> = Vec::new();
         let mut geom_matr: Array2<f64> = Array2::zeros((no_atoms, 3));
 
-        for line in geom_file_lines[1..].iter() { //* into_iter would do the same
+        for (atom_idx, line) in geom_file_lines[1..].iter().enumerate() {
+            //* into_iter would do the same
             let line_split: Vec<&str> = line.split_whitespace().collect();
 
             Z_vals.push(line_split[0].parse().unwrap());
 
-            for atom_idx in 0..no_atoms {
-                for cart_coord in 0..3 {
-                    geom_matr[(atom_idx, cart_coord)] = line_split[cart_coord + 1].parse().unwrap();
-                }
-            }
+            (0..3).for_each(|cart_coord| {
+                geom_matr[(atom_idx, cart_coord)] = line_split[cart_coord + 1].parse().unwrap();
+            });
         }
 
         (Z_vals, geom_matr, no_atoms)
@@ -83,7 +80,7 @@ impl Molecule {
             for j in 0..self.no_atoms * 3 {
                 self.hessian[(i, j)] /= (self.geom_obj.get_mass_Z_val(&self.Z_vals[i / 3]) //* this uses integer div by default 
                     * self.geom_obj.get_mass_Z_val(&self.Z_vals[j / 3])) //* -> neat trick to get right index
-                    .sqrt();
+                .sqrt();
             }
         }
     }

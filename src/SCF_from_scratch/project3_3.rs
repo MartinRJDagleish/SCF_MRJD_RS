@@ -129,11 +129,10 @@ pub fn run_project3_3() {
     // * Trying to use my Basisset parser to build molecule from gbs file info
     // let mol_6_311g_from_gbs = molecule::Molecule::new("inp/Project3_2/geom/h2.xyz", 0);
 
-
     println!("\nSCF from scratch:\n");
     //* Project 3: SCF from scratch
     //* Step 1: Read Nuclear Repulsion Energy (enuc) from file
-    mol_6_311g.wfn_total.HFMatrices.V_nn_val = calc_E_nn_val(&mol_6_311g.geom_obj.geom_matr);
+    mol_6_311g.wfn_total.HFMatrices.V_nn_val = calc_V_nn_val(&mol_6_311g.geom_obj.geom_matr);
 
     //* Step 2.1: Calculate the overlap matrix S
     mol_6_311g.wfn_total.HFMatrices.S_matr = Array2::<f64>::zeros((
