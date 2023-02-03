@@ -118,10 +118,16 @@ pub fn run_project3_3() {
         )]));
 
     // mol_6_311g.wfn_total.update_no_of_contr_gauss();
-    //***************************************************************************************/
 
+    for cgto in &mut mol_6_311g.wfn_total.basis_set_total.basis_set_cgtos {
+        cgto.update_no_pgtos();
+    }
+
+    mol_6_311g.wfn_total.basis_set_total.update_no_cgtos();
+
+    //***************************************************************************************/
     // * Trying to use my Basisset parser to build molecule from gbs file info
-    let mol_6_311g_from_gbs = molecule::Molecule::new("inp/Project3_2/geom/h2.xyz", 0);
+    // let mol_6_311g_from_gbs = molecule::Molecule::new("inp/Project3_2/geom/h2.xyz", 0);
 
 
     println!("\nSCF from scratch:\n");
@@ -294,7 +300,6 @@ pub fn run_project3_3() {
     println!("Initial density matrix:\n{:^.5}\n", &D_matr);
 
     let mut E_scf: f64 = 0.0;
-    let mut E_tot: f64 = 0.0;
     let mut E_scf_vec: Vec<f64> = Vec::new();
     let mut E_tot_vec: Vec<f64> = Vec::new();
 
@@ -308,7 +313,7 @@ pub fn run_project3_3() {
     }
 
     E_scf_vec.push(E_scf);
-    E_tot = E_scf + mol_6_311g.wfn_total.HFMatrices.V_nn_val;
+    let mut E_tot = E_scf + mol_6_311g.wfn_total.HFMatrices.V_nn_val;
     E_tot_vec.push(E_tot);
 
     //* Step 7: Iterate the SCF procedure until convergence
