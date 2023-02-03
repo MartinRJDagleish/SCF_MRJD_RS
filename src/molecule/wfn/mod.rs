@@ -20,13 +20,13 @@ pub struct CGTO {
     pub no_pgtos: usize,
 }
 
-#[derive(Debug,Default)]
+#[derive(Debug, Default)]
 pub struct BasisSetTotal {
     pub basis_set_cgtos: Vec<CGTO>,
     pub no_cgtos: usize,
 }
 
-#[derive(Debug,Default)]
+#[derive(Debug, Default)]
 pub struct HFMatrices {
     pub S_matr: Array2<f64>,
     pub T_matr: Array2<f64>,
@@ -37,7 +37,7 @@ pub struct HFMatrices {
     pub V_nn_val: f64,
 }
 
-#[derive(Debug,Default)]
+#[derive(Debug, Default)]
 pub struct WfnTotal {
     pub basis_set_total: BasisSetTotal,
     pub HFMatrices: HFMatrices,
@@ -96,8 +96,7 @@ impl PGTO {
     }
 
     pub fn calc_cart_norm_const(alpha: &f64, ang_mom_vec: &Array1<i32>) -> f64 {
-        let numerator: f64 =
-            (2.0 * alpha / PI).powf(1.5) * (4.0 * alpha).powi(ang_mom_vec.sum());
+        let numerator: f64 = (2.0 * alpha / PI).powf(1.5) * (4.0 * alpha).powi(ang_mom_vec.sum());
         let denom: i32 = ang_mom_vec
             .mapv(|x| Self::double_factorial(2 * x - 1))
             .product();
@@ -113,15 +112,6 @@ impl PGTO {
         }
     }
 
-    // pub fn calc_cart_norm_const_V2(&self) {
-    //     let numerator: f64 = (2.0 * self.alpha / PI).powf(1.5)
-    //         * (4.0 * self.alpha).powi(self.angular_momentum_vec.sum() as i32);
-    //     let denom: i32 = self.angular_momentum_vec
-    //         .mapv(|x| double_factorial(2 * x - 1))
-    //         .product();
-
-    //     numerator / denom as f64
-    // }
 }
 
 impl CGTO {
@@ -204,7 +194,7 @@ impl WfnTotal {
                             * (-prod_alphas_div_sum * diff_pos_squ).exp();
                     }
                 }
-                S_matr[(j, i)] = S_matr[(i, j)].clone();
+                S_matr[(j, i)] = S_matr[(i, j)];
             }
         }
 
@@ -222,20 +212,20 @@ impl WfnTotal {
 
                 for k in 0..no_prim_gauss_i {
                     for l in 0..no_prim_gauss_j {
-                        let norm_const: f64 = &self.basis_set_total.basis_set_cgtos[i].pgto_vec[k]
+                        let norm_const: f64 = self.basis_set_total.basis_set_cgtos[i].pgto_vec[k]
                             .norm_const
-                            * &self.basis_set_total.basis_set_cgtos[j].pgto_vec[l].norm_const; //* This is N
-                        let prod_coeffs: f64 = &self.basis_set_total.basis_set_cgtos[i].pgto_vec[k]
+                            * self.basis_set_total.basis_set_cgtos[j].pgto_vec[l].norm_const; //* This is N
+                        let prod_coeffs: f64 = self.basis_set_total.basis_set_cgtos[i].pgto_vec[k]
                             .cgto_coeff
-                            * &self.basis_set_total.basis_set_cgtos[j].pgto_vec[l].cgto_coeff; //* This is c_i * c_j
+                            * self.basis_set_total.basis_set_cgtos[j].pgto_vec[l].cgto_coeff; //* This is c_i * c_j
 
                         let sum_alphas_recip: f64 =
-                            (&self.basis_set_total.basis_set_cgtos[i].pgto_vec[k].alpha
-                                + &self.basis_set_total.basis_set_cgtos[j].pgto_vec[l].alpha)
+                            (self.basis_set_total.basis_set_cgtos[i].pgto_vec[k].alpha
+                                + self.basis_set_total.basis_set_cgtos[j].pgto_vec[l].alpha)
                                 .recip(); //* This is p^-1
                         let prod_alphas_div_sum: f64 =
-                            &self.basis_set_total.basis_set_cgtos[i].pgto_vec[k].alpha
-                                * &self.basis_set_total.basis_set_cgtos[j].pgto_vec[l].alpha
+                            self.basis_set_total.basis_set_cgtos[i].pgto_vec[k].alpha
+                                * self.basis_set_total.basis_set_cgtos[j].pgto_vec[l].alpha
                                 * sum_alphas_recip; //* This is q
                         let diff_pos: Array1<f64> = &self.basis_set_total.basis_set_cgtos[i]
                             .pgto_vec[k]
@@ -274,7 +264,7 @@ impl WfnTotal {
                         }
                     }
                 }
-                T_matr[(j, i)] = T_matr[(i, j)].clone();
+                T_matr[(j, i)] = T_matr[(i, j)];
             }
         }
 
@@ -302,21 +292,21 @@ impl WfnTotal {
 
                 for k in 0..no_prim_gauss_i {
                     for l in 0..no_prim_gauss_j {
-                        let norm_const: f64 = &self.basis_set_total.basis_set_cgtos[i].pgto_vec[k]
+                        let norm_const: f64 = self.basis_set_total.basis_set_cgtos[i].pgto_vec[k]
                             .norm_const
-                            * &self.basis_set_total.basis_set_cgtos[j].pgto_vec[l].norm_const; //* This is N
-                        let prod_coeffs: f64 = &self.basis_set_total.basis_set_cgtos[i].pgto_vec[k]
+                            * self.basis_set_total.basis_set_cgtos[j].pgto_vec[l].norm_const; //* This is N
+                        let prod_coeffs: f64 = self.basis_set_total.basis_set_cgtos[i].pgto_vec[k]
                             .cgto_coeff
-                            * &self.basis_set_total.basis_set_cgtos[j].pgto_vec[l].cgto_coeff; //* This is c_i * c_j
-                        let sum_alphas = &self.basis_set_total.basis_set_cgtos[i].pgto_vec[k].alpha
-                            + &self.basis_set_total.basis_set_cgtos[j].pgto_vec[l].alpha; //* This is p
+                            * self.basis_set_total.basis_set_cgtos[j].pgto_vec[l].cgto_coeff; //* This is c_i * c_j
+                        let sum_alphas = self.basis_set_total.basis_set_cgtos[i].pgto_vec[k].alpha
+                            + self.basis_set_total.basis_set_cgtos[j].pgto_vec[l].alpha; //* This is p
                         let sum_alphas_recip: f64 =
-                            (&self.basis_set_total.basis_set_cgtos[i].pgto_vec[k].alpha
-                                + &self.basis_set_total.basis_set_cgtos[j].pgto_vec[l].alpha)
+                            (self.basis_set_total.basis_set_cgtos[i].pgto_vec[k].alpha
+                                + self.basis_set_total.basis_set_cgtos[j].pgto_vec[l].alpha)
                                 .recip(); //* This is p^-1
                         let prod_alphas_div_sum: f64 =
-                            &self.basis_set_total.basis_set_cgtos[i].pgto_vec[k].alpha
-                                * &self.basis_set_total.basis_set_cgtos[j].pgto_vec[l].alpha
+                            self.basis_set_total.basis_set_cgtos[i].pgto_vec[k].alpha
+                                * self.basis_set_total.basis_set_cgtos[j].pgto_vec[l].alpha
                                 * sum_alphas_recip; //* This is q
                         let diff_pos: Array1<f64> = &self.basis_set_total.basis_set_cgtos[i]
                             .pgto_vec[k]
@@ -332,7 +322,7 @@ impl WfnTotal {
                                     * self.basis_set_total.basis_set_cgtos[j].pgto_vec[l].alpha; //* This is P
                         new_center_pos *= sum_alphas_recip; //* This is Pp
 
-                        for atom in 0..no_atoms {
+                        (0..no_atoms).for_each(|atom| {
                             let diff_pos_atom: Array1<f64> = &new_center_pos
                                 - &self.basis_set_total.basis_set_cgtos[atom].pgto_vec[0]
                                     .gauss_center_pos; //* This is PA
@@ -347,10 +337,10 @@ impl WfnTotal {
                                 * prod_coeffs
                                 * (-prod_alphas_div_sum * diff_pos_squ).exp()
                                 * boys::micb25::boys(0, sum_alphas * diff_pos_atom_squ);
-                        }
+                        });
                     }
                 }
-                V_ne_matr[(j, i)] = V_ne_matr[(i, j)].clone();
+                V_ne_matr[(j, i)] = V_ne_matr[(i, j)];
             }
         }
 
@@ -382,54 +372,52 @@ impl WfnTotal {
                             for n in 0..no_prim_gauss_j {
                                 for o in 0..no_prim_gauss_k {
                                     for p in 0..no_prim_gauss_l {
-                                        let norm_const: f64 = &self.basis_set_total.basis_set_cgtos
+                                        let norm_const: f64 = self.basis_set_total.basis_set_cgtos
                                             [i]
                                             .pgto_vec[m]
                                             .norm_const
-                                            * &self.basis_set_total.basis_set_cgtos[j].pgto_vec[n]
+                                            * self.basis_set_total.basis_set_cgtos[j].pgto_vec[n]
                                                 .norm_const
-                                            * &self.basis_set_total.basis_set_cgtos[k].pgto_vec[o]
+                                            * self.basis_set_total.basis_set_cgtos[k].pgto_vec[o]
                                                 .norm_const
-                                            * &self.basis_set_total.basis_set_cgtos[l].pgto_vec[p]
+                                            * self.basis_set_total.basis_set_cgtos[l].pgto_vec[p]
                                                 .norm_const; //* This is N
-                                        let prod_coeffs: f64 = &self
+                                        let prod_coeffs: f64 = self
                                             .basis_set_total
                                             .basis_set_cgtos[i]
                                             .pgto_vec[m]
                                             .cgto_coeff
-                                            * &self.basis_set_total.basis_set_cgtos[j].pgto_vec[n]
+                                            * self.basis_set_total.basis_set_cgtos[j].pgto_vec[n]
                                                 .cgto_coeff
-                                            * &self.basis_set_total.basis_set_cgtos[k].pgto_vec[o]
+                                            * self.basis_set_total.basis_set_cgtos[k].pgto_vec[o]
                                                 .cgto_coeff
-                                            * &self.basis_set_total.basis_set_cgtos[l].pgto_vec[p]
+                                            * self.basis_set_total.basis_set_cgtos[l].pgto_vec[p]
                                                 .cgto_coeff; //* This is c_i * c_j
 
-                                        let sum_alphas_ij = &self.basis_set_total.basis_set_cgtos
-                                            [i]
+                                        let sum_alphas_ij = self.basis_set_total.basis_set_cgtos[i]
                                             .pgto_vec[m]
                                             .alpha
-                                            + &self.basis_set_total.basis_set_cgtos[j].pgto_vec[n]
+                                            + self.basis_set_total.basis_set_cgtos[j].pgto_vec[n]
                                                 .alpha; //* This is p_ij
                                         let sum_alphas_recip_ij: f64 = sum_alphas_ij.recip(); //* This is p_ij^-1
-                                        let sum_alphas_kl = &self.basis_set_total.basis_set_cgtos
-                                            [k]
+                                        let sum_alphas_kl = self.basis_set_total.basis_set_cgtos[k]
                                             .pgto_vec[o]
                                             .alpha
-                                            + &self.basis_set_total.basis_set_cgtos[l].pgto_vec[p]
+                                            + self.basis_set_total.basis_set_cgtos[l].pgto_vec[p]
                                                 .alpha; //* This is p_kl
                                         let sum_alphas_recip_kl: f64 = sum_alphas_kl.recip(); //* This is p_kl^-1
 
                                         let prod_alphas_div_sum_ij: f64 =
-                                            &self.basis_set_total.basis_set_cgtos[i].pgto_vec[m]
+                                            self.basis_set_total.basis_set_cgtos[i].pgto_vec[m]
                                                 .alpha
-                                                * &self.basis_set_total.basis_set_cgtos[j].pgto_vec
+                                                * self.basis_set_total.basis_set_cgtos[j].pgto_vec
                                                     [n]
                                                     .alpha
                                                 * sum_alphas_recip_ij; //* This is q_ij
                                         let prod_alphas_div_sum_kl: f64 =
-                                            &self.basis_set_total.basis_set_cgtos[k].pgto_vec[o]
+                                            self.basis_set_total.basis_set_cgtos[k].pgto_vec[o]
                                                 .alpha
-                                                * &self.basis_set_total.basis_set_cgtos[l].pgto_vec
+                                                * self.basis_set_total.basis_set_cgtos[l].pgto_vec
                                                     [p]
                                                     .alpha
                                                 * sum_alphas_recip_kl; //* This is q_kl

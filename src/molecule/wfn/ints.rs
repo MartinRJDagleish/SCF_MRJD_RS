@@ -39,7 +39,7 @@ pub fn calc_expansion_coeff_overlap_int(
     let p_recip = (alpha1 + alpha2).recip();
     let q = alpha1 * alpha2 * p_recip;
     match (no_nodes, l1, l2) {
-        (x, _, _) if x < 0 || x > (l1 + l2) => 0.0,
+        (t, _, _) if t < 0 || t > (l1 + l2) => 0.0,
         (0, 0, 0) => (-q * gauss_dist.powi(2)).exp(),
         (_, _, 0) => {
             //* decrement index l1
@@ -82,7 +82,7 @@ pub fn calc_expansion_coeff_overlap_int(
                     alpha1,
                     alpha2,
                 )
-                - (q * gauss_dist / alpha1)
+                - (q * gauss_dist / alpha2) //* HERE I HAD alpha1 instead of alpha2 -> fixed 
                     * calc_expansion_coeff_overlap_int(
                         l1,
                         l2 - 1,
@@ -141,7 +141,7 @@ pub fn calc_overlap_int_prim(
             ang_mom_vec1[cart_coord],
             ang_mom_vec2[cart_coord],
             0,
-            &gauss1_center_pos[cart_coord] - &gauss2_center_pos[cart_coord], //* abs does not fix the problem
+            (gauss1_center_pos[cart_coord] - gauss2_center_pos[cart_coord]), //* abs does not fix the problem
             alpha1,
             alpha2,
         );
