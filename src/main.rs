@@ -72,8 +72,10 @@ fn main() {
     }
 
     if is_run_project3_3 {
-        use crate::SCF_from_scratch::project3_3::*;
-        run_project3_3();
+        // use crate::SCF_from_scratch::project3_3::*;
+        // run_project3_3();
+        use crate::SCF_from_scratch::project3_3_h2o::*;
+        run_project3_3_h2o();
     }
     //*****************************************************************
     //*****************************************************************

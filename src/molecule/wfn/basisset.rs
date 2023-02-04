@@ -11,7 +11,7 @@ use ndarray::Array2;
 use crate::molecule::wfn::{BasisSetTotal, CGTO, PGTO};
 
 #[derive(Eq, Hash, PartialEq, Clone, Copy, EnumIter)]
-pub enum PSE_element_sym {
+pub enum PseElementSym {
     DUMMY,
     H,
     He,
@@ -152,13 +152,13 @@ pub enum L_char {
 
 #[derive(Default)]
 pub struct BasisSetAtom {
-    pub element_sym: PSE_element_sym,
+    pub element_sym: PseElementSym,
     pub cgto_list: Vec<CGTO>,
 }
 
 #[derive(Default)]
 pub struct BasisSetDef {
-    pub element_sym: PSE_element_sym,
+    pub element_sym: PseElementSym,
     pub alphas: Vec<f64>,
     pub cgto_coeffs: Vec<f64>,
     pub L_and_no_prim_tup: Vec<(L_char, usize)>,
@@ -167,17 +167,17 @@ pub struct BasisSetDef {
 #[derive(Default)]
 pub struct BasisSetTotalDef {
     pub name: String,
-    pub basis_set_defs_dict: HashMap<PSE_element_sym, BasisSetDef>,
+    pub basis_set_defs_dict: HashMap<PseElementSym, BasisSetDef>,
 }
 
-impl Default for PSE_element_sym {
+impl Default for PseElementSym {
     fn default() -> Self {
-        PSE_element_sym::DUMMY
+        PseElementSym::DUMMY
     }
 }
 
 // impl BasisSetAtom {
-//     pub fn new(element_sym: PSE_element_sym) -> Self {
+//     pub fn new(element_sym: PseElementSym) -> Self {
 //         Self {
 //             element_sym,
 //             cgto_list: Vec::new(),
@@ -195,7 +195,7 @@ impl Default for PSE_element_sym {
 // }
 
 // impl BasisSetDef {
-//     pub fn new(element_sym: PSE_element_sym) -> Self {
+//     pub fn new(element_sym: PseElementSym) -> Self {
 //         Self {
 //             element_sym,
 //             alphas: Vec::new(),
@@ -205,131 +205,132 @@ impl Default for PSE_element_sym {
 //     }
 // }
 
-pub fn match_pse_symb(match_string: &str) -> PSE_element_sym {
-    // let mut PSE_element_sym_HashMap = HashMap::<&str,PSE_element_sym>::new();
 
+pub fn match_pse_symb(match_string: &str) -> PseElementSym {
     let PSE_element_sym_HashMap = [
-        ("H", PSE_element_sym::H),
-        ("He", PSE_element_sym::He),
-        ("Li", PSE_element_sym::Li),
-        ("Be", PSE_element_sym::Be),
-        ("B", PSE_element_sym::B),
-        ("C", PSE_element_sym::C),
-        ("N", PSE_element_sym::N),
-        ("O", PSE_element_sym::O),
-        ("F", PSE_element_sym::F),
-        ("Ne", PSE_element_sym::Ne),
-        ("Na", PSE_element_sym::Na),
-        ("Mg", PSE_element_sym::Mg),
-        ("Al", PSE_element_sym::Al),
-        ("Si", PSE_element_sym::Si),
-        ("P", PSE_element_sym::P),
-        ("S", PSE_element_sym::S),
-        ("Cl", PSE_element_sym::Cl),
-        ("Ar", PSE_element_sym::Ar),
-        ("K", PSE_element_sym::K),
-        ("Ca", PSE_element_sym::Ca),
-        ("Sc", PSE_element_sym::Sc),
-        ("Ti", PSE_element_sym::Ti),
-        ("V", PSE_element_sym::V),
-        ("Cr", PSE_element_sym::Cr),
-        ("Mn", PSE_element_sym::Mn),
-        ("Fe", PSE_element_sym::Fe),
-        ("Co", PSE_element_sym::Co),
-        ("Ni", PSE_element_sym::Ni),
-        ("Cu", PSE_element_sym::Cu),
-        ("Zn", PSE_element_sym::Zn),
-        ("Ga", PSE_element_sym::Ga),
-        ("Ge", PSE_element_sym::Ge),
-        ("As", PSE_element_sym::As),
-        ("Se", PSE_element_sym::Se),
-        ("Br", PSE_element_sym::Br),
-        ("Kr", PSE_element_sym::Kr),
-        ("Rb", PSE_element_sym::Rb),
-        ("Sr", PSE_element_sym::Sr),
-        ("Y", PSE_element_sym::Y),
-        ("Zr", PSE_element_sym::Zr),
-        ("Nb", PSE_element_sym::Nb),
-        ("Mo", PSE_element_sym::Mo),
-        ("Tc", PSE_element_sym::Tc),
-        ("Ru", PSE_element_sym::Ru),
-        ("Rh", PSE_element_sym::Rh),
-        ("Pd", PSE_element_sym::Pd),
-        ("Ag", PSE_element_sym::Ag),
-        ("Cd", PSE_element_sym::Cd),
-        ("In", PSE_element_sym::In),
-        ("Sn", PSE_element_sym::Sn),
-        ("Sb", PSE_element_sym::Sb),
-        ("Te", PSE_element_sym::Te),
-        ("I", PSE_element_sym::I),
-        ("Xe", PSE_element_sym::Xe),
-        ("Cs", PSE_element_sym::Cs),
-        ("Ba", PSE_element_sym::Ba),
-        ("La", PSE_element_sym::La),
-        ("Ce", PSE_element_sym::Ce),
-        ("Pr", PSE_element_sym::Pr),
-        ("Nd", PSE_element_sym::Nd),
-        ("Pm", PSE_element_sym::Pm),
-        ("Sm", PSE_element_sym::Sm),
-        ("Eu", PSE_element_sym::Eu),
-        ("Gd", PSE_element_sym::Gd),
-        ("Tb", PSE_element_sym::Tb),
-        ("Dy", PSE_element_sym::Dy),
-        ("Ho", PSE_element_sym::Ho),
-        ("Er", PSE_element_sym::Er),
-        ("Tm", PSE_element_sym::Tm),
-        ("Yb", PSE_element_sym::Yb),
-        ("Lu", PSE_element_sym::Lu),
-        ("Hf", PSE_element_sym::Hf),
-        ("Ta", PSE_element_sym::Ta),
-        ("W", PSE_element_sym::W),
-        ("Re", PSE_element_sym::Re),
-        ("Os", PSE_element_sym::Os),
-        ("Ir", PSE_element_sym::Ir),
-        ("Pt", PSE_element_sym::Pt),
-        ("Au", PSE_element_sym::Au),
-        ("Hg", PSE_element_sym::Hg),
-        ("Tl", PSE_element_sym::Tl),
-        ("Pb", PSE_element_sym::Pb),
-        ("Bi", PSE_element_sym::Bi),
-        ("Po", PSE_element_sym::Po),
-        ("At", PSE_element_sym::At),
-        ("Rn", PSE_element_sym::Rn),
-        ("Fr", PSE_element_sym::Fr),
-        ("Ra", PSE_element_sym::Ra),
-        ("Ac", PSE_element_sym::Ac),
-        ("Th", PSE_element_sym::Th),
-        ("Pa", PSE_element_sym::Pa),
-        ("U", PSE_element_sym::U),
-        ("Np", PSE_element_sym::Np),
-        ("Pu", PSE_element_sym::Pu),
-        ("Am", PSE_element_sym::Am),
-        ("Cm", PSE_element_sym::Cm),
-        ("Bk", PSE_element_sym::Bk),
-        ("Cf", PSE_element_sym::Cf),
-        ("Es", PSE_element_sym::Es),
-        ("Fm", PSE_element_sym::Fm),
-        ("Md", PSE_element_sym::Md),
-        ("No", PSE_element_sym::No),
-        ("Lr", PSE_element_sym::Lr),
-        ("Rf", PSE_element_sym::Rf),
-        ("Db", PSE_element_sym::Db),
-        ("Sg", PSE_element_sym::Sg),
-        ("Bh", PSE_element_sym::Bh),
-        ("Hs", PSE_element_sym::Hs),
-        ("Mt", PSE_element_sym::Mt),
-        ("Ds", PSE_element_sym::Ds),
-        ("Rg", PSE_element_sym::Rg),
-        ("Cn", PSE_element_sym::Cn),
-        ("Nh", PSE_element_sym::Nh),
-        ("Fl", PSE_element_sym::Fl),
-        ("Mc", PSE_element_sym::Mc),
-        ("Lv", PSE_element_sym::Lv),
-        ("Ts", PSE_element_sym::Ts),
-        ("Og", PSE_element_sym::Og),
+        ("H", PseElementSym::H),
+        ("He", PseElementSym::He),
+        ("Li", PseElementSym::Li),
+        ("Be", PseElementSym::Be),
+        ("B", PseElementSym::B),
+        ("C", PseElementSym::C),
+        ("N", PseElementSym::N),
+        ("O", PseElementSym::O),
+        ("F", PseElementSym::F),
+        ("Ne", PseElementSym::Ne),
+        ("Na", PseElementSym::Na),
+        ("Mg", PseElementSym::Mg),
+        ("Al", PseElementSym::Al),
+        ("Si", PseElementSym::Si),
+        ("P", PseElementSym::P),
+        ("S", PseElementSym::S),
+        ("Cl", PseElementSym::Cl),
+        ("Ar", PseElementSym::Ar),
+        ("K", PseElementSym::K),
+        ("Ca", PseElementSym::Ca),
+        ("Sc", PseElementSym::Sc),
+        ("Ti", PseElementSym::Ti),
+        ("V", PseElementSym::V),
+        ("Cr", PseElementSym::Cr),
+        ("Mn", PseElementSym::Mn),
+        ("Fe", PseElementSym::Fe),
+        ("Co", PseElementSym::Co),
+        ("Ni", PseElementSym::Ni),
+        ("Cu", PseElementSym::Cu),
+        ("Zn", PseElementSym::Zn),
+        ("Ga", PseElementSym::Ga),
+        ("Ge", PseElementSym::Ge),
+        ("As", PseElementSym::As),
+        ("Se", PseElementSym::Se),
+        ("Br", PseElementSym::Br),
+        ("Kr", PseElementSym::Kr),
+        ("Rb", PseElementSym::Rb),
+        ("Sr", PseElementSym::Sr),
+        ("Y", PseElementSym::Y),
+        ("Zr", PseElementSym::Zr),
+        ("Nb", PseElementSym::Nb),
+        ("Mo", PseElementSym::Mo),
+        ("Tc", PseElementSym::Tc),
+        ("Ru", PseElementSym::Ru),
+        ("Rh", PseElementSym::Rh),
+        ("Pd", PseElementSym::Pd),
+        ("Ag", PseElementSym::Ag),
+        ("Cd", PseElementSym::Cd),
+        ("In", PseElementSym::In),
+        ("Sn", PseElementSym::Sn),
+        ("Sb", PseElementSym::Sb),
+        ("Te", PseElementSym::Te),
+        ("I", PseElementSym::I),
+        ("Xe", PseElementSym::Xe),
+        ("Cs", PseElementSym::Cs),
+        ("Ba", PseElementSym::Ba),
+        ("La", PseElementSym::La),
+        ("Ce", PseElementSym::Ce),
+        ("Pr", PseElementSym::Pr),
+        ("Nd", PseElementSym::Nd),
+        ("Pm", PseElementSym::Pm),
+        ("Sm", PseElementSym::Sm),
+        ("Eu", PseElementSym::Eu),
+        ("Gd", PseElementSym::Gd),
+        ("Tb", PseElementSym::Tb),
+        ("Dy", PseElementSym::Dy),
+        ("Ho", PseElementSym::Ho),
+        ("Er", PseElementSym::Er),
+        ("Tm", PseElementSym::Tm),
+        ("Yb", PseElementSym::Yb),
+        ("Lu", PseElementSym::Lu),
+        ("Hf", PseElementSym::Hf),
+        ("Ta", PseElementSym::Ta),
+        ("W", PseElementSym::W),
+        ("Re", PseElementSym::Re),
+        ("Os", PseElementSym::Os),
+        ("Ir", PseElementSym::Ir),
+        ("Pt", PseElementSym::Pt),
+        ("Au", PseElementSym::Au),
+        ("Hg", PseElementSym::Hg),
+        ("Tl", PseElementSym::Tl),
+        ("Pb", PseElementSym::Pb),
+        ("Bi", PseElementSym::Bi),
+        ("Po", PseElementSym::Po),
+        ("At", PseElementSym::At),
+        ("Rn", PseElementSym::Rn),
+        ("Fr", PseElementSym::Fr),
+        ("Ra", PseElementSym::Ra),
+        ("Ac", PseElementSym::Ac),
+        ("Th", PseElementSym::Th),
+        ("Pa", PseElementSym::Pa),
+        ("U", PseElementSym::U),
+        ("Np", PseElementSym::Np),
+        ("Pu", PseElementSym::Pu),
+        ("Am", PseElementSym::Am),
+        ("Cm", PseElementSym::Cm),
+        ("Bk", PseElementSym::Bk),
+        ("Cf", PseElementSym::Cf),
+        ("Es", PseElementSym::Es),
+        ("Fm", PseElementSym::Fm),
+        ("Md", PseElementSym::Md),
+        ("No", PseElementSym::No),
+        ("Lr", PseElementSym::Lr),
+        ("Rf", PseElementSym::Rf),
+        ("Db", PseElementSym::Db),
+        ("Sg", PseElementSym::Sg),
+        ("Bh", PseElementSym::Bh),
+        ("Hs", PseElementSym::Hs),
+        ("Mt", PseElementSym::Mt),
+        ("Ds", PseElementSym::Ds),
+        ("Rg", PseElementSym::Rg),
+        ("Cn", PseElementSym::Cn),
+        ("Nh", PseElementSym::Nh),
+        ("Fl", PseElementSym::Fl),
+        ("Mc", PseElementSym::Mc),
+        ("Lv", PseElementSym::Lv),
+        ("Ts", PseElementSym::Ts),
+        ("Og", PseElementSym::Og),
     ]
     .into_iter()
     .collect::<HashMap<_, _>>();
+    // let mut PSE_element_sym_HashMap = HashMap::<&str,PSE_element_sym>::new();
+
 
     let pse_symb = match PSE_element_sym_HashMap.get(match_string) {
         Some(value) => *value,
@@ -500,10 +501,10 @@ pub fn create_basis_set_total(
     basis_set_total
 }
 
-pub fn translate_Z_val_to_sym(Z_val: i32) -> PSE_element_sym {
-    let mut Z_to_sym: HashMap<i32, PSE_element_sym> = HashMap::new();
+pub fn translate_Z_val_to_sym(Z_val: i32) -> PseElementSym {
+    let mut Z_to_sym: HashMap<i32, PseElementSym> = HashMap::new();
 
-    for (idx, sym) in PSE_element_sym::iter().enumerate() {
+    for (idx, sym) in PseElementSym::iter().enumerate() {
         let idx = (idx + 1) as i32;
         Z_to_sym.insert(idx, sym);
     }
@@ -516,10 +517,10 @@ pub fn translate_Z_val_to_sym(Z_val: i32) -> PSE_element_sym {
     pse_symb
 }
 
-pub fn translate_sym_to_Z_val(sym: PSE_element_sym) -> i32 {
-    let mut sym_to_Z: HashMap<PSE_element_sym, i32> = HashMap::new();
+pub fn translate_sym_to_Z_val(sym: PseElementSym) -> i32 {
+    let mut sym_to_Z: HashMap<PseElementSym, i32> = HashMap::new();
 
-    for (idx, sym) in PSE_element_sym::iter().enumerate() {
+    for (idx, sym) in PseElementSym::iter().enumerate() {
         let idx = (idx + 1) as i32;
         sym_to_Z.insert(sym, idx);
     }

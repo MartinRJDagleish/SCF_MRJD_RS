@@ -132,7 +132,8 @@ pub fn run_project3_3() {
     println!("\nSCF from scratch:\n");
     //* Project 3: SCF from scratch
     //* Step 1: Read Nuclear Repulsion Energy (enuc) from file
-    mol_6_311g.wfn_total.HFMatrices.V_nn_val = calc_V_nn_val(&mol_6_311g.geom_obj.geom_matr);
+    mol_6_311g.wfn_total.HFMatrices.V_nn_val =
+        calc_V_nn_val(&mol_6_311g.geom_obj.geom_matr, &mol_6_311g.geom_obj.Z_vals);
 
     //* Step 2.1: Calculate the overlap matrix S
     mol_6_311g.wfn_total.HFMatrices.S_matr = Array2::<f64>::zeros((
@@ -382,7 +383,7 @@ pub fn run_project3_3() {
         }
         rms_d_val = rms_d_val.sqrt();
 
-        println!("Iter  E_scf           E_total      RMS D");
+        println!("Iter  E_scf      E_total   RMS D");
         println!(
             " {}  {:^5.8} {:^5.8} {:^1.8}",
             &scf_iter, &E_scf, &E_tot, &rms_d_val
