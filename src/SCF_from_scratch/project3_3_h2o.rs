@@ -7,7 +7,7 @@ use crate::molecule::{
 };
 
 pub fn run_project3_3_h2o() {
-    let mut mol: Molecule = Molecule::new("inp/Project3_1/STO-3G/h2o_v2.xyz", 0);
+    let mut mol: Molecule = Molecule::new("inp/Project3_1/STO-3G/h2o_v2.xyz", Some(0));
 
     //* Create basis for mol object */
     // let basis_set_name = "STO-3G";
@@ -250,13 +250,13 @@ pub fn run_project3_3_h2o() {
     ));
 
     for i in 0..mol.wfn_total.basis_set_total.no_cgtos {
-        for j in 0..mol.wfn_total.basis_set_total.no_cgtos {
+        for j in 0..=i {
             mol.wfn_total.HFMatrices.T_matr[(i, j)] = calc_kin_energy_int_cgto(
                 &mol.wfn_total.basis_set_total.basis_set_cgtos[i],
                 &mol.wfn_total.basis_set_total.basis_set_cgtos[j],
             );
-            // mol.wfn_total.HFMatrices.T_matr[(j, i)] =
-            //     mol.wfn_total.HFMatrices.T_matr[(i, j)].clone();
+            mol.wfn_total.HFMatrices.T_matr[(j, i)] =
+                mol.wfn_total.HFMatrices.T_matr[(i, j)];
         }
     }
     println!(
@@ -271,7 +271,7 @@ pub fn run_project3_3_h2o() {
     ));
 
     for i in 0..mol.wfn_total.basis_set_total.no_cgtos {
-        for j in 0..mol.wfn_total.basis_set_total.no_cgtos {
+        for j in 0..=i {
             for (idx, atom_pos) in mol
                 .geom_obj
                 .geom_matr
@@ -285,6 +285,8 @@ pub fn run_project3_3_h2o() {
                         &atom_pos.to_owned(),
                     );
             }
+            mol.wfn_total.HFMatrices.V_ne_matr[(j, i)] =
+                mol.wfn_total.HFMatrices.V_ne_matr[(i, j)];
         }
     }
 
@@ -363,7 +365,7 @@ pub fn run_project3_3_h2o() {
     /*
     ? How do I get the correct number of occupied orbitals, when I have multiple CGTOs per orbital per atom?
     */
-    let no_occ_orb: usize = 3; // * QUICK FIX: 3 CGTO describe 1sσ orbital
+    let no_occ_orb: usize = 5; // * QUICK FIX: 3 CGTO describe 1sσ orbital
 
     let mut D_matr: Array2<f64> = Array2::<f64>::zeros((
         mol.wfn_total.basis_set_total.no_cgtos,
