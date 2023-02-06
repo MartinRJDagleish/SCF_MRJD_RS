@@ -141,7 +141,7 @@ pub fn calc_overlap_int_prim(
             ang_mom_vec1[cart_coord],
             ang_mom_vec2[cart_coord],
             0,
-            (gauss1_center_pos[cart_coord] - gauss2_center_pos[cart_coord]), //* abs does not fix the problem
+            gauss1_center_pos[cart_coord] - gauss2_center_pos[cart_coord], //* abs does not fix the problem
             alpha1,
             alpha2,
         );

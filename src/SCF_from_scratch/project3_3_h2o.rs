@@ -331,7 +331,7 @@ pub fn run_project3_3_h2o() {
         }
     }
 
-    println!("{:^5.6}\n", &mol.wfn_total.HFMatrices.ERI_tensor);
+    // println!("{:^5.6}\n", &mol.wfn_total.HFMatrices.ERI_tensor);
 
     //* Step 4: Build the orthogonalization matrix S^(-1/2)
     let S_matr_sqrt: Array2<f64> = mol
@@ -365,7 +365,7 @@ pub fn run_project3_3_h2o() {
     /*
     ? How do I get the correct number of occupied orbitals, when I have multiple CGTOs per orbital per atom?
     */
-    let no_occ_orb: usize = 5; // * QUICK FIX: 3 CGTO describe 1sσ orbital
+    let no_occ_orb: usize = 5; // * 1 CGTO per orbital per atom
 
     let mut D_matr: Array2<f64> = Array2::<f64>::zeros((
         mol.wfn_total.basis_set_total.no_cgtos,
@@ -467,4 +467,6 @@ pub fn run_project3_3_h2o() {
             &scf_iter, &E_scf, &E_tot, &rms_d_val
         );
     }
+
+    println!("\n\nFinal E_total = {:^5.8}", &E_tot);
 }
