@@ -1,7 +1,7 @@
 use crate::molecule::wfn::CGTO;
 use boys::micb25::boys;
 // use boys::exact::boys;
-use ndarray::{Array1, Array2};
+use ndarray::prelude::*;
 use ndarray_linalg::Scalar;
 use std::f64::consts::PI;
 // use rayon::prelude::*;

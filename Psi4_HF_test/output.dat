@@ -134,7 +134,7 @@ Scratch directory: /tmp/
     Mask sparsity (%):       0.0000
     Fitting Condition:        1E-10
 
-   => Auxiliary Basis Set <=
+   => Auxiliary Basis Set <==
 
   Basis Set: (6-311G AUX)
     Blend: CC-PVTZ-JKFIT

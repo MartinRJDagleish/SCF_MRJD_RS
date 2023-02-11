@@ -205,7 +205,7 @@ impl Geometry {
         vec_cros_prod
     }
 
-    pub fn calc_unit_vec_cross_prod(vec1: &Vec<f64>, vec2: &Vec<f64>) -> Vec<f64> {
+    pub fn calc_unit_vec_cross_prod(vec1: &[f64], vec2: &[f64]) -> Vec<f64> {
         let mut vec_cros_prod: Vec<f64> = vec![0.0; 3];
         let cos_v1_v2: f64 = Self::calc_scalar_prod(vec1, vec2);
         let sin_v1_v2: f64 = (1.0f64 - cos_v1_v2.powi(2)).sqrt();
@@ -217,7 +217,7 @@ impl Geometry {
         vec_cros_prod
     }
 
-    pub fn calc_scalar_prod(vec1: &Vec<f64>, vec2: &Vec<f64>) -> f64 {
+    pub fn calc_scalar_prod(vec1: &[f64], vec2: &[f64]) -> f64 {
         let mut scalar_prod: f64 = 0.0;
         (0..3).for_each(|cart_coord| {
             scalar_prod += vec1[cart_coord] * vec2[cart_coord];
@@ -230,7 +230,8 @@ impl Geometry {
         let unit_21: Vec<f64> = self.calc_e_ij(idx2, idx1);
         let unit_23: Vec<f64> = self.calc_e_ij(idx2, idx3);
         let bond_angle: f64 = Self::calc_scalar_prod(&unit_21, &unit_23);
-        return bond_angle.acos().to_degrees();
+
+        bond_angle.acos().to_degrees()
     }
 
     pub fn calc_oop_angle(&self, idx1: usize, idx2: usize, idx3: usize, idx4: usize) -> f64 {
@@ -244,11 +245,11 @@ impl Geometry {
         let oop_angle: f64 = Self::calc_scalar_prod(&x_prod_kj_kl_norm, &unit_ki);
 
         if oop_angle < -1.0 {
-            return -1.0f64.asin().to_degrees();
+            -1.0f64.asin().to_degrees()
         } else if oop_angle > 1.0 {
-            return 1.0f64.asin().to_degrees();
+            1.0f64.asin().to_degrees()
         } else {
-            return oop_angle.asin().to_degrees();
+            oop_angle.asin().to_degrees()
         }
     }
 
@@ -331,14 +332,14 @@ impl Geometry {
     }
 
     pub fn get_mass_Z_val(&self, Z_val: &i32) -> f64 {
-        return self.mass_array.get(*Z_val as usize).unwrap().clone();
+        return self.mass_array.get(*Z_val as usize).unwrap().to_owned();
     }
 }
 
 pub fn calc_r_ij_general(vec1: &Array1<f64>, vec2: &Array1<f64>) -> f64 {
     let mut r_ij: f64 = 0.0;
     (0..3).for_each(|cart_coord| {
-        r_ij += (&vec2[cart_coord] - &vec1[cart_coord]).powi(2);
+        r_ij += (vec2[cart_coord] - vec1[cart_coord]).powi(2);
     });
 
     r_ij.sqrt()
