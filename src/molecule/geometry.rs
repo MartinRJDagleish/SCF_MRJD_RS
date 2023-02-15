@@ -1,7 +1,7 @@
 // use super::Molecule;
 use ndarray::prelude::*;
 
-#[derive(Clone, Debug)]
+#[derive(Clone,  Debug)]
 pub struct Geometry {
     pub no_atoms: usize,
     pub geom_matr: Array2<f64>,
@@ -12,7 +12,7 @@ pub struct Geometry {
 #[allow(non_snake_case)]
 impl Geometry {
     pub fn new(no_atoms: usize, geom_matr: Array2<f64>, Z_vals: Vec<i32>) -> Self {
-        //* Array instead of hashamp for masses -> no file reading necessary
+        //* Static array with indexing instead of HashMap for masses -> no file reading necessary
         // ! SOURCE: https://iupac.qmul.ac.uk/AtWt/ -> cleaned with OpenRefine
         let mass_array = [
             0.0,

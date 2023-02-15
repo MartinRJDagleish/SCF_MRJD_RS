@@ -6,7 +6,8 @@ use std::{
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
-use ndarray::Array2;
+// use ndarray::{Array2, Array1};
+use ndarray::prelude::*;
 
 use crate::molecule::wfn::{BasisSetTotal, CGTO, PGTO};
 
@@ -205,7 +206,6 @@ impl Default for PseElementSym {
 //     }
 // }
 
-
 pub fn match_pse_symb(match_string: &str) -> PseElementSym {
     let PSE_element_sym_HashMap = [
         ("H", PseElementSym::H),
@@ -331,7 +331,6 @@ pub fn match_pse_symb(match_string: &str) -> PseElementSym {
     .collect::<HashMap<_, _>>();
     // let mut PSE_element_sym_HashMap = HashMap::<&str,PSE_element_sym>::new();
 
-
     let pse_symb = match PSE_element_sym_HashMap.get(match_string) {
         Some(value) => *value,
         None => panic!("Element symbol not found!"),
@@ -347,18 +346,10 @@ pub fn parse_basis_set_file_gaussian(basis_set_name: &str) -> BasisSetTotalDef {
     };
 
     let basis_set_file_path: &str = match basis_set_name.to_ascii_lowercase().as_str() {
-        "sto-3g" => {
-            "inp/Project3_2/basis_sets/sto-3g.gbs"
-        }
-        "6-311g" => {
-            "inp/Project3_2/basis_sets/6-311g.gbs"
-        }
-        "def2-svp" => {
-            "inp/Project3_2/basis_sets/def2-svp.gbs"
-        }
-        "def2-tzvp" => {
-            "inp/Project3_2/basis_sets/def2-tzvp.gbs"
-        }
+        "sto-3g" => "inp/Project3_2/basis_sets/sto-3g.gbs",
+        "6-311g" => "inp/Project3_2/basis_sets/6-311g.gbs",
+        "def2-svp" => "inp/Project3_2/basis_sets/def2-svp.gbs",
+        "def2-tzvp" => "inp/Project3_2/basis_sets/def2-tzvp.gbs",
         _ => {
             panic!("Basis set not yet implemented!");
         }
@@ -465,6 +456,83 @@ pub fn create_basis_set_total(
 ) -> BasisSetTotal {
     let mut basis_set_total = BasisSetTotal::new();
 
+    for (atom_idx, atom_pos) in geom_matr.axis_iter(ndarray::Axis(0)).enumerate() {
+        let Z_val = Z_vals[atom_idx];
+        let elem_sym: PseElementSym = translate_Z_val_to_sym(Z_val);
+
+        let atom_basis_set: &BasisSetDef = basis_set_total_def
+            .basis_set_defs_dict
+            .get(&elem_sym)
+            .unwrap();
+    
+        let mut basis_set_cgtos: Vec<CGTO> = Vec::new();
+
+        // * Generate PGTOs and then CGTOs
+        for (L_val, no_prim) in atom_basis_set.L_and_no_prim_tup.iter() {
+            let mut pgto_vec: Vec<PGTO> = Vec::new();
+            for i in 0..*no_prim {
+                let alpha = atom_basis_set.alphas[i];
+                let cgto_coeff = atom_basis_set.cgto_coeffs[i];
+                let ang_mom_vec: Vec<Array1<i32>> = match L_val {
+                    L_char::S => vec![array![0, 0, 0]],
+                    L_char::SP => vec![array![0, 0, 0], array![1, 0, 0], array![0, 1, 0], array![0, 0, 1]],
+                    L_char::P => vec![array![1, 0, 0], array![0, 1, 0], array![0, 0, 1]],
+                    L_char::D => vec![
+                        array![2, 0, 0],
+                        array![0, 2, 0],
+                        array![0, 0, 2],
+                        array![1, 1, 0],
+                        array![1, 0, 1],
+                        array![0, 1, 1],
+                    ],
+                    L_char::F => vec![
+                        array![3, 0, 0],
+                        array![0, 3, 0],
+                        array![0, 0, 3],
+                        array![2, 1, 0],
+                        array![2, 0, 1],
+                        array![0, 2, 1],
+                        array![1, 2, 0],
+                        array![1, 0, 2],
+                        array![0, 1, 2],
+                    ],
+                    L_char::G => vec![
+                        array![4, 0, 0],
+                        array![0, 4, 0],
+                        array![0, 0, 4],
+                        array![3, 1, 0],
+                        array![3, 0, 1],
+                        array![0, 3, 1],
+                        array![1, 3, 0],
+                        array![1, 0, 3],
+                        array![0, 1, 3],
+                        array![2, 2, 0],
+                        array![2, 0, 2],
+                        array![0, 2, 2],
+                    ],
+                    _ => vec![array![0, 0, 0]],
+                };
+                for ang_mom_poss in ang_mom_vec.iter() {
+                    let pgto: PGTO = PGTO::new(alpha, cgto_coeff, atom_pos.to_owned(), ang_mom_poss.to_owned());
+                    pgto_vec.push(pgto);
+                }
+            }
+            let cgto: CGTO = CGTO::new(pgto_vec);
+
+            basis_set_cgtos.push(cgto);
+
+        }
+    }
+
+    // fn build_pgto(
+    //     alpha: f64,
+    //     cgto_coeff: f64,
+    //     position: &Array1<f64>,
+    //     ang_mom_vec: &Array1<i32>,
+    // ) -> PGTO {
+    //     PGTO::new(alpha, cgto_coeff, position.clone(), ang_mom_vec.clone())
+    // }
+
     // fn build_pgto(Z_val: i32) -> PGTO {
     //     let mut pgto = PGTO::new();
     //     let elem_sym: PSE_element_sym = translate_Z_val_to_sym(Z_vals[0]);
@@ -505,7 +573,7 @@ pub fn translate_Z_val_to_sym(Z_val: i32) -> PseElementSym {
     let mut Z_to_sym: HashMap<i32, PseElementSym> = HashMap::new();
 
     for (idx, sym) in PseElementSym::iter().enumerate() {
-        let idx = (idx + 1) as i32;
+        let idx = idx as i32;
         Z_to_sym.insert(idx, sym);
     }
 
@@ -521,7 +589,7 @@ pub fn translate_sym_to_Z_val(sym: PseElementSym) -> i32 {
     let mut sym_to_Z: HashMap<PseElementSym, i32> = HashMap::new();
 
     for (idx, sym) in PseElementSym::iter().enumerate() {
-        let idx = (idx + 1) as i32;
+        let idx = idx as i32;
         sym_to_Z.insert(sym, idx);
     }
 
@@ -531,4 +599,23 @@ pub fn translate_sym_to_Z_val(sym: PseElementSym) -> i32 {
     };
 
     Z_val
+}
+
+pub fn translate_L_char_to_val(L_char: L_char) -> i32 {
+    match L_char {
+        L_char::S => 0,
+        L_char::SP => 1, //* This needs special care */
+        L_char::P => 1,
+        L_char::D => 2,
+        L_char::F => 3,
+        L_char::G => 4,
+        L_char::H => 5,
+        L_char::I => 6,
+        L_char::J => 7,
+        L_char::K => 8,
+        L_char::L => 9,
+        L_char::M => 10,
+        L_char::N => 11,
+        L_char::O => todo!(),
+    }
 }

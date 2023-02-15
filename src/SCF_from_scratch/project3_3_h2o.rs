@@ -2,15 +2,23 @@ use ndarray::prelude::*;
 use ndarray_linalg::{Eigh, Inverse, SymmetricSqrt};
 
 use crate::molecule::{
-    wfn::{ints::*, CGTO, PGTO},
+    wfn::{ints::*, CGTO, PGTO, BasisSetTotal},
     Molecule,
 };
+
+use crate::molecule::wfn::basisset::create_basis_set_total;
+use crate::molecule::wfn::basisset::parse_basis_set_file_gaussian;
 
 pub fn run_project3_3_h2o() {
     let mut mol: Molecule = Molecule::new("inp/Project3_1/STO-3G/h2o_v2.xyz", Some(0));
 
     //* Create basis for mol object */
-    // let basis_set_name = "STO-3G";
+    let basis_set_name = "STO-3G";
+    let basis_set_total: BasisSetTotal = create_basis_set_total(
+        parse_basis_set_file_gaussian(basis_set_name),
+        mol.geom_obj.geom_matr.clone(),
+        mol.geom_obj.Z_vals.clone()
+    );
 
     //TODO: QUICK FIX FOR NOW, NEED TO FIX THIS -> Manual creation
 
