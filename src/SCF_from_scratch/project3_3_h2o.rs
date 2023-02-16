@@ -2,7 +2,7 @@ use ndarray::prelude::*;
 use ndarray_linalg::{Eigh, Inverse, SymmetricSqrt};
 
 use crate::molecule::{
-    wfn::{ints::*, CGTO, PGTO, BasisSetTotal},
+    wfn::{ints::*, BasisSetTotal, CGTO, PGTO},
     Molecule,
 };
 
@@ -17,208 +17,208 @@ pub fn run_project3_3_h2o() {
     let basis_set_total: BasisSetTotal = create_basis_set_total(
         parse_basis_set_file_gaussian(basis_set_name),
         mol.geom_obj.geom_matr.clone(),
-        mol.geom_obj.Z_vals.clone()
+        mol.geom_obj.Z_vals.clone(),
     );
 
-    //TODO: QUICK FIX FOR NOW, NEED TO FIX THIS -> Manual creation
+    mol.wfn_total.basis_set_total = basis_set_total;
 
-    // O_contr_gauss_1s
-    let O_pos: Array1<f64> =
-        Array1::from_vec(vec![0.000000000000, -0.143225816552, 0.000000000000]);
-    mol.wfn_total.basis_set_total.basis_set_cgtos = vec![CGTO::new(vec![PGTO::new(
-        0.1307093214E+03,
-        0.1543289673E+00,
-        O_pos.clone(),
-        Array1::from_vec(vec![0, 0, 0]),
-    )])];
-    mol.wfn_total.basis_set_total.basis_set_cgtos[0]
-        .pgto_vec
-        .push(PGTO::new(
-            0.2380886605E+02,
-            0.5353281423E+00,
-            O_pos.clone(),
-            Array1::from_vec(vec![0, 0, 0]),
-        ));
-    mol.wfn_total.basis_set_total.basis_set_cgtos[0]
-        .pgto_vec
-        .push(PGTO::new(
-            0.6443608313E+01,
-            0.4446345422E+00,
-            O_pos.clone(),
-            Array1::from_vec(vec![0, 0, 0]),
-        ));
+    // // O_contr_gauss_1s
+    // let O_pos: Array1<f64> =
+    //     Array1::from_vec(vec![0.000000000000, -0.143225816552, 0.000000000000]);
+    // mol.wfn_total.basis_set_total.basis_set_cgtos = vec![CGTO::new(vec![PGTO::new(
+    //     0.1307093214E+03,
+    //     0.1543289673E+00,
+    //     O_pos.clone(),
+    //     Array1::from_vec(vec![0, 0, 0]),
+    // )])];
+    // mol.wfn_total.basis_set_total.basis_set_cgtos[0]
+    //     .pgto_vec
+    //     .push(PGTO::new(
+    //         0.2380886605E+02,
+    //         0.5353281423E+00,
+    //         O_pos.clone(),
+    //         Array1::from_vec(vec![0, 0, 0]),
+    //     ));
+    // mol.wfn_total.basis_set_total.basis_set_cgtos[0]
+    //     .pgto_vec
+    //     .push(PGTO::new(
+    //         0.6443608313E+01,
+    //         0.4446345422E+00,
+    //         O_pos.clone(),
+    //         Array1::from_vec(vec![0, 0, 0]),
+    //     ));
 
-    // O_contr_gauss_2s
-    mol.wfn_total
-        .basis_set_total
-        .basis_set_cgtos
-        .push(CGTO::new(vec![PGTO::new(
-            0.5033151319E+01,
-            -0.9996722919E-01,
-            O_pos.clone(),
-            Array1::from_vec(vec![0, 0, 0]),
-        )]));
-    mol.wfn_total.basis_set_total.basis_set_cgtos[1]
-        .pgto_vec
-        .push(PGTO::new(
-            0.1169596125E+01,
-            0.3995128261E+00,
-            O_pos.clone(),
-            Array1::from_vec(vec![0, 0, 0]),
-        ));
-    mol.wfn_total.basis_set_total.basis_set_cgtos[1]
-        .pgto_vec
-        .push(PGTO::new(
-            0.3803889600E+00,
-            0.7001154689E+00,
-            O_pos.clone(),
-            Array1::from_vec(vec![0, 0, 0]),
-        ));
+    // // O_contr_gauss_2s
+    // mol.wfn_total
+    //     .basis_set_total
+    //     .basis_set_cgtos
+    //     .push(CGTO::new(vec![PGTO::new(
+    //         0.5033151319E+01,
+    //         -0.9996722919E-01,
+    //         O_pos.clone(),
+    //         Array1::from_vec(vec![0, 0, 0]),
+    //     )]));
+    // mol.wfn_total.basis_set_total.basis_set_cgtos[1]
+    //     .pgto_vec
+    //     .push(PGTO::new(
+    //         0.1169596125E+01,
+    //         0.3995128261E+00,
+    //         O_pos.clone(),
+    //         Array1::from_vec(vec![0, 0, 0]),
+    //     ));
+    // mol.wfn_total.basis_set_total.basis_set_cgtos[1]
+    //     .pgto_vec
+    //     .push(PGTO::new(
+    //         0.3803889600E+00,
+    //         0.7001154689E+00,
+    //         O_pos.clone(),
+    //         Array1::from_vec(vec![0, 0, 0]),
+    //     ));
 
-    // O_contr_gauss_2p -> (1,0,0)
-    mol.wfn_total
-        .basis_set_total
-        .basis_set_cgtos
-        .push(CGTO::new(vec![PGTO::new(
-            0.5033151319E+01,
-            0.1559162750E+00,
-            O_pos.clone(),
-            Array1::from_vec(vec![1, 0, 0]),
-        )]));
-    mol.wfn_total.basis_set_total.basis_set_cgtos[2]
-        .pgto_vec
-        .push(PGTO::new(
-            0.1169596125E+01,
-            0.6076837186E+00,
-            O_pos.clone(),
-            Array1::from_vec(vec![1, 0, 0]),
-        ));
-    mol.wfn_total.basis_set_total.basis_set_cgtos[2]
-        .pgto_vec
-        .push(PGTO::new(
-            0.3803889600E+00,
-            0.3919573931E+00,
-            O_pos.clone(),
-            Array1::from_vec(vec![1, 0, 0]),
-        ));
+    // // O_contr_gauss_2p -> (1,0,0)
+    // mol.wfn_total
+    //     .basis_set_total
+    //     .basis_set_cgtos
+    //     .push(CGTO::new(vec![PGTO::new(
+    //         0.5033151319E+01,
+    //         0.1559162750E+00,
+    //         O_pos.clone(),
+    //         Array1::from_vec(vec![1, 0, 0]),
+    //     )]));
+    // mol.wfn_total.basis_set_total.basis_set_cgtos[2]
+    //     .pgto_vec
+    //     .push(PGTO::new(
+    //         0.1169596125E+01,
+    //         0.6076837186E+00,
+    //         O_pos.clone(),
+    //         Array1::from_vec(vec![1, 0, 0]),
+    //     ));
+    // mol.wfn_total.basis_set_total.basis_set_cgtos[2]
+    //     .pgto_vec
+    //     .push(PGTO::new(
+    //         0.3803889600E+00,
+    //         0.3919573931E+00,
+    //         O_pos.clone(),
+    //         Array1::from_vec(vec![1, 0, 0]),
+    //     ));
 
-    // O_contr_gauss_2p -> (0,1,0)
-    mol.wfn_total
-        .basis_set_total
-        .basis_set_cgtos
-        .push(CGTO::new(vec![PGTO::new(
-            0.5033151319E+01,
-            0.1559162750E+00,
-            O_pos.clone(),
-            Array1::from_vec(vec![0, 1, 0]),
-        )]));
-    mol.wfn_total.basis_set_total.basis_set_cgtos[3]
-        .pgto_vec
-        .push(PGTO::new(
-            0.1169596125E+01,
-            0.6076837186E+00,
-            O_pos.clone(),
-            Array1::from_vec(vec![0, 1, 0]),
-        ));
-    mol.wfn_total.basis_set_total.basis_set_cgtos[3]
-        .pgto_vec
-        .push(PGTO::new(
-            0.3803889600E+00,
-            0.3919573931E+00,
-            O_pos.clone(),
-            Array1::from_vec(vec![0, 1, 0]),
-        ));
+    // // O_contr_gauss_2p -> (0,1,0)
+    // mol.wfn_total
+    //     .basis_set_total
+    //     .basis_set_cgtos
+    //     .push(CGTO::new(vec![PGTO::new(
+    //         0.5033151319E+01,
+    //         0.1559162750E+00,
+    //         O_pos.clone(),
+    //         Array1::from_vec(vec![0, 1, 0]),
+    //     )]));
+    // mol.wfn_total.basis_set_total.basis_set_cgtos[3]
+    //     .pgto_vec
+    //     .push(PGTO::new(
+    //         0.1169596125E+01,
+    //         0.6076837186E+00,
+    //         O_pos.clone(),
+    //         Array1::from_vec(vec![0, 1, 0]),
+    //     ));
+    // mol.wfn_total.basis_set_total.basis_set_cgtos[3]
+    //     .pgto_vec
+    //     .push(PGTO::new(
+    //         0.3803889600E+00,
+    //         0.3919573931E+00,
+    //         O_pos.clone(),
+    //         Array1::from_vec(vec![0, 1, 0]),
+    //     ));
 
-    // O_contr_gauss_2p -> (0,0,1)
-    mol.wfn_total
-        .basis_set_total
-        .basis_set_cgtos
-        .push(CGTO::new(vec![PGTO::new(
-            0.5033151319E+01,
-            0.1559162750E+00,
-            O_pos.clone(),
-            Array1::from_vec(vec![0, 0, 1]),
-        )]));
-    mol.wfn_total.basis_set_total.basis_set_cgtos[4]
-        .pgto_vec
-        .push(PGTO::new(
-            0.1169596125E+01,
-            0.6076837186E+00,
-            O_pos.clone(),
-            Array1::from_vec(vec![0, 0, 1]),
-        ));
-    mol.wfn_total.basis_set_total.basis_set_cgtos[4]
-        .pgto_vec
-        .push(PGTO::new(
-            0.3803889600E+00,
-            0.3919573931E+00,
-            O_pos.clone(),
-            Array1::from_vec(vec![0, 0, 1]),
-        ));
+    // // O_contr_gauss_2p -> (0,0,1)
+    // mol.wfn_total
+    //     .basis_set_total
+    //     .basis_set_cgtos
+    //     .push(CGTO::new(vec![PGTO::new(
+    //         0.5033151319E+01,
+    //         0.1559162750E+00,
+    //         O_pos.clone(),
+    //         Array1::from_vec(vec![0, 0, 1]),
+    //     )]));
+    // mol.wfn_total.basis_set_total.basis_set_cgtos[4]
+    //     .pgto_vec
+    //     .push(PGTO::new(
+    //         0.1169596125E+01,
+    //         0.6076837186E+00,
+    //         O_pos.clone(),
+    //         Array1::from_vec(vec![0, 0, 1]),
+    //     ));
+    // mol.wfn_total.basis_set_total.basis_set_cgtos[4]
+    //     .pgto_vec
+    //     .push(PGTO::new(
+    //         0.3803889600E+00,
+    //         0.3919573931E+00,
+    //         O_pos.clone(),
+    //         Array1::from_vec(vec![0, 0, 1]),
+    //     ));
 
-    // H1_contr_gauss_1s
-    let H1_pos: Array1<f64> =
-        Array1::from_vec(vec![1.638036840407, 1.136548822547, -0.000000000000]);
-    mol.wfn_total
-        .basis_set_total
-        .basis_set_cgtos
-        .push(CGTO::new(vec![PGTO::new(
-            0.3425250914E+01,
-            0.1543289673E+00,
-            H1_pos.clone(),
-            Array1::from_vec(vec![0, 0, 0]),
-        )]));
-    mol.wfn_total.basis_set_total.basis_set_cgtos[5]
-        .pgto_vec
-        .push(PGTO::new(
-            0.6239137298E+00,
-            0.5353281423E+00,
-            H1_pos.clone(),
-            Array1::from_vec(vec![0, 0, 0]),
-        ));
-    mol.wfn_total.basis_set_total.basis_set_cgtos[5]
-        .pgto_vec
-        .push(PGTO::new(
-            0.1688554040E+00,
-            0.4446345422E+00,
-            H1_pos.clone(),
-            Array1::from_vec(vec![0, 0, 0]),
-        ));
+    // // H1_contr_gauss_1s
+    // let H1_pos: Array1<f64> =
+    //     Array1::from_vec(vec![1.638036840407, 1.136548822547, -0.000000000000]);
+    // mol.wfn_total
+    //     .basis_set_total
+    //     .basis_set_cgtos
+    //     .push(CGTO::new(vec![PGTO::new(
+    //         0.3425250914E+01,
+    //         0.1543289673E+00,
+    //         H1_pos.clone(),
+    //         Array1::from_vec(vec![0, 0, 0]),
+    //     )]));
+    // mol.wfn_total.basis_set_total.basis_set_cgtos[5]
+    //     .pgto_vec
+    //     .push(PGTO::new(
+    //         0.6239137298E+00,
+    //         0.5353281423E+00,
+    //         H1_pos.clone(),
+    //         Array1::from_vec(vec![0, 0, 0]),
+    //     ));
+    // mol.wfn_total.basis_set_total.basis_set_cgtos[5]
+    //     .pgto_vec
+    //     .push(PGTO::new(
+    //         0.1688554040E+00,
+    //         0.4446345422E+00,
+    //         H1_pos.clone(),
+    //         Array1::from_vec(vec![0, 0, 0]),
+    //     ));
 
-    // H2_contr_gauss_1s
-    let H2_pos: Array1<f64> =
-        Array1::from_vec(vec![-1.638036840407, 1.136548822547, -0.000000000001]);
-    mol.wfn_total
-        .basis_set_total
-        .basis_set_cgtos
-        .push(CGTO::new(vec![PGTO::new(
-            0.3425250914E+01,
-            0.1543289673E+00,
-            H2_pos.clone(),
-            Array1::from_vec(vec![0, 0, 0]),
-        )]));
-    mol.wfn_total.basis_set_total.basis_set_cgtos[6]
-        .pgto_vec
-        .push(PGTO::new(
-            0.6239137298E+00,
-            0.5353281423E+00,
-            H2_pos.clone(),
-            Array1::from_vec(vec![0, 0, 0]),
-        ));
-    mol.wfn_total.basis_set_total.basis_set_cgtos[6]
-        .pgto_vec
-        .push(PGTO::new(
-            0.1688554040E+00,
-            0.4446345422E+00,
-            H2_pos.clone(),
-            Array1::from_vec(vec![0, 0, 0]),
-        ));
+    // // H2_contr_gauss_1s
+    // let H2_pos: Array1<f64> =
+    //     Array1::from_vec(vec![-1.638036840407, 1.136548822547, -0.000000000001]);
+    // mol.wfn_total
+    //     .basis_set_total
+    //     .basis_set_cgtos
+    //     .push(CGTO::new(vec![PGTO::new(
+    //         0.3425250914E+01,
+    //         0.1543289673E+00,
+    //         H2_pos.clone(),
+    //         Array1::from_vec(vec![0, 0, 0]),
+    //     )]));
+    // mol.wfn_total.basis_set_total.basis_set_cgtos[6]
+    //     .pgto_vec
+    //     .push(PGTO::new(
+    //         0.6239137298E+00,
+    //         0.5353281423E+00,
+    //         H2_pos.clone(),
+    //         Array1::from_vec(vec![0, 0, 0]),
+    //     ));
+    // mol.wfn_total.basis_set_total.basis_set_cgtos[6]
+    //     .pgto_vec
+    //     .push(PGTO::new(
+    //         0.1688554040E+00,
+    //         0.4446345422E+00,
+    //         H2_pos.clone(),
+    //         Array1::from_vec(vec![0, 0, 0]),
+    //     ));
 
-    for cgto in &mut mol.wfn_total.basis_set_total.basis_set_cgtos {
-        cgto.update_no_pgtos();
-    }
+    // for cgto in &mut mol.wfn_total.basis_set_total.basis_set_cgtos {
+    //     cgto.update_no_pgtos();
+    // }
 
-    mol.wfn_total.basis_set_total.update_no_cgtos();
+    // mol.wfn_total.basis_set_total.update_no_cgtos();
 
     println!("\nSCF from scratch:\n");
     //* Project 3: SCF from scratch
@@ -263,8 +263,7 @@ pub fn run_project3_3_h2o() {
                 &mol.wfn_total.basis_set_total.basis_set_cgtos[i],
                 &mol.wfn_total.basis_set_total.basis_set_cgtos[j],
             );
-            mol.wfn_total.HFMatrices.T_matr[(j, i)] =
-                mol.wfn_total.HFMatrices.T_matr[(i, j)];
+            mol.wfn_total.HFMatrices.T_matr[(j, i)] = mol.wfn_total.HFMatrices.T_matr[(i, j)];
         }
     }
     println!(
@@ -293,8 +292,7 @@ pub fn run_project3_3_h2o() {
                         &atom_pos.to_owned(),
                     );
             }
-            mol.wfn_total.HFMatrices.V_ne_matr[(j, i)] =
-                mol.wfn_total.HFMatrices.V_ne_matr[(i, j)];
+            mol.wfn_total.HFMatrices.V_ne_matr[(j, i)] = mol.wfn_total.HFMatrices.V_ne_matr[(i, j)];
         }
     }
 

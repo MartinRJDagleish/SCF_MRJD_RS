@@ -6,7 +6,6 @@ use std::{
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
-// use ndarray::{Array2, Array1};
 use ndarray::prelude::*;
 
 use crate::molecule::wfn::{BasisSetTotal, CGTO, PGTO};
@@ -134,6 +133,7 @@ pub enum PseElementSym {
     Og,
 }
 
+#[derive(PartialEq)]
 pub enum L_char {
     S,
     P,
@@ -358,18 +358,9 @@ pub fn parse_basis_set_file_gaussian(basis_set_name: &str) -> BasisSetTotalDef {
     let basis_set_file = fs::File::open(basis_set_file_path).expect("Basis set file not found!");
     let basis_set_reader = BufReader::new(basis_set_file);
 
-    // let SPDF_str: &str = "SPDFGHIKLMN"; //* With L or without?
-    // let mut SPDF_HashMap: HashMap<char, usize> = HashMap::new();
-
-    // for (i, c) in SPDF_str.chars().enumerate() {
-    //     SPDF_HashMap.insert(c, i);
-    // }
-
     let block_delimiter: &str = "****";
 
-    // let mut block_count: u32 = 0;
-
-    let mut basis_set: BasisSetDef = BasisSetDef::default(); //* using dummy element symbol
+    let mut basis_set_def: BasisSetDef = BasisSetDef::default(); //* using dummy element symbol
 
     for line in basis_set_reader.lines() {
         let line = line.unwrap();
@@ -381,14 +372,14 @@ pub fn parse_basis_set_file_gaussian(basis_set_name: &str) -> BasisSetTotalDef {
         if data.starts_with('!') || data.is_empty() {
             continue;
         } else if data.starts_with(block_delimiter) {
-            if !basis_set.alphas.is_empty() {
+            if !basis_set_def.alphas.is_empty() {
                 //* Check if BasisSet is not empty
                 //* Add the basis using the element symbol as key
                 basis_set_total_def
                     .basis_set_defs_dict
-                    .insert(basis_set.element_sym, basis_set);
+                    .insert(basis_set_def.element_sym, basis_set_def);
             }
-            basis_set = BasisSetDef::default();
+            basis_set_def = BasisSetDef::default();
             continue;
         } else if line_start.is_alphabetic() {
             let line_split: Vec<&str> = data.split_whitespace().collect();
@@ -396,12 +387,11 @@ pub fn parse_basis_set_file_gaussian(basis_set_name: &str) -> BasisSetTotalDef {
                 //* Old version with string -> new version with enum
                 // basis_set.element_sym = line_split[0].to_string();
                 //* New version with enum
-                basis_set.element_sym = match_pse_symb(line_split[0]);
+                basis_set_def.element_sym = match_pse_symb(line_split[0]);
                 continue;
             } else if line_split[0] == "SP" {
                 let no_prim1: usize = line_split[1].parse::<usize>().unwrap();
-                basis_set.L_and_no_prim_tup.push((L_char::SP, no_prim1));
-                // basis_set.L_and_no_prim_tup.push((L_letter::SP, no_prim1.clone()));
+                basis_set_def.L_and_no_prim_tup.push((L_char::SP, no_prim1));
             } else if line_split[0].len() > 2
                 && (line_split[0].starts_with("l=") || line_split[0].starts_with("L="))
             {
@@ -425,7 +415,9 @@ pub fn parse_basis_set_file_gaussian(basis_set_name: &str) -> BasisSetTotalDef {
                 };
                 // let L_val: usize = SPDF_HashMap.get(&L_val_char).unwrap().clone();
                 let no_prim: usize = line_split[1].parse::<usize>().unwrap();
-                basis_set.L_and_no_prim_tup.push((L_letter_val, no_prim));
+                basis_set_def
+                    .L_and_no_prim_tup
+                    .push((L_letter_val, no_prim));
             }
         } else {
             let parameters_vec = data
@@ -435,12 +427,12 @@ pub fn parse_basis_set_file_gaussian(basis_set_name: &str) -> BasisSetTotalDef {
                 .collect::<Vec<f64>>();
             if parameters_vec.len() > 2 {
                 //* This is the SP basis case
-                basis_set.alphas.push(parameters_vec[0]);
-                basis_set.cgto_coeffs.push(parameters_vec[1]);
-                basis_set.cgto_coeffs.push(parameters_vec[2]);
+                basis_set_def.alphas.push(parameters_vec[0]);
+                basis_set_def.cgto_coeffs.push(parameters_vec[1]); //* Values at even positions (0,2,…) are coeffs for S, odd values are for P (1,3,…) */
+                basis_set_def.cgto_coeffs.push(parameters_vec[2]);
             } else {
-                basis_set.alphas.push(parameters_vec[0]);
-                basis_set.cgto_coeffs.push(parameters_vec[1]);
+                basis_set_def.alphas.push(parameters_vec[0]);
+                basis_set_def.cgto_coeffs.push(parameters_vec[1]);
             }
         }
     }
@@ -448,7 +440,6 @@ pub fn parse_basis_set_file_gaussian(basis_set_name: &str) -> BasisSetTotalDef {
     basis_set_total_def
 }
 
-//TODO: THIS WHOLE FUNCTION DOES NOT WORK YET -> complicated process
 pub fn create_basis_set_total(
     basis_set_total_def: BasisSetTotalDef,
     geom_matr: Array2<f64>,
@@ -464,18 +455,19 @@ pub fn create_basis_set_total(
             .basis_set_defs_dict
             .get(&elem_sym)
             .unwrap();
-    
-        let mut basis_set_cgtos: Vec<CGTO> = Vec::new();
 
         // * Generate PGTOs and then CGTOs
+        let mut alphas_offset = 0_usize;
         for (L_val, no_prim) in atom_basis_set.L_and_no_prim_tup.iter() {
-            let mut pgto_vec: Vec<PGTO> = Vec::new();
-            for i in 0..*no_prim {
-                let alpha = atom_basis_set.alphas[i];
-                let cgto_coeff = atom_basis_set.cgto_coeffs[i];
-                let ang_mom_vec: Vec<Array1<i32>> = match L_val {
+            if *L_val != L_char::SP {
+                let list_ang_mom_vec: Vec<Array1<i32>> = match L_val {
                     L_char::S => vec![array![0, 0, 0]],
-                    L_char::SP => vec![array![0, 0, 0], array![1, 0, 0], array![0, 1, 0], array![0, 0, 1]],
+                    L_char::SP => vec![
+                        array![0, 0, 0],
+                        array![1, 0, 0],
+                        array![0, 1, 0],
+                        array![0, 0, 1],
+                    ],
                     L_char::P => vec![array![1, 0, 0], array![0, 1, 0], array![0, 0, 1]],
                     L_char::D => vec![
                         array![2, 0, 0],
@@ -512,60 +504,64 @@ pub fn create_basis_set_total(
                     ],
                     _ => vec![array![0, 0, 0]],
                 };
-                for ang_mom_poss in ang_mom_vec.iter() {
-                    let pgto: PGTO = PGTO::new(alpha, cgto_coeff, atom_pos.to_owned(), ang_mom_poss.to_owned());
-                    pgto_vec.push(pgto);
+                for ang_mom_poss in list_ang_mom_vec.iter() {
+                    let mut pgto_vec: Vec<PGTO> = Vec::new();
+                    for prim_idx in 0..*no_prim {
+                        let alpha = atom_basis_set.alphas[prim_idx + alphas_offset];
+                        let cgto_coeff = atom_basis_set.cgto_coeffs[prim_idx + alphas_offset];
+                        let pgto: PGTO = PGTO::new(
+                            alpha,
+                            cgto_coeff,
+                            atom_pos.to_owned(),
+                            ang_mom_poss.to_owned(),
+                        );
+                        pgto_vec.push(pgto);
+                    }
+                    let cgto: CGTO = CGTO::new(pgto_vec);
+                    basis_set_total.basis_set_cgtos.push(cgto);
                 }
+                alphas_offset += no_prim;
+            } else {
+                (0..2).for_each(|coeff_type: usize| {
+                    //* 0 is S, 1 is P
+                    if coeff_type == 0 {
+                        let mut pgto_vec: Vec<PGTO> = Vec::new();
+                        for prim_idx in 0..*no_prim {
+                            let alpha = atom_basis_set.alphas[prim_idx + alphas_offset];
+                            let cgto_coeff =
+                                atom_basis_set.cgto_coeffs[prim_idx + alphas_offset + coeff_type];
+                            //* S
+                            let ang_mom_vec: Array1<i32> = array![0, 0, 0];
+                            let pgto: PGTO =
+                                PGTO::new(alpha, cgto_coeff, atom_pos.to_owned(), ang_mom_vec);
+                            pgto_vec.push(pgto);
+                        }
+                        let cgtos: CGTO = CGTO::new(pgto_vec);
+                        basis_set_total.basis_set_cgtos.push(cgtos);
+                    } else {
+                        (0..3).for_each(|cart_coord: usize| {
+                            //* P
+                            let mut pgto_vec: Vec<PGTO> = Vec::new();
+                            for prim_idx in 0..*no_prim {
+                                let alpha = atom_basis_set.alphas[prim_idx + alphas_offset];
+                                let cgto_coeff = atom_basis_set.cgto_coeffs
+                                    [prim_idx + alphas_offset + coeff_type];
+                                let mut ang_mom_vec: Array1<i32> = array![0, 0, 0];
+                                ang_mom_vec[cart_coord] = 1;
+                                let pgto: PGTO =
+                                    PGTO::new(alpha, cgto_coeff, atom_pos.to_owned(), ang_mom_vec);
+                                pgto_vec.push(pgto);
+                            }
+                            let cgto: CGTO = CGTO::new(pgto_vec);
+                            basis_set_total.basis_set_cgtos.push(cgto);
+                        });
+                    }
+                });
+                alphas_offset += no_prim;
             }
-            let cgto: CGTO = CGTO::new(pgto_vec);
-
-            basis_set_cgtos.push(cgto);
-
         }
     }
-
-    // fn build_pgto(
-    //     alpha: f64,
-    //     cgto_coeff: f64,
-    //     position: &Array1<f64>,
-    //     ang_mom_vec: &Array1<i32>,
-    // ) -> PGTO {
-    //     PGTO::new(alpha, cgto_coeff, position.clone(), ang_mom_vec.clone())
-    // }
-
-    // fn build_pgto(Z_val: i32) -> PGTO {
-    //     let mut pgto = PGTO::new();
-    //     let elem_sym: PSE_element_sym = translate_Z_val_to_sym(Z_vals[0]);
-
-    //     pgto
-    // }
-
-    // fn build_cgto() -> CGTO {
-    //     let mut cgto = CGTO::new();
-
-    //     build_pgto();
-
-    //     cgto
-    // }
-
-    // for (idx, Z_val) in Z_vals.iter().enumerate() {
-    //     let mut basis_set_atom = BasisSetAtom::new(PSE_element_sym::DUMMY);
-    //     let elem_sym: PSE_element_sym = translate_Z_val_to_sym(*Z_val);
-    //     basis_set_atom.element_sym = elem_sym;
-
-    //     let basis_set_def = basis_set_total_def
-    //         .basis_set_defs_dict
-    //         .get(&elem_sym)
-    //         .unwrap();
-
-    //     let cgto: CGTO = build_cgto();
-
-    //     for (L_val, no_prim) in basis_set_def.L_and_no_prim_tup.iter() {
-
-    //     }
-
-    // }
-
+    basis_set_total.no_cgtos = basis_set_total.basis_set_cgtos.len();
     basis_set_total
 }
 
