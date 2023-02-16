@@ -26,6 +26,7 @@ The code for the Crawford's group tutorials can be found in `src/Crawford_projec
 - `Rust`
 -  `OpenBLAS` (including the LAPACK implementation)
 
+    [![](https://img.shields.io/badge/Arch_Linux-1793D1?style=for-the-badge&logo=arch-linux&logoColor=white)](https://aur.archlinux.org/packages/openblas-lapack)
     ```bash
     # Arch based Linux distro:
     yay -S openblas-lapack
@@ -35,6 +36,7 @@ The code for the Crawford's group tutorials can be found in `src/Crawford_projec
     ```
 - `libgls-dev` 
 
+    [![](https://img.shields.io/badge/Arch_Linux-1793D1?style=for-the-badge&logo=arch-linux&logoColor=white)](https://archlinux.org/packages/extra/x86_64/gsl/)
     ```bash
     # Arch based Linux distro:
     yay -S gsl
