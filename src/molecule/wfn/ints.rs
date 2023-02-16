@@ -1,7 +1,7 @@
 use crate::molecule::wfn::CGTO;
 use boys::micb25::boys;
 // use boys::exact::boys;
-use ndarray::{Array1, Array2};
+use ndarray::prelude::*;
 use ndarray_linalg::Scalar;
 use std::f64::consts::PI;
 // use rayon::prelude::*;
@@ -141,7 +141,7 @@ pub fn calc_overlap_int_prim(
             ang_mom_vec1[cart_coord],
             ang_mom_vec2[cart_coord],
             0,
-            (gauss1_center_pos[cart_coord] - gauss2_center_pos[cart_coord]), //* abs does not fix the problem
+            gauss1_center_pos[cart_coord] - gauss2_center_pos[cart_coord], //* abs does not fix the problem
             alpha1,
             alpha2,
         );
@@ -687,16 +687,21 @@ pub fn calc_elec_elec_repul_cgto(
     ERI_val
 }
 
-pub fn calc_E_nn_val(geom_matr: &Array2<f64>) -> f64 {
-    let mut E_nn_val: f64 = 0.0;
+pub fn calc_V_nn_val(geom_matr: &Array2<f64>, Z_vals: &[i32]) -> f64 {
+    let mut V_nn_val: f64 = 0.0;
     for (i, atom1_pos) in geom_matr.axis_iter(ndarray::Axis(0)).enumerate() {
         for (j, atom2_pos) in geom_matr.axis_iter(ndarray::Axis(0)).enumerate() {
             if i == j {
                 continue;
             }
-            E_nn_val += calc_r_ij_general(&atom1_pos.to_owned(), &atom2_pos.to_owned());
+            if i < j {
+                let Z_val1 = *Z_vals.get(i).unwrap();
+                let Z_val2 = *Z_vals.get(j).unwrap();
+                V_nn_val += ((Z_val1 * Z_val2) as f64)
+                    / calc_r_ij_general(&atom1_pos.to_owned(), &atom2_pos.to_owned());
+            }
         }
     }
 
-    E_nn_val
+    V_nn_val
 }

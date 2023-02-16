@@ -1,13 +1,13 @@
-#![allow(non_snake_case)] 
+#![allow(non_snake_case)]
 
 use humantime::format_duration;
 use std::time::Instant;
 
-use crate::{molecule::Molecule};
+use crate::molecule::Molecule;
 
 // pub mod Crawford_projects;
-pub mod molecule;
 pub mod SCF_from_scratch;
+pub mod molecule;
 
 // #[allow(non_snake_case)] // * -> I need this due to QM naming conventions
 fn main() {
@@ -45,13 +45,13 @@ fn main() {
     );
     println!("{ASCII_art_logo}");
 
-    let mut mol: Molecule = Molecule::new("inp/Project3_1/STO-3G/h2o_v2.xyz", 0);
+    let mut mol: Molecule = Molecule::new("inp/Project3_1/STO-3G/h2o_v2.xyz", Some(0));
 
     let _is_run_project1: bool = false; //* General molecule geometry stuff
     let _is_run_project2: bool = false; //* Hessian -> eigenfreqs from file
     let _is_run_project3_1: bool = false; //* SCF from precomputed integrals
     let is_run_project3_2: bool = false; //* Ints for SCF from "scratch"
-    let is_run_project3_3: bool = true; //* actual SCF from "scratch" 
+    let is_run_project3_3: bool = true; //* actual SCF from "scratch"
     let _is_run_project4: bool = false; //* MP2 from precomputed integrals
 
     // if is_run_project1 {
@@ -72,8 +72,10 @@ fn main() {
     }
 
     if is_run_project3_3 {
-        use crate::SCF_from_scratch::project3_3::*;
-        run_project3_3();
+        // use crate::SCF_from_scratch::project3_3::*;
+        // run_project3_3();
+        use crate::SCF_from_scratch::project3_3_h2o::*;
+        run_project3_3_h2o();
     }
     //*****************************************************************
     //*****************************************************************
@@ -85,7 +87,6 @@ fn main() {
     let end_exec_time = Instant::now();
     let duration_exec_time = end_exec_time.duration_since(start_exec_time);
     let formatted_duration_exec_time = format_duration(duration_exec_time).to_string();
-    println!(
-        "\nTime elapsed in execution is: {formatted_duration_exec_time}"
-    );
+    println!("\nTime elapsed in execution is: {formatted_duration_exec_time}");
+    //*****************************************************************
 }

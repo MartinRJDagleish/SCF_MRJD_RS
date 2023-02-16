@@ -42,34 +42,4 @@
             "cwd": "${workspaceFolder}"
         }
     ]
-        // {
-        //     "type": "cppdbg",
-        //     "name": "Debug executable 'SCF_MRJD_RS' with cppdbg (lldb)",
-        //     "request": "launch",
-        //     "program": "${workspaceFolder}/target/debug/SCF_MRJD_RS",
-        //     "args": [],
-        //     "stopAtEntry": false,
-        //     "cwd": "${workspaceFolder}",
-        //     "environment": [],
-        //     "externalConsole": false,
-        //     "MIMode": "lldb",
-        //     "miDebuggerPath": "/home/mrjd/.vscode-server/extensions/vadimcn.vscode-lldb-1.8.1/lldb/bin/lldb",
-        //     "preLaunchTask": "cargo build (stable-msvc)", 
-        //     "visualizerFile": "${workspaceFolder}/.vscode/custom.natvis"
-        // },
-        // {
-        //     "name": "(Windows) Launch",
-        //     "type": "cppvsdbg",
-        //     "request": "launch",
-        //     "program": "${workspaceRoot}/target/debug/${workspaceRootFolderName}.exe",
-        //     "args": [
-        //         "example2"
-        //     ],
-        //     "stopAtEntry": false,
-        //     "cwd": "${workspaceFolder}",
-        //     "environment": [],
-        //     "externalConsole": false,
-        //     "preLaunchTask": "cargo build (stable-msvc)",
-        //     "visualizerFile":"${workspaceFolder}/.vscode/custom.natvis"
-        // }
 }

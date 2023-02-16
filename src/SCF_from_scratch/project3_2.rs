@@ -8,8 +8,8 @@ use crate::molecule::wfn::basisset::*;
 pub fn run_project3_2() {
     println!("\nRunning project 3.2 (SCF from 'scratch')");
 
-    let mut mol_sto_3g = molecule::Molecule::new("inp/Project3_2/geom/h2.xyz", 0);
-    let mut mol_6_311g = molecule::Molecule::new("inp/Project3_2/geom/h2.xyz", 0);
+    let mut mol_sto_3g = molecule::Molecule::new("inp/Project3_2/geom/h2.xyz", Some(0));
+    let mut mol_6_311g = molecule::Molecule::new("inp/Project3_2/geom/h2.xyz", Some(0));
 
     // * Parse the basis set file
     let basis_set_name = "sto-3g";

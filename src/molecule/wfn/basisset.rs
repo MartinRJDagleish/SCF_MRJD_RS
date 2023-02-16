@@ -6,12 +6,12 @@ use std::{
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
-use ndarray::Array2;
+use ndarray::prelude::*;
 
 use crate::molecule::wfn::{BasisSetTotal, CGTO, PGTO};
 
 #[derive(Eq, Hash, PartialEq, Clone, Copy, EnumIter)]
-pub enum PSE_element_sym {
+pub enum PseElementSym {
     DUMMY,
     H,
     He,
@@ -133,6 +133,7 @@ pub enum PSE_element_sym {
     Og,
 }
 
+#[derive(PartialEq)]
 pub enum L_char {
     S,
     P,
@@ -152,13 +153,13 @@ pub enum L_char {
 
 #[derive(Default)]
 pub struct BasisSetAtom {
-    pub element_sym: PSE_element_sym,
+    pub element_sym: PseElementSym,
     pub cgto_list: Vec<CGTO>,
 }
 
 #[derive(Default)]
 pub struct BasisSetDef {
-    pub element_sym: PSE_element_sym,
+    pub element_sym: PseElementSym,
     pub alphas: Vec<f64>,
     pub cgto_coeffs: Vec<f64>,
     pub L_and_no_prim_tup: Vec<(L_char, usize)>,
@@ -167,17 +168,17 @@ pub struct BasisSetDef {
 #[derive(Default)]
 pub struct BasisSetTotalDef {
     pub name: String,
-    pub basis_set_defs_dict: HashMap<PSE_element_sym, BasisSetDef>,
+    pub basis_set_defs_dict: HashMap<PseElementSym, BasisSetDef>,
 }
 
-impl Default for PSE_element_sym {
+impl Default for PseElementSym {
     fn default() -> Self {
-        PSE_element_sym::DUMMY
+        PseElementSym::DUMMY
     }
 }
 
 // impl BasisSetAtom {
-//     pub fn new(element_sym: PSE_element_sym) -> Self {
+//     pub fn new(element_sym: PseElementSym) -> Self {
 //         Self {
 //             element_sym,
 //             cgto_list: Vec::new(),
@@ -195,7 +196,7 @@ impl Default for PSE_element_sym {
 // }
 
 // impl BasisSetDef {
-//     pub fn new(element_sym: PSE_element_sym) -> Self {
+//     pub fn new(element_sym: PseElementSym) -> Self {
 //         Self {
 //             element_sym,
 //             alphas: Vec::new(),
@@ -205,131 +206,130 @@ impl Default for PSE_element_sym {
 //     }
 // }
 
-pub fn match_pse_symb(match_string: &str) -> PSE_element_sym {
-    // let mut PSE_element_sym_HashMap = HashMap::<&str,PSE_element_sym>::new();
-
+pub fn match_pse_symb(match_string: &str) -> PseElementSym {
     let PSE_element_sym_HashMap = [
-        ("H", PSE_element_sym::H),
-        ("He", PSE_element_sym::He),
-        ("Li", PSE_element_sym::Li),
-        ("Be", PSE_element_sym::Be),
-        ("B", PSE_element_sym::B),
-        ("C", PSE_element_sym::C),
-        ("N", PSE_element_sym::N),
-        ("O", PSE_element_sym::O),
-        ("F", PSE_element_sym::F),
-        ("Ne", PSE_element_sym::Ne),
-        ("Na", PSE_element_sym::Na),
-        ("Mg", PSE_element_sym::Mg),
-        ("Al", PSE_element_sym::Al),
-        ("Si", PSE_element_sym::Si),
-        ("P", PSE_element_sym::P),
-        ("S", PSE_element_sym::S),
-        ("Cl", PSE_element_sym::Cl),
-        ("Ar", PSE_element_sym::Ar),
-        ("K", PSE_element_sym::K),
-        ("Ca", PSE_element_sym::Ca),
-        ("Sc", PSE_element_sym::Sc),
-        ("Ti", PSE_element_sym::Ti),
-        ("V", PSE_element_sym::V),
-        ("Cr", PSE_element_sym::Cr),
-        ("Mn", PSE_element_sym::Mn),
-        ("Fe", PSE_element_sym::Fe),
-        ("Co", PSE_element_sym::Co),
-        ("Ni", PSE_element_sym::Ni),
-        ("Cu", PSE_element_sym::Cu),
-        ("Zn", PSE_element_sym::Zn),
-        ("Ga", PSE_element_sym::Ga),
-        ("Ge", PSE_element_sym::Ge),
-        ("As", PSE_element_sym::As),
-        ("Se", PSE_element_sym::Se),
-        ("Br", PSE_element_sym::Br),
-        ("Kr", PSE_element_sym::Kr),
-        ("Rb", PSE_element_sym::Rb),
-        ("Sr", PSE_element_sym::Sr),
-        ("Y", PSE_element_sym::Y),
-        ("Zr", PSE_element_sym::Zr),
-        ("Nb", PSE_element_sym::Nb),
-        ("Mo", PSE_element_sym::Mo),
-        ("Tc", PSE_element_sym::Tc),
-        ("Ru", PSE_element_sym::Ru),
-        ("Rh", PSE_element_sym::Rh),
-        ("Pd", PSE_element_sym::Pd),
-        ("Ag", PSE_element_sym::Ag),
-        ("Cd", PSE_element_sym::Cd),
-        ("In", PSE_element_sym::In),
-        ("Sn", PSE_element_sym::Sn),
-        ("Sb", PSE_element_sym::Sb),
-        ("Te", PSE_element_sym::Te),
-        ("I", PSE_element_sym::I),
-        ("Xe", PSE_element_sym::Xe),
-        ("Cs", PSE_element_sym::Cs),
-        ("Ba", PSE_element_sym::Ba),
-        ("La", PSE_element_sym::La),
-        ("Ce", PSE_element_sym::Ce),
-        ("Pr", PSE_element_sym::Pr),
-        ("Nd", PSE_element_sym::Nd),
-        ("Pm", PSE_element_sym::Pm),
-        ("Sm", PSE_element_sym::Sm),
-        ("Eu", PSE_element_sym::Eu),
-        ("Gd", PSE_element_sym::Gd),
-        ("Tb", PSE_element_sym::Tb),
-        ("Dy", PSE_element_sym::Dy),
-        ("Ho", PSE_element_sym::Ho),
-        ("Er", PSE_element_sym::Er),
-        ("Tm", PSE_element_sym::Tm),
-        ("Yb", PSE_element_sym::Yb),
-        ("Lu", PSE_element_sym::Lu),
-        ("Hf", PSE_element_sym::Hf),
-        ("Ta", PSE_element_sym::Ta),
-        ("W", PSE_element_sym::W),
-        ("Re", PSE_element_sym::Re),
-        ("Os", PSE_element_sym::Os),
-        ("Ir", PSE_element_sym::Ir),
-        ("Pt", PSE_element_sym::Pt),
-        ("Au", PSE_element_sym::Au),
-        ("Hg", PSE_element_sym::Hg),
-        ("Tl", PSE_element_sym::Tl),
-        ("Pb", PSE_element_sym::Pb),
-        ("Bi", PSE_element_sym::Bi),
-        ("Po", PSE_element_sym::Po),
-        ("At", PSE_element_sym::At),
-        ("Rn", PSE_element_sym::Rn),
-        ("Fr", PSE_element_sym::Fr),
-        ("Ra", PSE_element_sym::Ra),
-        ("Ac", PSE_element_sym::Ac),
-        ("Th", PSE_element_sym::Th),
-        ("Pa", PSE_element_sym::Pa),
-        ("U", PSE_element_sym::U),
-        ("Np", PSE_element_sym::Np),
-        ("Pu", PSE_element_sym::Pu),
-        ("Am", PSE_element_sym::Am),
-        ("Cm", PSE_element_sym::Cm),
-        ("Bk", PSE_element_sym::Bk),
-        ("Cf", PSE_element_sym::Cf),
-        ("Es", PSE_element_sym::Es),
-        ("Fm", PSE_element_sym::Fm),
-        ("Md", PSE_element_sym::Md),
-        ("No", PSE_element_sym::No),
-        ("Lr", PSE_element_sym::Lr),
-        ("Rf", PSE_element_sym::Rf),
-        ("Db", PSE_element_sym::Db),
-        ("Sg", PSE_element_sym::Sg),
-        ("Bh", PSE_element_sym::Bh),
-        ("Hs", PSE_element_sym::Hs),
-        ("Mt", PSE_element_sym::Mt),
-        ("Ds", PSE_element_sym::Ds),
-        ("Rg", PSE_element_sym::Rg),
-        ("Cn", PSE_element_sym::Cn),
-        ("Nh", PSE_element_sym::Nh),
-        ("Fl", PSE_element_sym::Fl),
-        ("Mc", PSE_element_sym::Mc),
-        ("Lv", PSE_element_sym::Lv),
-        ("Ts", PSE_element_sym::Ts),
-        ("Og", PSE_element_sym::Og),
+        ("H", PseElementSym::H),
+        ("He", PseElementSym::He),
+        ("Li", PseElementSym::Li),
+        ("Be", PseElementSym::Be),
+        ("B", PseElementSym::B),
+        ("C", PseElementSym::C),
+        ("N", PseElementSym::N),
+        ("O", PseElementSym::O),
+        ("F", PseElementSym::F),
+        ("Ne", PseElementSym::Ne),
+        ("Na", PseElementSym::Na),
+        ("Mg", PseElementSym::Mg),
+        ("Al", PseElementSym::Al),
+        ("Si", PseElementSym::Si),
+        ("P", PseElementSym::P),
+        ("S", PseElementSym::S),
+        ("Cl", PseElementSym::Cl),
+        ("Ar", PseElementSym::Ar),
+        ("K", PseElementSym::K),
+        ("Ca", PseElementSym::Ca),
+        ("Sc", PseElementSym::Sc),
+        ("Ti", PseElementSym::Ti),
+        ("V", PseElementSym::V),
+        ("Cr", PseElementSym::Cr),
+        ("Mn", PseElementSym::Mn),
+        ("Fe", PseElementSym::Fe),
+        ("Co", PseElementSym::Co),
+        ("Ni", PseElementSym::Ni),
+        ("Cu", PseElementSym::Cu),
+        ("Zn", PseElementSym::Zn),
+        ("Ga", PseElementSym::Ga),
+        ("Ge", PseElementSym::Ge),
+        ("As", PseElementSym::As),
+        ("Se", PseElementSym::Se),
+        ("Br", PseElementSym::Br),
+        ("Kr", PseElementSym::Kr),
+        ("Rb", PseElementSym::Rb),
+        ("Sr", PseElementSym::Sr),
+        ("Y", PseElementSym::Y),
+        ("Zr", PseElementSym::Zr),
+        ("Nb", PseElementSym::Nb),
+        ("Mo", PseElementSym::Mo),
+        ("Tc", PseElementSym::Tc),
+        ("Ru", PseElementSym::Ru),
+        ("Rh", PseElementSym::Rh),
+        ("Pd", PseElementSym::Pd),
+        ("Ag", PseElementSym::Ag),
+        ("Cd", PseElementSym::Cd),
+        ("In", PseElementSym::In),
+        ("Sn", PseElementSym::Sn),
+        ("Sb", PseElementSym::Sb),
+        ("Te", PseElementSym::Te),
+        ("I", PseElementSym::I),
+        ("Xe", PseElementSym::Xe),
+        ("Cs", PseElementSym::Cs),
+        ("Ba", PseElementSym::Ba),
+        ("La", PseElementSym::La),
+        ("Ce", PseElementSym::Ce),
+        ("Pr", PseElementSym::Pr),
+        ("Nd", PseElementSym::Nd),
+        ("Pm", PseElementSym::Pm),
+        ("Sm", PseElementSym::Sm),
+        ("Eu", PseElementSym::Eu),
+        ("Gd", PseElementSym::Gd),
+        ("Tb", PseElementSym::Tb),
+        ("Dy", PseElementSym::Dy),
+        ("Ho", PseElementSym::Ho),
+        ("Er", PseElementSym::Er),
+        ("Tm", PseElementSym::Tm),
+        ("Yb", PseElementSym::Yb),
+        ("Lu", PseElementSym::Lu),
+        ("Hf", PseElementSym::Hf),
+        ("Ta", PseElementSym::Ta),
+        ("W", PseElementSym::W),
+        ("Re", PseElementSym::Re),
+        ("Os", PseElementSym::Os),
+        ("Ir", PseElementSym::Ir),
+        ("Pt", PseElementSym::Pt),
+        ("Au", PseElementSym::Au),
+        ("Hg", PseElementSym::Hg),
+        ("Tl", PseElementSym::Tl),
+        ("Pb", PseElementSym::Pb),
+        ("Bi", PseElementSym::Bi),
+        ("Po", PseElementSym::Po),
+        ("At", PseElementSym::At),
+        ("Rn", PseElementSym::Rn),
+        ("Fr", PseElementSym::Fr),
+        ("Ra", PseElementSym::Ra),
+        ("Ac", PseElementSym::Ac),
+        ("Th", PseElementSym::Th),
+        ("Pa", PseElementSym::Pa),
+        ("U", PseElementSym::U),
+        ("Np", PseElementSym::Np),
+        ("Pu", PseElementSym::Pu),
+        ("Am", PseElementSym::Am),
+        ("Cm", PseElementSym::Cm),
+        ("Bk", PseElementSym::Bk),
+        ("Cf", PseElementSym::Cf),
+        ("Es", PseElementSym::Es),
+        ("Fm", PseElementSym::Fm),
+        ("Md", PseElementSym::Md),
+        ("No", PseElementSym::No),
+        ("Lr", PseElementSym::Lr),
+        ("Rf", PseElementSym::Rf),
+        ("Db", PseElementSym::Db),
+        ("Sg", PseElementSym::Sg),
+        ("Bh", PseElementSym::Bh),
+        ("Hs", PseElementSym::Hs),
+        ("Mt", PseElementSym::Mt),
+        ("Ds", PseElementSym::Ds),
+        ("Rg", PseElementSym::Rg),
+        ("Cn", PseElementSym::Cn),
+        ("Nh", PseElementSym::Nh),
+        ("Fl", PseElementSym::Fl),
+        ("Mc", PseElementSym::Mc),
+        ("Lv", PseElementSym::Lv),
+        ("Ts", PseElementSym::Ts),
+        ("Og", PseElementSym::Og),
     ]
     .into_iter()
     .collect::<HashMap<_, _>>();
+    // let mut PSE_element_sym_HashMap = HashMap::<&str,PSE_element_sym>::new();
 
     let pse_symb = match PSE_element_sym_HashMap.get(match_string) {
         Some(value) => *value,
@@ -346,18 +346,10 @@ pub fn parse_basis_set_file_gaussian(basis_set_name: &str) -> BasisSetTotalDef {
     };
 
     let basis_set_file_path: &str = match basis_set_name.to_ascii_lowercase().as_str() {
-        "sto-3g" => {
-            "inp/Project3_2/basis_sets/sto-3g.gbs"
-        }
-        "6-311g" => {
-            "inp/Project3_2/basis_sets/6-311g.gbs"
-        }
-        "def2-svp" => {
-            "inp/Project3_2/basis_sets/def2-svp.gbs"
-        }
-        "def2-tzvp" => {
-            "inp/Project3_2/basis_sets/def2-tzvp.gbs"
-        }
+        "sto-3g" => "inp/Project3_2/basis_sets/sto-3g.gbs",
+        "6-311g" => "inp/Project3_2/basis_sets/6-311g.gbs",
+        "def2-svp" => "inp/Project3_2/basis_sets/def2-svp.gbs",
+        "def2-tzvp" => "inp/Project3_2/basis_sets/def2-tzvp.gbs",
         _ => {
             panic!("Basis set not yet implemented!");
         }
@@ -366,18 +358,9 @@ pub fn parse_basis_set_file_gaussian(basis_set_name: &str) -> BasisSetTotalDef {
     let basis_set_file = fs::File::open(basis_set_file_path).expect("Basis set file not found!");
     let basis_set_reader = BufReader::new(basis_set_file);
 
-    // let SPDF_str: &str = "SPDFGHIKLMN"; //* With L or without?
-    // let mut SPDF_HashMap: HashMap<char, usize> = HashMap::new();
-
-    // for (i, c) in SPDF_str.chars().enumerate() {
-    //     SPDF_HashMap.insert(c, i);
-    // }
-
     let block_delimiter: &str = "****";
 
-    // let mut block_count: u32 = 0;
-
-    let mut basis_set: BasisSetDef = BasisSetDef::default(); //* using dummy element symbol
+    let mut basis_set_def: BasisSetDef = BasisSetDef::default(); //* using dummy element symbol
 
     for line in basis_set_reader.lines() {
         let line = line.unwrap();
@@ -389,14 +372,14 @@ pub fn parse_basis_set_file_gaussian(basis_set_name: &str) -> BasisSetTotalDef {
         if data.starts_with('!') || data.is_empty() {
             continue;
         } else if data.starts_with(block_delimiter) {
-            if !basis_set.alphas.is_empty() {
+            if !basis_set_def.alphas.is_empty() {
                 //* Check if BasisSet is not empty
                 //* Add the basis using the element symbol as key
                 basis_set_total_def
                     .basis_set_defs_dict
-                    .insert(basis_set.element_sym, basis_set);
+                    .insert(basis_set_def.element_sym, basis_set_def);
             }
-            basis_set = BasisSetDef::default();
+            basis_set_def = BasisSetDef::default();
             continue;
         } else if line_start.is_alphabetic() {
             let line_split: Vec<&str> = data.split_whitespace().collect();
@@ -404,12 +387,11 @@ pub fn parse_basis_set_file_gaussian(basis_set_name: &str) -> BasisSetTotalDef {
                 //* Old version with string -> new version with enum
                 // basis_set.element_sym = line_split[0].to_string();
                 //* New version with enum
-                basis_set.element_sym = match_pse_symb(line_split[0]);
+                basis_set_def.element_sym = match_pse_symb(line_split[0]);
                 continue;
             } else if line_split[0] == "SP" {
                 let no_prim1: usize = line_split[1].parse::<usize>().unwrap();
-                basis_set.L_and_no_prim_tup.push((L_char::SP, no_prim1));
-                // basis_set.L_and_no_prim_tup.push((L_letter::SP, no_prim1.clone()));
+                basis_set_def.L_and_no_prim_tup.push((L_char::SP, no_prim1));
             } else if line_split[0].len() > 2
                 && (line_split[0].starts_with("l=") || line_split[0].starts_with("L="))
             {
@@ -433,7 +415,9 @@ pub fn parse_basis_set_file_gaussian(basis_set_name: &str) -> BasisSetTotalDef {
                 };
                 // let L_val: usize = SPDF_HashMap.get(&L_val_char).unwrap().clone();
                 let no_prim: usize = line_split[1].parse::<usize>().unwrap();
-                basis_set.L_and_no_prim_tup.push((L_letter_val, no_prim));
+                basis_set_def
+                    .L_and_no_prim_tup
+                    .push((L_letter_val, no_prim));
             }
         } else {
             let parameters_vec = data
@@ -443,12 +427,12 @@ pub fn parse_basis_set_file_gaussian(basis_set_name: &str) -> BasisSetTotalDef {
                 .collect::<Vec<f64>>();
             if parameters_vec.len() > 2 {
                 //* This is the SP basis case
-                basis_set.alphas.push(parameters_vec[0]);
-                basis_set.cgto_coeffs.push(parameters_vec[1]);
-                basis_set.cgto_coeffs.push(parameters_vec[2]);
+                basis_set_def.alphas.push(parameters_vec[0]);
+                basis_set_def.cgto_coeffs.push(parameters_vec[1]); //* Values at even positions (0,2,…) are coeffs for S, odd values are for P (1,3,…) */
+                basis_set_def.cgto_coeffs.push(parameters_vec[2]);
             } else {
-                basis_set.alphas.push(parameters_vec[0]);
-                basis_set.cgto_coeffs.push(parameters_vec[1]);
+                basis_set_def.alphas.push(parameters_vec[0]);
+                basis_set_def.cgto_coeffs.push(parameters_vec[1]);
             }
         }
     }
@@ -456,7 +440,6 @@ pub fn parse_basis_set_file_gaussian(basis_set_name: &str) -> BasisSetTotalDef {
     basis_set_total_def
 }
 
-//TODO: THIS WHOLE FUNCTION DOES NOT WORK YET -> complicated process
 pub fn create_basis_set_total(
     basis_set_total_def: BasisSetTotalDef,
     geom_matr: Array2<f64>,
@@ -464,47 +447,129 @@ pub fn create_basis_set_total(
 ) -> BasisSetTotal {
     let mut basis_set_total = BasisSetTotal::new();
 
-    // fn build_pgto(Z_val: i32) -> PGTO {
-    //     let mut pgto = PGTO::new();
-    //     let elem_sym: PSE_element_sym = translate_Z_val_to_sym(Z_vals[0]);
+    for (atom_idx, atom_pos) in geom_matr.axis_iter(ndarray::Axis(0)).enumerate() {
+        let Z_val = Z_vals[atom_idx];
+        let elem_sym: PseElementSym = translate_Z_val_to_sym(Z_val);
 
-    //     pgto
-    // }
+        let atom_basis_set: &BasisSetDef = basis_set_total_def
+            .basis_set_defs_dict
+            .get(&elem_sym)
+            .unwrap();
 
-    // fn build_cgto() -> CGTO {
-    //     let mut cgto = CGTO::new();
-
-    //     build_pgto();
-
-    //     cgto
-    // }
-
-    // for (idx, Z_val) in Z_vals.iter().enumerate() {
-    //     let mut basis_set_atom = BasisSetAtom::new(PSE_element_sym::DUMMY);
-    //     let elem_sym: PSE_element_sym = translate_Z_val_to_sym(*Z_val);
-    //     basis_set_atom.element_sym = elem_sym;
-
-    //     let basis_set_def = basis_set_total_def
-    //         .basis_set_defs_dict
-    //         .get(&elem_sym)
-    //         .unwrap();
-
-    //     let cgto: CGTO = build_cgto();
-
-    //     for (L_val, no_prim) in basis_set_def.L_and_no_prim_tup.iter() {
-
-    //     }
-
-    // }
-
+        // * Generate PGTOs and then CGTOs
+        let mut alphas_offset = 0_usize;
+        for (L_val, no_prim) in atom_basis_set.L_and_no_prim_tup.iter() {
+            if *L_val != L_char::SP {
+                let list_ang_mom_vec: Vec<Array1<i32>> = match L_val {
+                    L_char::S => vec![array![0, 0, 0]],
+                    L_char::SP => vec![
+                        array![0, 0, 0],
+                        array![1, 0, 0],
+                        array![0, 1, 0],
+                        array![0, 0, 1],
+                    ],
+                    L_char::P => vec![array![1, 0, 0], array![0, 1, 0], array![0, 0, 1]],
+                    L_char::D => vec![
+                        array![2, 0, 0],
+                        array![0, 2, 0],
+                        array![0, 0, 2],
+                        array![1, 1, 0],
+                        array![1, 0, 1],
+                        array![0, 1, 1],
+                    ],
+                    L_char::F => vec![
+                        array![3, 0, 0],
+                        array![0, 3, 0],
+                        array![0, 0, 3],
+                        array![2, 1, 0],
+                        array![2, 0, 1],
+                        array![0, 2, 1],
+                        array![1, 2, 0],
+                        array![1, 0, 2],
+                        array![0, 1, 2],
+                    ],
+                    L_char::G => vec![
+                        array![4, 0, 0],
+                        array![0, 4, 0],
+                        array![0, 0, 4],
+                        array![3, 1, 0],
+                        array![3, 0, 1],
+                        array![0, 3, 1],
+                        array![1, 3, 0],
+                        array![1, 0, 3],
+                        array![0, 1, 3],
+                        array![2, 2, 0],
+                        array![2, 0, 2],
+                        array![0, 2, 2],
+                    ],
+                    _ => vec![array![0, 0, 0]],
+                };
+                for ang_mom_poss in list_ang_mom_vec.iter() {
+                    let mut pgto_vec: Vec<PGTO> = Vec::new();
+                    for prim_idx in 0..*no_prim {
+                        let alpha = atom_basis_set.alphas[prim_idx + alphas_offset];
+                        let cgto_coeff = atom_basis_set.cgto_coeffs[prim_idx + alphas_offset];
+                        let pgto: PGTO = PGTO::new(
+                            alpha,
+                            cgto_coeff,
+                            atom_pos.to_owned(),
+                            ang_mom_poss.to_owned(),
+                        );
+                        pgto_vec.push(pgto);
+                    }
+                    let cgto: CGTO = CGTO::new(pgto_vec);
+                    basis_set_total.basis_set_cgtos.push(cgto);
+                }
+                alphas_offset += no_prim;
+            } else {
+                (0..2).for_each(|coeff_type: usize| {
+                    //* 0 is S, 1 is P
+                    if coeff_type == 0 {
+                        let mut pgto_vec: Vec<PGTO> = Vec::new();
+                        for prim_idx in 0..*no_prim {
+                            let alpha = atom_basis_set.alphas[prim_idx + alphas_offset];
+                            let cgto_coeff =
+                                atom_basis_set.cgto_coeffs[prim_idx + alphas_offset + coeff_type];
+                            //* S
+                            let ang_mom_vec: Array1<i32> = array![0, 0, 0];
+                            let pgto: PGTO =
+                                PGTO::new(alpha, cgto_coeff, atom_pos.to_owned(), ang_mom_vec);
+                            pgto_vec.push(pgto);
+                        }
+                        let cgtos: CGTO = CGTO::new(pgto_vec);
+                        basis_set_total.basis_set_cgtos.push(cgtos);
+                    } else {
+                        (0..3).for_each(|cart_coord: usize| {
+                            //* P
+                            let mut pgto_vec: Vec<PGTO> = Vec::new();
+                            for prim_idx in 0..*no_prim {
+                                let alpha = atom_basis_set.alphas[prim_idx + alphas_offset];
+                                let cgto_coeff = atom_basis_set.cgto_coeffs
+                                    [prim_idx + alphas_offset + coeff_type];
+                                let mut ang_mom_vec: Array1<i32> = array![0, 0, 0];
+                                ang_mom_vec[cart_coord] = 1;
+                                let pgto: PGTO =
+                                    PGTO::new(alpha, cgto_coeff, atom_pos.to_owned(), ang_mom_vec);
+                                pgto_vec.push(pgto);
+                            }
+                            let cgto: CGTO = CGTO::new(pgto_vec);
+                            basis_set_total.basis_set_cgtos.push(cgto);
+                        });
+                    }
+                });
+                alphas_offset += no_prim;
+            }
+        }
+    }
+    basis_set_total.no_cgtos = basis_set_total.basis_set_cgtos.len();
     basis_set_total
 }
 
-pub fn translate_Z_val_to_sym(Z_val: i32) -> PSE_element_sym {
-    let mut Z_to_sym: HashMap<i32, PSE_element_sym> = HashMap::new();
+pub fn translate_Z_val_to_sym(Z_val: i32) -> PseElementSym {
+    let mut Z_to_sym: HashMap<i32, PseElementSym> = HashMap::new();
 
-    for (idx, sym) in PSE_element_sym::iter().enumerate() {
-        let idx = (idx + 1) as i32;
+    for (idx, sym) in PseElementSym::iter().enumerate() {
+        let idx = idx as i32;
         Z_to_sym.insert(idx, sym);
     }
 
@@ -516,11 +581,11 @@ pub fn translate_Z_val_to_sym(Z_val: i32) -> PSE_element_sym {
     pse_symb
 }
 
-pub fn translate_sym_to_Z_val(sym: PSE_element_sym) -> i32 {
-    let mut sym_to_Z: HashMap<PSE_element_sym, i32> = HashMap::new();
+pub fn translate_sym_to_Z_val(sym: PseElementSym) -> i32 {
+    let mut sym_to_Z: HashMap<PseElementSym, i32> = HashMap::new();
 
-    for (idx, sym) in PSE_element_sym::iter().enumerate() {
-        let idx = (idx + 1) as i32;
+    for (idx, sym) in PseElementSym::iter().enumerate() {
+        let idx = idx as i32;
         sym_to_Z.insert(sym, idx);
     }
 
@@ -530,4 +595,23 @@ pub fn translate_sym_to_Z_val(sym: PSE_element_sym) -> i32 {
     };
 
     Z_val
+}
+
+pub fn translate_L_char_to_val(L_char: L_char) -> i32 {
+    match L_char {
+        L_char::S => 0,
+        L_char::SP => 1, //* This needs special care */
+        L_char::P => 1,
+        L_char::D => 2,
+        L_char::F => 3,
+        L_char::G => 4,
+        L_char::H => 5,
+        L_char::I => 6,
+        L_char::J => 7,
+        L_char::K => 8,
+        L_char::L => 9,
+        L_char::M => 10,
+        L_char::N => 11,
+        L_char::O => todo!(),
+    }
 }
