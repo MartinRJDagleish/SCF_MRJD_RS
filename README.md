@@ -1,3 +1,10 @@
+[![](https://tokei.rs/b1/github/MartinRJDagleish/SCF_MRJD_RS)](https://github.com/MartinRJDagleish/SCF_MRJD_RS) 
+[![](https://tokei.rs/b1/github/MartinRJDagleish/SCF_MRJD_RS?category=code)](https://github.com/MartinRJDagleish/SCF_MRJD_RS) 
+[![](https://tokei.rs/b1/github/MartinRJDagleish/SCF_MRJD_RS?category=comments)](https://github.com/MartinRJDagleish/SCF_MRJD_RS) 
+[![](https://tokei.rs/b1/github/MartinRJDagleish/SCF_MRJD_RS?category=files)](https://github.com/MartinRJDagleish/SCF_MRJD_RS) 
+
+[![](https://github.com/MartinRJDagleish/SCF_MRJD_RS/actions/workflows/build.yml/badge.svg)](https://github.com/MartinRJDagleish/SCF_MRJD_RS) 
+
 # SCF_MRJD_RS
 This project started out of curiosity to understand the 
 fundamentals of Hartree-Fock (HF) calculations. As I only had an "overview" lecture in my 
