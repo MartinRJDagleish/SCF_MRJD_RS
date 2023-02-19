@@ -104,9 +104,10 @@ impl PGTO {
         (numerator / denom as f64).sqrt()
     }
 
-    pub fn double_factorial(n: i32) -> i32 {
+    fn double_factorial(n: i32) -> i32 {
         match n {
             -1 => 1,
+            0 => 1,
             1 => 1,
             _ => n * Self::double_factorial(n - 2),
         }
