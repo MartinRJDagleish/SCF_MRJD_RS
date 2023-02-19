@@ -3,7 +3,7 @@ use ndarray::prelude::*;
 use std::f64::consts::PI;
 
 pub mod basisset;
-pub mod ints;
+pub mod integrals;
 
 #[derive(Debug)]
 pub struct PGTO {

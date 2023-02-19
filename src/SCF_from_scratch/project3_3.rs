@@ -3,7 +3,7 @@ use ndarray_linalg::{Eigh, Inverse, SymmetricSqrt};
 
 use crate::molecule::{
     self,
-    wfn::{ints::*, CGTO, PGTO},
+    wfn::{integrals::*, CGTO, PGTO},
 };
 
 pub fn run_project3_3() {

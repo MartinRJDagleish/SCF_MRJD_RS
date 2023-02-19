@@ -2,7 +2,7 @@ use ndarray::prelude::*;
 use ndarray_linalg::{Eigh, Inverse, SymmetricSqrt};
 
 use crate::molecule::{
-    wfn::{ints::*, BasisSetTotal, CGTO, PGTO},
+    wfn::{integrals::*, BasisSetTotal, CGTO, PGTO},
     Molecule,
 };
 

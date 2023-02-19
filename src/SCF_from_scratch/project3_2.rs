@@ -217,7 +217,7 @@ pub fn run_project3_2() {
     println!("V_ee_matr:\n{:^5.6}\n", &V_ee_matr);
 
     //* Test new code for overlap_int:
-    use crate::molecule::wfn::ints::*; //* for testing
+    use crate::molecule::wfn::integrals::*; //* for testing
 
     println!("\n****************************************");
     println!("           TESTS FOR INTEGRALS         ");
