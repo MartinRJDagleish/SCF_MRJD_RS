@@ -150,7 +150,7 @@ pub fn calc_overlap_int_prim(
     S_cart_total * PI.powf(1.5) * (alpha1 + alpha2).recip().powf(1.5)
 }
 
-pub fn calc_overlap_int_cgto(ContrGauss1: &CGTO, ContrGauss2: &CGTO) -> f64 {
+pub fn calc_overlap_int_cgto(cgto1: &CGTO, cgto2: &CGTO) -> f64 {
     // Calculate the overlap integral between two contracted Gaussian functions.
     //
     // # Arguments
@@ -167,19 +167,19 @@ pub fn calc_overlap_int_cgto(ContrGauss1: &CGTO, ContrGauss2: &CGTO) -> f64 {
     //
 
     let mut overlap_int_val: f64 = 0.0;
-    for prim1 in ContrGauss1.pgto_vec.iter() {
-        for prim2 in ContrGauss2.pgto_vec.iter() {
-            overlap_int_val += prim1.norm_const
-                * prim2.norm_const
-                * prim1.cgto_coeff
-                * prim2.cgto_coeff
+    for pgto1 in cgto1.pgto_vec.iter() {
+        for pgto2 in cgto2.pgto_vec.iter() {
+            overlap_int_val += pgto1.norm_const
+                * pgto2.norm_const
+                * pgto1.cgto_coeff
+                * pgto2.cgto_coeff
                 * calc_overlap_int_prim(
-                    &prim1.alpha,
-                    &prim2.alpha,
-                    &prim1.ang_mom_vec,
-                    &prim2.ang_mom_vec,
-                    &prim1.gauss_center_pos,
-                    &prim2.gauss_center_pos,
+                    &pgto1.alpha,
+                    &pgto2.alpha,
+                    &pgto1.ang_mom_vec,
+                    &pgto2.ang_mom_vec,
+                    &pgto1.gauss_center_pos,
+                    &pgto2.gauss_center_pos,
                 );
         }
     }
@@ -265,7 +265,7 @@ pub fn calc_kin_energy_int_prim(
     part1 + part2 + part3
 }
 
-pub fn calc_kin_energy_int_cgto(ContrGauss1: &CGTO, ContrGauss2: &CGTO) -> f64 {
+pub fn calc_kin_energy_int_cgto(cgto1: &CGTO, cgto2: &CGTO) -> f64 {
     // Calculate the kinetic energy integral between two contracted Gaussian functions.
     //
     // # Arguments
@@ -282,19 +282,19 @@ pub fn calc_kin_energy_int_cgto(ContrGauss1: &CGTO, ContrGauss2: &CGTO) -> f64 {
     //
 
     let mut kinetic_energy_int_val: f64 = 0.0;
-    for prim1 in ContrGauss1.pgto_vec.iter() {
-        for prim2 in ContrGauss2.pgto_vec.iter() {
-            kinetic_energy_int_val += prim1.norm_const
-                * prim2.norm_const
-                * prim1.cgto_coeff
-                * prim2.cgto_coeff
+    for pgto1 in cgto1.pgto_vec.iter() {
+        for pgto2 in cgto2.pgto_vec.iter() {
+            kinetic_energy_int_val += pgto1.norm_const
+                * pgto2.norm_const
+                * pgto1.cgto_coeff
+                * pgto2.cgto_coeff
                 * calc_kin_energy_int_prim(
-                    &prim1.alpha,
-                    &prim2.alpha,
-                    &prim1.ang_mom_vec,
-                    &prim2.ang_mom_vec,
-                    &prim1.gauss_center_pos,
-                    &prim2.gauss_center_pos,
+                    &pgto1.alpha,
+                    &pgto2.alpha,
+                    &pgto1.ang_mom_vec,
+                    &pgto2.ang_mom_vec,
+                    &pgto1.gauss_center_pos,
+                    &pgto2.gauss_center_pos,
                 );
         }
     }
@@ -510,24 +510,24 @@ pub fn calc_nuc_attr_int_prim(
 }
 
 pub fn calc_nuc_attr_int_cgto(
-    ContrGaus1: &CGTO,
-    ContrGaus2: &CGTO,
+    cgto1: &CGTO,
+    cgto2: &CGTO,
     nuc_center: &Array1<f64>,
 ) -> f64 {
     let mut nuc_attr_int_val: f64 = 0.0;
-    for prim1 in ContrGaus1.pgto_vec.iter() {
-        for prim2 in ContrGaus2.pgto_vec.iter() {
-            nuc_attr_int_val += prim1.norm_const
-                * prim2.norm_const
-                * prim1.cgto_coeff
-                * prim2.cgto_coeff
+    for pgto1 in cgto1.pgto_vec.iter() {
+        for pgto2 in cgto2.pgto_vec.iter() {
+            nuc_attr_int_val += pgto1.norm_const
+                * pgto2.norm_const
+                * pgto1.cgto_coeff
+                * pgto2.cgto_coeff
                 * calc_nuc_attr_int_prim(
-                    &prim1.alpha,
-                    &prim2.alpha,
-                    &prim1.ang_mom_vec,
-                    &prim2.ang_mom_vec,
-                    &prim1.gauss_center_pos,
-                    &prim2.gauss_center_pos,
+                    &pgto1.alpha,
+                    &pgto2.alpha,
+                    &pgto1.ang_mom_vec,
+                    &pgto2.ang_mom_vec,
+                    &pgto1.gauss_center_pos,
+                    &pgto2.gauss_center_pos,
                     nuc_center,
                 );
         }
@@ -646,38 +646,38 @@ pub fn calc_elec_elec_repul_prim(
 }
 
 pub fn calc_elec_elec_repul_cgto(
-    ContrGaus1: &CGTO,
-    ContrGaus2: &CGTO,
-    ContrGaus3: &CGTO,
-    ContrGaus4: &CGTO,
+    cgto1: &CGTO,
+    cgto2: &CGTO,
+    cgto3: &CGTO,
+    cgto4: &CGTO,
 ) -> f64 {
     let mut ERI_val: f64 = 0.0;
 
-    for prim1 in ContrGaus1.pgto_vec.iter() {
-        for prim2 in ContrGaus2.pgto_vec.iter() {
-            for prim3 in ContrGaus3.pgto_vec.iter() {
-                for prim4 in ContrGaus4.pgto_vec.iter() {
-                    ERI_val += prim1.norm_const
-                        * prim2.norm_const
-                        * prim3.norm_const
-                        * prim4.norm_const
-                        * prim1.cgto_coeff
-                        * prim2.cgto_coeff
-                        * prim3.cgto_coeff
-                        * prim4.cgto_coeff
+    for pgto1 in cgto1.pgto_vec.iter() {
+        for pgto2 in cgto2.pgto_vec.iter() {
+            for pgto3 in cgto3.pgto_vec.iter() {
+                for pgto4 in cgto4.pgto_vec.iter() {
+                    ERI_val += pgto1.norm_const
+                        * pgto2.norm_const
+                        * pgto3.norm_const
+                        * pgto4.norm_const
+                        * pgto1.cgto_coeff
+                        * pgto2.cgto_coeff
+                        * pgto3.cgto_coeff
+                        * pgto4.cgto_coeff
                         * calc_elec_elec_repul_prim(
-                            &prim1.alpha,
-                            &prim2.alpha,
-                            &prim3.alpha,
-                            &prim4.alpha,
-                            &prim1.ang_mom_vec,
-                            &prim2.ang_mom_vec,
-                            &prim3.ang_mom_vec,
-                            &prim4.ang_mom_vec,
-                            &prim1.gauss_center_pos,
-                            &prim2.gauss_center_pos,
-                            &prim3.gauss_center_pos,
-                            &prim4.gauss_center_pos,
+                            &pgto1.alpha,
+                            &pgto2.alpha,
+                            &pgto3.alpha,
+                            &pgto4.alpha,
+                            &pgto1.ang_mom_vec,
+                            &pgto2.ang_mom_vec,
+                            &pgto3.ang_mom_vec,
+                            &pgto4.ang_mom_vec,
+                            &pgto1.gauss_center_pos,
+                            &pgto2.gauss_center_pos,
+                            &pgto3.gauss_center_pos,
+                            &pgto4.gauss_center_pos,
                         );
                 }
             }

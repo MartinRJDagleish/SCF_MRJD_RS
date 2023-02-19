@@ -1,9 +1,8 @@
+[![](https://github.com/MartinRJDagleish/SCF_MRJD_RS/actions/workflows/build.yml/badge.svg)](https://github.com/MartinRJDagleish/SCF_MRJD_RS) 
 [![](https://tokei.rs/b1/github/MartinRJDagleish/SCF_MRJD_RS)](https://github.com/MartinRJDagleish/SCF_MRJD_RS) 
 [![](https://tokei.rs/b1/github/MartinRJDagleish/SCF_MRJD_RS?category=code)](https://github.com/MartinRJDagleish/SCF_MRJD_RS) 
 [![](https://tokei.rs/b1/github/MartinRJDagleish/SCF_MRJD_RS?category=comments)](https://github.com/MartinRJDagleish/SCF_MRJD_RS) 
 [![](https://tokei.rs/b1/github/MartinRJDagleish/SCF_MRJD_RS?category=files)](https://github.com/MartinRJDagleish/SCF_MRJD_RS) 
-
-[![](https://github.com/MartinRJDagleish/SCF_MRJD_RS/actions/workflows/build.yml/badge.svg)](https://github.com/MartinRJDagleish/SCF_MRJD_RS) 
 
 # SCF_MRJD_RS
 This project started out of curiosity to understand the 
@@ -34,7 +33,7 @@ The code for the Crawford's group tutorials can be found in `src/Crawford_projec
     # Ubuntu based Linux distro:
     sudo apt install libopenblas-dev
     ```
-- `libgls-dev` 
+- `libgsl-dev` 
 
     [![](https://img.shields.io/badge/Arch_Linux-1793D1?style=for-the-badge&logo=arch-linux&logoColor=white)](https://archlinux.org/packages/extra/x86_64/gsl/)
     ```bash
