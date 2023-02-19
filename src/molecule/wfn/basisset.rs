@@ -462,7 +462,7 @@ pub fn create_basis_set_total(
             if *L_val != L_char::SP {
                 let list_ang_mom_vec: Vec<Array1<i32>> = match L_val {
                     L_char::S => vec![array![0, 0, 0]],
-                    L_char::SP => vec![
+                    L_char::SP => vec![ // * This is never used -> separate code below
                         array![0, 0, 0],
                         array![1, 0, 0],
                         array![0, 1, 0],
@@ -529,7 +529,7 @@ pub fn create_basis_set_total(
                         for prim_idx in 0..*no_prim {
                             let alpha = atom_basis_set.alphas[prim_idx + alphas_offset];
                             let cgto_coeff =
-                                atom_basis_set.cgto_coeffs[prim_idx + alphas_offset + coeff_type];
+                                atom_basis_set.cgto_coeffs[(2 * prim_idx) + alphas_offset + coeff_type];
                             //* S
                             let ang_mom_vec: Array1<i32> = array![0, 0, 0];
                             let pgto: PGTO =
@@ -545,7 +545,7 @@ pub fn create_basis_set_total(
                             for prim_idx in 0..*no_prim {
                                 let alpha = atom_basis_set.alphas[prim_idx + alphas_offset];
                                 let cgto_coeff = atom_basis_set.cgto_coeffs
-                                    [prim_idx + alphas_offset + coeff_type];
+                                    [(2 * prim_idx) + alphas_offset + coeff_type];
                                 let mut ang_mom_vec: Array1<i32> = array![0, 0, 0];
                                 ang_mom_vec[cart_coord] = 1;
                                 let pgto: PGTO =
