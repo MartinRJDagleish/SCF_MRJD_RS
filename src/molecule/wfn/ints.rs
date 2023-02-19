@@ -480,11 +480,12 @@ pub fn calc_nuc_attr_int_prim(
         for u in 0..(ang_mom_vec1[1] + ang_mom_vec2[1] + 1) {
             for v in 0..(ang_mom_vec1[2] + ang_mom_vec2[2] + 1) {
                 let mut result_tmp: f64 = 1.0; //* Intialize the result_tmp variable
+                let tuv = [t, u, v];
                 for cart_coord in 0..3 {
                     result_tmp *= calc_expansion_coeff_overlap_int(
                         ang_mom_vec1[cart_coord],
                         ang_mom_vec2[cart_coord],
-                        t,
+                        tuv[cart_coord], //* This is t, u, v depending on the cartesian coordinate
                         gauss1_center_pos[cart_coord] - gauss2_center_pos[cart_coord],
                         alpha1,
                         alpha2,
