@@ -45,7 +45,7 @@ fn main() {
     );
     println!("{ASCII_art_logo}");
 
-    let mut mol: Molecule = Molecule::new("inp/Project3_1/STO-3G/h2o_v2.xyz", Some(0));
+    // let mut mol: Molecule = Molecule::new("inp/Project3_1/STO-3G/h2o_v2.xyz", Some(0));
 
     let _is_run_project1: bool = false; //* General molecule geometry stuff
     let _is_run_project2: bool = false; //* Hessian -> eigenfreqs from file

@@ -48,6 +48,7 @@ impl Molecule {
     fn read_crawford_inputfile(geom_filename: &str) -> (Vec<i32>, Array2<f64>, usize) {
         //* Step 1: Read the coord data from input
         println!("Inputfile: {geom_filename}");
+        println!("Reading geometry from input file...\n");
 
         let geom_file = fs::File::open(geom_filename).expect("Geometry file not found!");
         let geom_file_reader = BufReader::new(geom_file);
@@ -62,6 +63,8 @@ impl Molecule {
         let mut geom_matr: Array2<f64> = Array2::zeros((no_atoms, 3));
 
         for (atom_idx, line) in geom_file_lines.enumerate() {
+            //* Print out the read geometry to stdout */
+            println!("{line}");
             let mut line_split = line.split_whitespace();
 
             Z_vals.push(line_split.next().unwrap().parse().unwrap());
@@ -71,12 +74,15 @@ impl Molecule {
             });
         }
 
+        println!("\n...End of geometry input.\n");
+
         (Z_vals, geom_matr, no_atoms)
     }
 
     fn read_xyz_xmol_inputfile(geom_filename: &str) -> (Vec<i32>, Array2<f64>, usize) {
         //* Step 1: Read the coord data from input
         println!("Inputfile: {geom_filename}");
+        println!("Reading geometry from input file...\n");
 
         let geom_file = fs::File::open(geom_filename).expect("Geometry file not found!");
         let geom_file_reader = BufReader::new(geom_file);
@@ -93,6 +99,8 @@ impl Molecule {
         geom_file_lines.next(); //* Skip the comment line of xyz file
 
         for (atom_idx, line) in geom_file_lines.enumerate() {
+            //* Print out the read geometry to stdout */
+            println!("{line}");
             let mut line_split = line.split_whitespace();
 
             Z_vals.push(line_split.next().unwrap().parse().unwrap());
@@ -103,6 +111,8 @@ impl Molecule {
         }
         let bohr_to_AA: f64 = 0.529177210903_f64.recip();
         geom_matr.mapv_inplace(|x| x * bohr_to_AA);
+
+        println!("\n...End of geometry input.\n");
 
         (Z_vals, geom_matr, no_atoms)
     }

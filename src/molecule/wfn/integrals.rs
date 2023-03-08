@@ -401,9 +401,9 @@ pub fn calc_gaussian_prod_center(
     //   Exponent of the first Gaussian function.
     // alpha2 : f64
     //   Exponent of the second Gaussian function.
-    // origin_vec1 : Array1<f64>
+    // gauss1_center_pos : Array1<f64>
     //   Cartesian vec of the first Gaussian function.
-    // origin_vec2 : Array1<f64>
+    // gauss2_center_pos : Array1<f64>
     //   Cartesian vec of the second Gaussian function.
     //
     // # Returns
@@ -413,10 +413,7 @@ pub fn calc_gaussian_prod_center(
     //
 
     let p_recip: f64 = (alpha1 + alpha2).recip();
-    let gaussian_prod_center: Array1<f64> =
-        (gauss1_center_pos * alpha1 + alpha2 * gauss2_center_pos) * p_recip;
-
-    gaussian_prod_center
+    p_recip * (alpha1 * gauss1_center_pos + alpha2 * gauss2_center_pos)
 }
 
 pub fn calc_nuc_attr_int_prim(
@@ -434,10 +431,47 @@ pub fn calc_nuc_attr_int_prim(
     let dist_P_C: f64 = calc_r_ij_general(&gaussian_prod_center, nuc_center);
 
     let mut result: f64 = 0.0;
+    // (l1, l2) = ang_mom_vec1[0], ang_mom_vec2[0];
+    // (m1, m2) = ang_mom_vec1[1], ang_mom_vec2[1];
+    // (n1, n2) = ang_mom_vec1[2], ang_mom_vec2[2];
 
     for t in 0..(ang_mom_vec1[0] + ang_mom_vec2[0] + 1) {
         for u in 0..(ang_mom_vec1[1] + ang_mom_vec2[1] + 1) {
             for v in 0..(ang_mom_vec1[2] + ang_mom_vec2[2] + 1) {
+                // * Same result as the commented out code below
+                // result += calc_E_herm_gauss_coeff(
+                //     ang_mom_vec1[0],
+                //     ang_mom_vec2[0],
+                //     t,
+                //     gauss1_center_pos[0] - gauss2_center_pos[0],
+                //     alpha1,
+                //     alpha2,
+                // ) * calc_E_herm_gauss_coeff(
+                //     ang_mom_vec1[1],
+                //     ang_mom_vec2[1],
+                //     u,
+                //     gauss1_center_pos[1] - gauss2_center_pos[1],
+                //     alpha1,
+                //     alpha2,
+                // ) * calc_E_herm_gauss_coeff(
+                //     ang_mom_vec1[2],
+                //     ang_mom_vec2[2],
+                //     v,
+                //     gauss1_center_pos[2] - gauss2_center_pos[2],
+                //     alpha1,
+                //     alpha2,
+                // ) * calc_R_coulomb_aux_herm_int(
+                //     t,
+                //     u,
+                //     v,
+                //     0,
+                //     alpha1,
+                //     alpha2,
+                //     &gaussian_prod_center,
+                //     dist_P_C,
+                // );
+
+                // * Previous version of code → same result as above
                 let tuv = [t, u, v];
                 let mut result_tmp: f64 = 1.0;
                 for cart_coord in 0..3 {
