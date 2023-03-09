@@ -8,8 +8,7 @@ use std::f64::consts::PI;
 
 use crate::molecule::geometry::calc_r_ij_general;
 
-#[doc(hidden)]
-pub fn calc_expansion_coeff_overlap_int(
+pub fn calc_E_herm_gauss_coeff(
     l1: i32,
     l2: i32,
     no_nodes: i32,
@@ -44,46 +43,18 @@ pub fn calc_expansion_coeff_overlap_int(
         (_, _, 0) => {
             //* decrement index l1
             0.5 * p_recip
-                * calc_expansion_coeff_overlap_int(
-                    l1 - 1,
-                    l2,
-                    no_nodes - 1,
-                    gauss_dist,
-                    alpha1,
-                    alpha2,
-                )
+                * calc_E_herm_gauss_coeff(l1 - 1, l2, no_nodes - 1, gauss_dist, alpha1, alpha2)
                 - (q * gauss_dist / alpha1)
-                    * calc_expansion_coeff_overlap_int(
-                        l1 - 1,
-                        l2,
-                        no_nodes,
-                        gauss_dist,
-                        alpha1,
-                        alpha2,
-                    )
+                    * calc_E_herm_gauss_coeff(l1 - 1, l2, no_nodes, gauss_dist, alpha1, alpha2)
                 + (no_nodes + 1) as f64
-                    * calc_expansion_coeff_overlap_int(
-                        l1 - 1,
-                        l2,
-                        no_nodes + 1,
-                        gauss_dist,
-                        alpha1,
-                        alpha2,
-                    )
+                    * calc_E_herm_gauss_coeff(l1 - 1, l2, no_nodes + 1, gauss_dist, alpha1, alpha2)
         }
         (_, _, _) => {
             //* decrement index l2
             0.5 * p_recip
-                * calc_expansion_coeff_overlap_int(
-                    l1,
-                    l2 - 1,
-                    no_nodes - 1,
-                    gauss_dist,
-                    alpha1,
-                    alpha2,
-                )
-                - (q * gauss_dist / alpha2) //* HERE I HAD alpha1 instead of alpha2 -> fixed 
-                    * calc_expansion_coeff_overlap_int(
+                * calc_E_herm_gauss_coeff(l1, l2 - 1, no_nodes - 1, gauss_dist, alpha1, alpha2)
+                + (q * gauss_dist / alpha2) //* 2 bugs here: 1. alpha1 instead of alpha2 -> fixed; 2. - instead of + -> fixed
+                    * calc_E_herm_gauss_coeff(
                         l1,
                         l2 - 1,
                         no_nodes,
@@ -92,14 +63,7 @@ pub fn calc_expansion_coeff_overlap_int(
                         alpha2,
                     )
                 + (no_nodes + 1) as f64
-                    * calc_expansion_coeff_overlap_int(
-                        l1,
-                        l2 - 1,
-                        no_nodes + 1,
-                        gauss_dist,
-                        alpha1,
-                        alpha2,
-                    )
+                    * calc_E_herm_gauss_coeff(l1, l2 - 1, no_nodes + 1, gauss_dist, alpha1, alpha2)
         }
     }
 }
@@ -136,8 +100,8 @@ pub fn calc_overlap_int_prim(
     //
 
     let mut S_cart_total: f64 = 1.0; //* Start with 1, otherwise it will be 0
-    (0..3).for_each(|cart_coord| {
-        S_cart_total *= calc_expansion_coeff_overlap_int(
+    for cart_coord in 0..3 {
+        S_cart_total *= calc_E_herm_gauss_coeff(
             ang_mom_vec1[cart_coord],
             ang_mom_vec2[cart_coord],
             0,
@@ -145,8 +109,7 @@ pub fn calc_overlap_int_prim(
             alpha1,
             alpha2,
         );
-    });
-
+    }
     S_cart_total * PI.powf(1.5) * (alpha1 + alpha2).recip().powf(1.5)
 }
 
@@ -302,7 +265,7 @@ pub fn calc_kin_energy_int_cgto(cgto1: &CGTO, cgto2: &CGTO) -> f64 {
     kinetic_energy_int_val
 }
 
-pub fn calc_expansion_coeff_attr_int(
+pub fn calc_R_coulomb_aux_herm_int(
     t: i32,
     u: i32,
     v: i32,
@@ -334,17 +297,17 @@ pub fn calc_expansion_coeff_attr_int(
     //   Exponent of the second Gaussian function.
 
     let p: f64 = alpha1 + alpha2;
-    let val1: f64 = p * dist_P_C.powi(2);
+    let boys_arg: f64 = p * dist_P_C * dist_P_C;
     let mut result: f64 = 0.0;
 
     match (t, u, v) {
         (0, 0, 0) => {
-            result += (-2.0 * p).powi(order_boys as i32) * boys(order_boys, val1);
+            result += (-2.0 * p).powi(order_boys as i32) * boys(order_boys, boys_arg);
         }
         (0, 0, _) => {
             if v > 1 {
                 result += (v - 1) as f64
-                    * calc_expansion_coeff_attr_int(
+                    * calc_R_coulomb_aux_herm_int(
                         t,
                         u,
                         v - 2,
@@ -356,7 +319,7 @@ pub fn calc_expansion_coeff_attr_int(
                     );
             }
             result += P_C_vec[2]
-                * calc_expansion_coeff_attr_int(
+                * calc_R_coulomb_aux_herm_int(
                     t,
                     u,
                     v - 1,
@@ -370,7 +333,7 @@ pub fn calc_expansion_coeff_attr_int(
         (0, _, _) => {
             if u > 1 {
                 result += (u - 1) as f64
-                    * calc_expansion_coeff_attr_int(
+                    * calc_R_coulomb_aux_herm_int(
                         t,
                         u - 2,
                         v,
@@ -382,7 +345,7 @@ pub fn calc_expansion_coeff_attr_int(
                     );
             }
             result += P_C_vec[1]
-                * calc_expansion_coeff_attr_int(
+                * calc_R_coulomb_aux_herm_int(
                     t,
                     u - 1,
                     v,
@@ -396,7 +359,7 @@ pub fn calc_expansion_coeff_attr_int(
         (_, _, _) => {
             if t > 1 {
                 result += (t - 1) as f64
-                    * calc_expansion_coeff_attr_int(
+                    * calc_R_coulomb_aux_herm_int(
                         t - 2,
                         u,
                         v,
@@ -408,7 +371,7 @@ pub fn calc_expansion_coeff_attr_int(
                     );
             }
             result += P_C_vec[0]
-                * calc_expansion_coeff_attr_int(
+                * calc_R_coulomb_aux_herm_int(
                     t - 1,
                     u,
                     v,
@@ -438,9 +401,9 @@ pub fn calc_gaussian_prod_center(
     //   Exponent of the first Gaussian function.
     // alpha2 : f64
     //   Exponent of the second Gaussian function.
-    // origin_vec1 : Array1<f64>
+    // gauss1_center_pos : Array1<f64>
     //   Cartesian vec of the first Gaussian function.
-    // origin_vec2 : Array1<f64>
+    // gauss2_center_pos : Array1<f64>
     //   Cartesian vec of the second Gaussian function.
     //
     // # Returns
@@ -450,10 +413,7 @@ pub fn calc_gaussian_prod_center(
     //
 
     let p_recip: f64 = (alpha1 + alpha2).recip();
-    let gaussian_prod_center: Array1<f64> =
-        (gauss1_center_pos * alpha1 + alpha2 * gauss2_center_pos) * p_recip;
-
-    gaussian_prod_center
+    p_recip * (alpha1 * gauss1_center_pos + alpha2 * gauss2_center_pos)
 }
 
 pub fn calc_nuc_attr_int_prim(
@@ -465,24 +425,57 @@ pub fn calc_nuc_attr_int_prim(
     gauss2_center_pos: &Array1<f64>,
     nuc_center: &Array1<f64>,
 ) -> f64 {
-    let gaussian_prod_center: Array1<f64> = calc_gaussian_prod_center(
-        alpha1.to_owned(),
-        alpha2.to_owned(),
-        gauss1_center_pos,
-        gauss2_center_pos,
-    );
+    let gaussian_prod_center: Array1<f64> =
+        calc_gaussian_prod_center(*alpha1, *alpha2, gauss1_center_pos, gauss2_center_pos);
     let p_recip = (alpha1 + alpha2).recip();
     let dist_P_C: f64 = calc_r_ij_general(&gaussian_prod_center, nuc_center);
 
     let mut result: f64 = 0.0;
+    // (l1, l2) = ang_mom_vec1[0], ang_mom_vec2[0];
+    // (m1, m2) = ang_mom_vec1[1], ang_mom_vec2[1];
+    // (n1, n2) = ang_mom_vec1[2], ang_mom_vec2[2];
 
     for t in 0..(ang_mom_vec1[0] + ang_mom_vec2[0] + 1) {
         for u in 0..(ang_mom_vec1[1] + ang_mom_vec2[1] + 1) {
             for v in 0..(ang_mom_vec1[2] + ang_mom_vec2[2] + 1) {
-                let mut result_tmp: f64 = 1.0; //* Intialize the result_tmp variable
+                // * Same result as the commented out code below
+                // result += calc_E_herm_gauss_coeff(
+                //     ang_mom_vec1[0],
+                //     ang_mom_vec2[0],
+                //     t,
+                //     gauss1_center_pos[0] - gauss2_center_pos[0],
+                //     alpha1,
+                //     alpha2,
+                // ) * calc_E_herm_gauss_coeff(
+                //     ang_mom_vec1[1],
+                //     ang_mom_vec2[1],
+                //     u,
+                //     gauss1_center_pos[1] - gauss2_center_pos[1],
+                //     alpha1,
+                //     alpha2,
+                // ) * calc_E_herm_gauss_coeff(
+                //     ang_mom_vec1[2],
+                //     ang_mom_vec2[2],
+                //     v,
+                //     gauss1_center_pos[2] - gauss2_center_pos[2],
+                //     alpha1,
+                //     alpha2,
+                // ) * calc_R_coulomb_aux_herm_int(
+                //     t,
+                //     u,
+                //     v,
+                //     0,
+                //     alpha1,
+                //     alpha2,
+                //     &gaussian_prod_center,
+                //     dist_P_C,
+                // );
+
+                // * Previous version of code → same result as above
                 let tuv = [t, u, v];
+                let mut result_tmp: f64 = 1.0;
                 for cart_coord in 0..3 {
-                    result_tmp *= calc_expansion_coeff_overlap_int(
+                    result_tmp *= calc_E_herm_gauss_coeff(
                         ang_mom_vec1[cart_coord],
                         ang_mom_vec2[cart_coord],
                         tuv[cart_coord], //* This is t, u, v depending on the cartesian coordinate
@@ -491,8 +484,9 @@ pub fn calc_nuc_attr_int_prim(
                         alpha2,
                     )
                 }
+
                 result += result_tmp
-                    * calc_expansion_coeff_attr_int(
+                    * calc_R_coulomb_aux_herm_int(
                         t,
                         u,
                         v,
@@ -506,15 +500,10 @@ pub fn calc_nuc_attr_int_prim(
         }
     }
 
-    result *= 2.0 * PI * p_recip;
-    result
+    result * 2.0 * PI * p_recip
 }
 
-pub fn calc_nuc_attr_int_cgto(
-    cgto1: &CGTO,
-    cgto2: &CGTO,
-    nuc_center: &Array1<f64>,
-) -> f64 {
+pub fn calc_nuc_attr_int_cgto(cgto1: &CGTO, cgto2: &CGTO, nuc_center: &Array1<f64>) -> f64 {
     let mut nuc_attr_int_val: f64 = 0.0;
     for pgto1 in cgto1.pgto_vec.iter() {
         for pgto2 in cgto2.pgto_vec.iter() {
@@ -577,7 +566,7 @@ pub fn calc_elec_elec_repul_prim(
                     for nu in 0..(ang_mom_vec3[1] + ang_mom_vec4[1] + 1) {
                         for phi in 0..(ang_mom_vec3[2] + ang_mom_vec4[2] + 1) {
                             ERI_result += (-1.0).powi(tau + nu + phi)
-                                * calc_expansion_coeff_overlap_int(
+                                * calc_E_herm_gauss_coeff(
                                     ang_mom_vec1[0],
                                     ang_mom_vec2[0],
                                     t,
@@ -585,7 +574,7 @@ pub fn calc_elec_elec_repul_prim(
                                     alpha1,
                                     alpha2,
                                 )
-                                * calc_expansion_coeff_overlap_int(
+                                * calc_E_herm_gauss_coeff(
                                     ang_mom_vec1[1],
                                     ang_mom_vec2[1],
                                     u,
@@ -593,7 +582,7 @@ pub fn calc_elec_elec_repul_prim(
                                     alpha1,
                                     alpha2,
                                 )
-                                * calc_expansion_coeff_overlap_int(
+                                * calc_E_herm_gauss_coeff(
                                     ang_mom_vec1[2],
                                     ang_mom_vec2[2],
                                     v,
@@ -601,7 +590,7 @@ pub fn calc_elec_elec_repul_prim(
                                     alpha1,
                                     alpha2,
                                 )
-                                * calc_expansion_coeff_overlap_int(
+                                * calc_E_herm_gauss_coeff(
                                     ang_mom_vec3[0],
                                     ang_mom_vec4[0],
                                     tau,
@@ -609,7 +598,7 @@ pub fn calc_elec_elec_repul_prim(
                                     alpha3,
                                     alpha4,
                                 )
-                                * calc_expansion_coeff_overlap_int(
+                                * calc_E_herm_gauss_coeff(
                                     ang_mom_vec3[1],
                                     ang_mom_vec4[1],
                                     nu,
@@ -617,7 +606,7 @@ pub fn calc_elec_elec_repul_prim(
                                     alpha3,
                                     alpha4,
                                 )
-                                * calc_expansion_coeff_overlap_int(
+                                * calc_E_herm_gauss_coeff(
                                     ang_mom_vec3[2],
                                     ang_mom_vec4[2],
                                     phi,
@@ -625,7 +614,7 @@ pub fn calc_elec_elec_repul_prim(
                                     alpha3,
                                     alpha4,
                                 )
-                                * calc_expansion_coeff_attr_int(
+                                * calc_R_coulomb_aux_herm_int(
                                     t + tau,
                                     u + nu,
                                     v + phi,
@@ -646,12 +635,7 @@ pub fn calc_elec_elec_repul_prim(
     ERI_result
 }
 
-pub fn calc_elec_elec_repul_cgto(
-    cgto1: &CGTO,
-    cgto2: &CGTO,
-    cgto3: &CGTO,
-    cgto4: &CGTO,
-) -> f64 {
+pub fn calc_elec_elec_repul_cgto(cgto1: &CGTO, cgto2: &CGTO, cgto3: &CGTO, cgto4: &CGTO) -> f64 {
     let mut ERI_val: f64 = 0.0;
 
     for pgto1 in cgto1.pgto_vec.iter() {
