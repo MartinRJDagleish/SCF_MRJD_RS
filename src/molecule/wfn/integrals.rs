@@ -660,7 +660,7 @@ pub fn calc_elec_elec_repul_prim(
                         for phi in 0..(ang_mom_vec3[2] + ang_mom_vec4[2] + 1) {
 
                             let tau_nu_phi = [tau, nu, phi];
-                            let mut result_tmp2: f64 = 1.0;
+                            let mut result_tmp2: f64 = 1.0; //* added result_tmp2 to make it work */
                             for cart_coord in 0..3 {
                                 result_tmp2 *= calc_E_herm_gauss_coeff(
                                         ang_mom_vec3[cart_coord],
