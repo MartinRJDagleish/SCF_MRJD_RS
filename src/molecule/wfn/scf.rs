@@ -127,28 +127,39 @@ impl SCF {
 
     //     // //* Step 3: Calculate the 2-electron integrals (ERI)
 
-    //     println!("Electron-electron repulsion integrals (V_ee / ERI matrix):");
-    //     self.mol.wfn_total.HFMatrices.ERI_tensor = Array4::<f64>::zeros((
-    //         self.mol.wfn_total.basis_set_total.no_cgtos,
-    //         self.mol.wfn_total.basis_set_total.no_cgtos,
-    //         self.mol.wfn_total.basis_set_total.no_cgtos,
-    //         self.mol.wfn_total.basis_set_total.no_cgtos,
-    //     ));
-    //     for i in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
-    //         for j in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
-    //             for k in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
-    //                 for l in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
-    //                     self.mol.wfn_total.HFMatrices.ERI_tensor[(i, j, k, l)] =
-    //                         calc_elec_elec_repul_cgto(
-    //                             &self.mol.wfn_total.basis_set_total.basis_set_cgtos[i],
-    //                             &self.mol.wfn_total.basis_set_total.basis_set_cgtos[j],
-    //                             &self.mol.wfn_total.basis_set_total.basis_set_cgtos[k],
-    //                             &self.mol.wfn_total.basis_set_total.basis_set_cgtos[l],
+    // println!("Electron-electron repulsion integrals (V_ee / ERI matrix):");
+    // mol.wfn_total.HFMatrices.ERI_tensor = Array4::<f64>::zeros((
+    //     mol.wfn_total.basis_set_total.no_cgtos,
+    //     mol.wfn_total.basis_set_total.no_cgtos,
+    //     mol.wfn_total.basis_set_total.no_cgtos,
+    //     mol.wfn_total.basis_set_total.no_cgtos,
+    // ));
+    // for i in 0..mol.wfn_total.basis_set_total.no_cgtos {
+    //     for j in 0..=i {
+    //         let ij = calc_cmp_idx(i, j);
+    //         for k in 0..mol.wfn_total.basis_set_total.no_cgtos {
+    //             for l in 0..=k {
+    //                 let kl = calc_cmp_idx(k, l);
+    //                 if ij >= kl {
+    //                     let ERI_val = calc_elec_elec_repul_cgto(
+    //                             &mol.wfn_total.basis_set_total.basis_set_cgtos[i],
+    //                             &mol.wfn_total.basis_set_total.basis_set_cgtos[j],
+    //                             &mol.wfn_total.basis_set_total.basis_set_cgtos[k],
+    //                             &mol.wfn_total.basis_set_total.basis_set_cgtos[l],
     //                         );
+    //                     mol.wfn_total.HFMatrices.ERI_tensor[(i, j, k, l)] = ERI_val;
+    //                     mol.wfn_total.HFMatrices.ERI_tensor[(j, i, k, l)] = ERI_val;
+    //                     mol.wfn_total.HFMatrices.ERI_tensor[(i, j, l, k)] = ERI_val;
+    //                     mol.wfn_total.HFMatrices.ERI_tensor[(j, i, l, k)] = ERI_val;
+    //                     mol.wfn_total.HFMatrices.ERI_tensor[(k, l, i, j)] = ERI_val;
+    //                     mol.wfn_total.HFMatrices.ERI_tensor[(l, k, i, j)] = ERI_val;
+    //                     mol.wfn_total.HFMatrices.ERI_tensor[(k, l, j, i)] = ERI_val;
+    //                     mol.wfn_total.HFMatrices.ERI_tensor[(l, k, j, i)] = ERI_val;
     //                 }
     //             }
     //         }
     //     }
+    // }
 
     //     println!("{:^5.6}\n", &self.mol.wfn_total.HFMatrices.ERI_tensor);
 
@@ -316,4 +327,28 @@ impl SCF {
     //         println!("{line}");
     //     }
     }
+}
+
+
+pub fn calc_ijkl_idx(i: usize, j: usize, k: usize, l: usize) -> usize {
+    let ij: usize = if i > j {
+        calc_cmp_idx(i, j)
+    } else {
+        calc_cmp_idx(j, i)
+    };
+    let kl: usize = if k > l {
+        calc_cmp_idx(k, l)
+    } else {
+        calc_cmp_idx(l, k)
+    };
+    let ijkl: usize = if ij > kl {
+        calc_cmp_idx(ij, kl)
+    } else {
+        calc_cmp_idx(kl, ij)
+    };
+    ijkl
+}
+
+pub fn calc_cmp_idx(idx1: usize, idx2: usize) -> usize {
+    (idx1 * (idx1 + 1)) / 2 + idx2
 }

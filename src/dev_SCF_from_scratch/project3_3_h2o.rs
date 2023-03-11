@@ -9,6 +9,9 @@ use crate::molecule::{
 use crate::molecule::wfn::basisset::create_basis_set_total;
 use crate::molecule::wfn::basisset::parse_basis_set_file_gaussian;
 
+use crate::molecule::wfn::scf::calc_cmp_idx;
+use crate::molecule::wfn::scf::calc_ijkl_idx;
+
 pub fn run_project3_3_h2o() {
     let mut mol: Molecule = Molecule::new("inp/Project3_1/STO-3G/h2o_v2.xyz", 0);
     // let mut mol: Molecule = Molecule::new("inp/benzene_bohr.xyz", Some(0));
@@ -324,15 +327,27 @@ pub fn run_project3_3_h2o() {
         mol.wfn_total.basis_set_total.no_cgtos,
     ));
     for i in 0..mol.wfn_total.basis_set_total.no_cgtos {
-        for j in 0..mol.wfn_total.basis_set_total.no_cgtos {
+        for j in 0..=i {
+            let ij = calc_cmp_idx(i, j);
             for k in 0..mol.wfn_total.basis_set_total.no_cgtos {
-                for l in 0..mol.wfn_total.basis_set_total.no_cgtos {
-                    mol.wfn_total.HFMatrices.ERI_tensor[(i, j, k, l)] = calc_elec_elec_repul_cgto(
-                        &mol.wfn_total.basis_set_total.basis_set_cgtos[i],
-                        &mol.wfn_total.basis_set_total.basis_set_cgtos[j],
-                        &mol.wfn_total.basis_set_total.basis_set_cgtos[k],
-                        &mol.wfn_total.basis_set_total.basis_set_cgtos[l],
-                    );
+                for l in 0..=k {
+                    let kl = calc_cmp_idx(k, l);
+                    if ij >= kl {
+                        let ERI_val = calc_elec_elec_repul_cgto(
+                                &mol.wfn_total.basis_set_total.basis_set_cgtos[i],
+                                &mol.wfn_total.basis_set_total.basis_set_cgtos[j],
+                                &mol.wfn_total.basis_set_total.basis_set_cgtos[k],
+                                &mol.wfn_total.basis_set_total.basis_set_cgtos[l],
+                            );
+                        mol.wfn_total.HFMatrices.ERI_tensor[(i, j, k, l)] = ERI_val;
+                        mol.wfn_total.HFMatrices.ERI_tensor[(j, i, k, l)] = ERI_val;
+                        mol.wfn_total.HFMatrices.ERI_tensor[(i, j, l, k)] = ERI_val;
+                        mol.wfn_total.HFMatrices.ERI_tensor[(j, i, l, k)] = ERI_val;
+                        mol.wfn_total.HFMatrices.ERI_tensor[(k, l, i, j)] = ERI_val;
+                        mol.wfn_total.HFMatrices.ERI_tensor[(l, k, i, j)] = ERI_val;
+                        mol.wfn_total.HFMatrices.ERI_tensor[(k, l, j, i)] = ERI_val;
+                        mol.wfn_total.HFMatrices.ERI_tensor[(l, k, j, i)] = ERI_val;
+                    }
                 }
             }
         }
@@ -376,7 +391,7 @@ pub fn run_project3_3_h2o() {
     ? How do I get the correct number of occupied orbitals, when I have multiple CGTOs per orbital per atom?
     */
     let no_occ_orb: usize = 5; // * 1 CGTO per orbital per atom
-    // let no_occ_orb: usize = 21; // * 1 CGTO per orbital per atom
+                               // let no_occ_orb: usize = 21; // * 1 CGTO per orbital per atom
 
     let mut D_matr: Array2<f64> = Array2::<f64>::zeros((
         mol.wfn_total.basis_set_total.no_cgtos,
@@ -486,7 +501,6 @@ pub fn run_project3_3_h2o() {
     );
     println!("{header_scf_str}");
 
-
     // * First line extra
     let line = format!(
         "{:>3} {: >16.8}{: >16.8}{: >12.8}",
@@ -497,7 +511,9 @@ pub fn run_project3_3_h2o() {
     for idx in 1..E_scf_vec.len() {
         let line = format!(
             "{:>3} {: >16.8}{: >16.8}{: >12.8}",
-            &idx, &E_scf_vec[idx], &E_tot_vec[idx], &rms_d_vec[idx-1]
+            &idx,
+            &E_scf_vec[idx],
+            &E_tot_vec[idx], &rms_d_vec[idx-1]
         );
         println!("{line}");
     }
