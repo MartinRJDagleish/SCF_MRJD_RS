@@ -302,7 +302,6 @@ pub fn calc_R_coulomb_aux_herm_int(
     let boys_arg: f64 = p * dist_P_C * dist_P_C;
     let mut result: f64 = 0.0;
 
-    // * Same as the original code… 
     // if (t == 0) && (u == 0) && (v == 0) {
     //     result += (-2.0 * p).powi(order_boys as i32) * boys(order_boys, boys_arg);
     // } else if (t == 0) && (u == 0) {
@@ -507,7 +506,7 @@ pub fn calc_nuc_attr_int_prim(
     let p = alpha1 + alpha2;
     let p_recip = p.recip();
     let dist_P_C: f64 = calc_r_ij_general(&gaussian_prod_center, nuc_center);
-    let P_C_vec: Array1<f64> = (gaussian_prod_center - nuc_center);
+    let P_C_vec = gaussian_prod_center - nuc_center;
 
     let mut result_V_ne_prim: f64 = 0.0;
     // (l1, l2) = ang_mom_vec1[0], ang_mom_vec2[0];
@@ -644,9 +643,9 @@ pub fn calc_elec_elec_repul_prim(
             for v in 0..(ang_mom_vec1[2] + ang_mom_vec2[2] + 1) {
 
                 let tuv = [t, u, v];
-                let mut result_tmp: f64 = 1.0;
+                let mut result_tmp1: f64 = 1.0;
                 for cart_coord in 0..3 {
-                    result_tmp *= calc_E_herm_gauss_coeff(
+                    result_tmp1 *= calc_E_herm_gauss_coeff(
                         ang_mom_vec1[cart_coord],
                         ang_mom_vec2[cart_coord],
                         tuv[cart_coord], //* This is t, u, v depending on the cartesian coordinate
@@ -661,8 +660,9 @@ pub fn calc_elec_elec_repul_prim(
                         for phi in 0..(ang_mom_vec3[2] + ang_mom_vec4[2] + 1) {
 
                             let tau_nu_phi = [tau, nu, phi];
+                            let mut result_tmp2: f64 = 1.0;
                             for cart_coord in 0..3 {
-                                result_tmp *= calc_E_herm_gauss_coeff(
+                                result_tmp2 *= calc_E_herm_gauss_coeff(
                                         ang_mom_vec3[cart_coord],
                                         ang_mom_vec4[cart_coord],
                                         tau_nu_phi[cart_coord], //* This is tau, nu, phi depending on the cartesian coordinate
@@ -672,7 +672,7 @@ pub fn calc_elec_elec_repul_prim(
                                     )
                             }
 
-                            ERI_result += result_tmp * (-1.0).powi(tau + nu + phi)
+                            ERI_result += result_tmp1 * result_tmp2 * (-1.0_f64).powi(tau + nu + phi)
                                 * calc_R_coulomb_aux_herm_int(
                                     t + tau,
                                     u + nu,
