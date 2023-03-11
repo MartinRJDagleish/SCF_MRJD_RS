@@ -2,10 +2,7 @@ use crate::molecule::wfn::CGTO;
 use boys::micb25::boys;
 // use boys::exact::boys;
 use ndarray::prelude::*;
-use ndarray_linalg::Scalar;
-use rayon::result;
 use std::f64::consts::PI;
-// use rayon::prelude::*;
 
 use crate::molecule::geometry::calc_r_ij_general;
 

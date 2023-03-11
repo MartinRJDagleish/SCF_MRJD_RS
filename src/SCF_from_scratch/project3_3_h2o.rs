@@ -11,6 +11,7 @@ use crate::molecule::wfn::basisset::parse_basis_set_file_gaussian;
 
 pub fn run_project3_3_h2o() {
     let mut mol: Molecule = Molecule::new("inp/Project3_1/STO-3G/h2o_v2.xyz", Some(0));
+    // let mut mol: Molecule = Molecule::new("inp/benzene_bohr.xyz", Some(0));
 
     //* Create basis for mol object */
     let basis_set_name = "STO-3G";
@@ -339,7 +340,6 @@ pub fn run_project3_3_h2o() {
 
     println!("{:^5.6}\n", &mol.wfn_total.HFMatrices.ERI_tensor);
 
-
     // ! COMMENT IN FROM HERE TO END OF FILE
 
     //* Step 4: Build the orthogonalization matrix S^(-1/2)
@@ -376,6 +376,7 @@ pub fn run_project3_3_h2o() {
     ? How do I get the correct number of occupied orbitals, when I have multiple CGTOs per orbital per atom?
     */
     let no_occ_orb: usize = 5; // * 1 CGTO per orbital per atom
+    // let no_occ_orb: usize = 21; // * 1 CGTO per orbital per atom
 
     let mut D_matr: Array2<f64> = Array2::<f64>::zeros((
         mol.wfn_total.basis_set_total.no_cgtos,
@@ -479,13 +480,27 @@ pub fn run_project3_3_h2o() {
         }
     }
 
-    println!("Iter  E_scf      E_total   RMS D");
-    for (idx, energy) in E_scf_vec.iter().enumerate() {
-        println!(
-            " {}  {:^5.8} {:^5.8} {:^1.8}",
-            &idx, &E_scf_vec[idx], &E_tot_vec[idx], &rms_d_vec[idx + 1]
+    let header_scf_str = format!(
+        "{:^3} {:^16}{:^16}{:^12}",
+        "Iter", "E_scf", "E_total", "RMS D"
+    );
+    println!("{header_scf_str}");
+
+
+    // * First line extra
+    let line = format!(
+        "{:>3} {: >16.8}{: >16.8}{: >12.8}",
+        "0", &E_scf_vec[0], &E_tot_vec[0], " "
+    );
+    println!("{line}");
+
+    for idx in 1..E_scf_vec.len() {
+        let line = format!(
+            "{:>3} {: >16.8}{: >16.8}{: >12.8}",
+            &idx, &E_scf_vec[idx], &E_tot_vec[idx], &rms_d_vec[idx-1]
         );
+        println!("{line}");
     }
 
-    println!("\n\nFinal E_total = {:^5.8}", &E_tot);
+    // println!("\n\nFinal E_total = {:^5.8}", &E_tot);
 }
