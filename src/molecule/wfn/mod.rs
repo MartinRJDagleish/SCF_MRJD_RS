@@ -25,10 +25,11 @@ pub struct CGTO {
 pub struct BasisSetTotal {
     pub basis_set_cgtos: Vec<CGTO>,
     pub no_cgtos: usize,
+    pub no_occ_orb: usize,
 }
 
 #[derive(Debug, Default)]
-pub struct HFMatrices {
+pub struct HF_Matrices {
     pub S_matr: Array2<f64>,
     pub T_matr: Array2<f64>,
     pub V_ne_matr: Array2<f64>,
@@ -41,7 +42,7 @@ pub struct HFMatrices {
 #[derive(Debug, Default)]
 pub struct WfnTotal {
     pub basis_set_total: BasisSetTotal,
-    pub HFMatrices: HFMatrices,
+    pub HF_Matrices: HF_Matrices,
 }
 
 #[allow(non_snake_case)]
@@ -100,10 +101,12 @@ impl BasisSetTotal {
     fn new() -> Self {
         let basis_set_cgtos: Vec<CGTO> = Vec::new();
         let no_cgtos: usize = 0;
+        let no_occ: usize = 0;
 
         BasisSetTotal {
             basis_set_cgtos,
             no_cgtos,
+            no_occ_orb: no_occ
         }
     }
 
@@ -114,11 +117,11 @@ impl BasisSetTotal {
 
 impl WfnTotal {
     pub fn new() -> Self {
-        let HFMatrices = HFMatrices::default();
+        let HFMatrices = HF_Matrices::default();
         let basis_set_total = BasisSetTotal::new();
 
         WfnTotal {
-            HFMatrices,
+            HF_Matrices: HFMatrices,
             basis_set_total,
         }
     }

@@ -18,6 +18,7 @@ pub fn run_project3_3_h2o() {
 
     //* Create basis for mol object */
     let basis_set_name = "STO-3G";
+    // let basis_set_name = "def2-TZVP";
     let basis_set_total: BasisSetTotal = create_basis_set_total(
         parse_basis_set_file_gaussian(basis_set_name),
         mol.geom_obj.geom_matr.clone(),
@@ -227,56 +228,56 @@ pub fn run_project3_3_h2o() {
     println!("\nSCF from scratch:\n");
     //* Project 3: SCF from scratch
     //* Step 1: Read Nuclear Repulsion Energy (enuc) from file
-    mol.wfn_total.HFMatrices.V_nn_val =
+    mol.wfn_total.HF_Matrices.V_nn_val =
         calc_V_nn_val(&mol.geom_obj.geom_matr, &mol.geom_obj.Z_vals);
 
     //* Step 2.1: Calculate the overlap matrix S
-    mol.wfn_total.HFMatrices.S_matr = Array2::<f64>::zeros((
+    mol.wfn_total.HF_Matrices.S_matr = Array2::<f64>::zeros((
         mol.wfn_total.basis_set_total.no_cgtos,
         mol.wfn_total.basis_set_total.no_cgtos,
     ));
     for i in 0..mol.wfn_total.basis_set_total.no_cgtos {
         for j in 0..=i {
             if i == j {
-                mol.wfn_total.HFMatrices.S_matr[(i, j)] = 1.0;
+                mol.wfn_total.HF_Matrices.S_matr[(i, j)] = 1.0;
                 continue;
             } else {
-                mol.wfn_total.HFMatrices.S_matr[(i, j)] = calc_overlap_int_cgto(
+                mol.wfn_total.HF_Matrices.S_matr[(i, j)] = calc_overlap_int_cgto(
                     &mol.wfn_total.basis_set_total.basis_set_cgtos[i],
                     &mol.wfn_total.basis_set_total.basis_set_cgtos[j],
                 );
-                mol.wfn_total.HFMatrices.S_matr[(j, i)] = mol.wfn_total.HFMatrices.S_matr[(i, j)];
+                mol.wfn_total.HF_Matrices.S_matr[(j, i)] = mol.wfn_total.HF_Matrices.S_matr[(i, j)];
             }
         }
     }
 
     println!(
         "Overlap matrix S:\n{:1.5}\n",
-        &mol.wfn_total.HFMatrices.S_matr
+        &mol.wfn_total.HF_Matrices.S_matr
     );
 
     //* Step 2.2: Calculate the kinetic energy matrix T
-    mol.wfn_total.HFMatrices.T_matr = Array2::<f64>::zeros((
+    mol.wfn_total.HF_Matrices.T_matr = Array2::<f64>::zeros((
         mol.wfn_total.basis_set_total.no_cgtos,
         mol.wfn_total.basis_set_total.no_cgtos,
     ));
 
     for i in 0..mol.wfn_total.basis_set_total.no_cgtos {
         for j in 0..=i {
-            mol.wfn_total.HFMatrices.T_matr[(i, j)] = calc_kin_energy_int_cgto(
+            mol.wfn_total.HF_Matrices.T_matr[(i, j)] = calc_kin_energy_int_cgto(
                 &mol.wfn_total.basis_set_total.basis_set_cgtos[i],
                 &mol.wfn_total.basis_set_total.basis_set_cgtos[j],
             );
-            mol.wfn_total.HFMatrices.T_matr[(j, i)] = mol.wfn_total.HFMatrices.T_matr[(i, j)];
+            mol.wfn_total.HF_Matrices.T_matr[(j, i)] = mol.wfn_total.HF_Matrices.T_matr[(i, j)];
         }
     }
     println!(
         "Kinetic energy matrix T:\n{:1.5}\n",
-        &mol.wfn_total.HFMatrices.T_matr
+        &mol.wfn_total.HF_Matrices.T_matr
     );
 
     //* Step 2.3: Calculate the nuclear attraction matrix V_ne
-    mol.wfn_total.HFMatrices.V_ne_matr = Array2::<f64>::zeros((
+    mol.wfn_total.HF_Matrices.V_ne_matr = Array2::<f64>::zeros((
         mol.wfn_total.basis_set_total.no_cgtos,
         mol.wfn_total.basis_set_total.no_cgtos,
     ));
@@ -289,38 +290,38 @@ pub fn run_project3_3_h2o() {
                 .axis_iter(ndarray::Axis(0))
                 .enumerate()
             {
-                mol.wfn_total.HFMatrices.V_ne_matr[(i, j)] += (-mol.geom_obj.Z_vals[idx] as f64)
+                mol.wfn_total.HF_Matrices.V_ne_matr[(i, j)] += (-mol.geom_obj.Z_vals[idx] as f64)
                     * calc_nuc_attr_int_cgto(
                         &mol.wfn_total.basis_set_total.basis_set_cgtos[i],
                         &mol.wfn_total.basis_set_total.basis_set_cgtos[j],
                         &atom_pos.to_owned(),
                     );
             }
-            mol.wfn_total.HFMatrices.V_ne_matr[(j, i)] = mol.wfn_total.HFMatrices.V_ne_matr[(i, j)];
+            mol.wfn_total.HF_Matrices.V_ne_matr[(j, i)] = mol.wfn_total.HF_Matrices.V_ne_matr[(i, j)];
         }
     }
 
     println!(
         "Nuclear attraction matrix V_ne:\n{:1.5}\n",
-        &mol.wfn_total.HFMatrices.V_ne_matr
+        &mol.wfn_total.HF_Matrices.V_ne_matr
     );
     //* Step 2.4: Form the core Hamiltonian matrix H_core
-    mol.wfn_total.HFMatrices.H_core_matr = Array2::<f64>::zeros((
+    mol.wfn_total.HF_Matrices.H_core_matr = Array2::<f64>::zeros((
         mol.wfn_total.basis_set_total.no_cgtos,
         mol.wfn_total.basis_set_total.no_cgtos,
     ));
-    mol.wfn_total.HFMatrices.H_core_matr =
-        &mol.wfn_total.HFMatrices.T_matr + &mol.wfn_total.HFMatrices.V_ne_matr;
+    mol.wfn_total.HF_Matrices.H_core_matr =
+        &mol.wfn_total.HF_Matrices.T_matr + &mol.wfn_total.HF_Matrices.V_ne_matr;
 
     println!(
         "Core Hamiltonian matrix H_core:\n{:1.5}\n",
-        &mol.wfn_total.HFMatrices.H_core_matr
+        &mol.wfn_total.HF_Matrices.H_core_matr
     );
 
     // //* Step 3: Calculate the 2-electron integrals (ERI)
 
     println!("Electron-electron repulsion integrals (V_ee / ERI matrix):");
-    mol.wfn_total.HFMatrices.ERI_tensor = Array4::<f64>::zeros((
+    mol.wfn_total.HF_Matrices.ERI_tensor = Array4::<f64>::zeros((
         mol.wfn_total.basis_set_total.no_cgtos,
         mol.wfn_total.basis_set_total.no_cgtos,
         mol.wfn_total.basis_set_total.no_cgtos,
@@ -339,28 +340,28 @@ pub fn run_project3_3_h2o() {
                                 &mol.wfn_total.basis_set_total.basis_set_cgtos[k],
                                 &mol.wfn_total.basis_set_total.basis_set_cgtos[l],
                             );
-                        mol.wfn_total.HFMatrices.ERI_tensor[(i, j, k, l)] = ERI_val;
-                        mol.wfn_total.HFMatrices.ERI_tensor[(j, i, k, l)] = ERI_val;
-                        mol.wfn_total.HFMatrices.ERI_tensor[(i, j, l, k)] = ERI_val;
-                        mol.wfn_total.HFMatrices.ERI_tensor[(j, i, l, k)] = ERI_val;
-                        mol.wfn_total.HFMatrices.ERI_tensor[(k, l, i, j)] = ERI_val;
-                        mol.wfn_total.HFMatrices.ERI_tensor[(l, k, i, j)] = ERI_val;
-                        mol.wfn_total.HFMatrices.ERI_tensor[(k, l, j, i)] = ERI_val;
-                        mol.wfn_total.HFMatrices.ERI_tensor[(l, k, j, i)] = ERI_val;
+                        mol.wfn_total.HF_Matrices.ERI_tensor[(i, j, k, l)] = ERI_val;
+                        mol.wfn_total.HF_Matrices.ERI_tensor[(j, i, k, l)] = ERI_val;
+                        mol.wfn_total.HF_Matrices.ERI_tensor[(i, j, l, k)] = ERI_val;
+                        mol.wfn_total.HF_Matrices.ERI_tensor[(j, i, l, k)] = ERI_val;
+                        mol.wfn_total.HF_Matrices.ERI_tensor[(k, l, i, j)] = ERI_val;
+                        mol.wfn_total.HF_Matrices.ERI_tensor[(l, k, i, j)] = ERI_val;
+                        mol.wfn_total.HF_Matrices.ERI_tensor[(k, l, j, i)] = ERI_val;
+                        mol.wfn_total.HF_Matrices.ERI_tensor[(l, k, j, i)] = ERI_val;
                     }
                 }
             }
         }
     }
 
-    println!("{:^5.6}\n", &mol.wfn_total.HFMatrices.ERI_tensor);
+    println!("{:^5.6}\n", &mol.wfn_total.HF_Matrices.ERI_tensor);
 
     // ! COMMENT IN FROM HERE TO END OF FILE
 
     //* Step 4: Build the orthogonalization matrix S^(-1/2)
     let S_matr_sqrt: Array2<f64> = mol
         .wfn_total
-        .HFMatrices
+        .HF_Matrices
         .S_matr
         .ssqrt(ndarray_linalg::UPLO::Upper)
         .unwrap();
@@ -373,7 +374,7 @@ pub fn run_project3_3_h2o() {
     let F_matr_0_pr: Array2<f64> = S_matr_sqrt_inv
         .clone()
         .reversed_axes()
-        .dot(&mol.wfn_total.HFMatrices.H_core_matr)
+        .dot(&mol.wfn_total.HF_Matrices.H_core_matr)
         .dot(&S_matr_sqrt_inv.clone());
 
     println!("F_matr_0_pr:\n{:^5.6}\n", &F_matr_0_pr);
@@ -416,12 +417,12 @@ pub fn run_project3_3_h2o() {
     //* That's why the initial SCF energy differs from the other SCF energy calcs
     for mu in 0..mol.wfn_total.basis_set_total.no_cgtos {
         for nu in 0..mol.wfn_total.basis_set_total.no_cgtos {
-            E_scf += D_matr[(mu, nu)] * 2.0 * (mol.wfn_total.HFMatrices.H_core_matr[(mu, nu)]);
+            E_scf += D_matr[(mu, nu)] * 2.0 * (mol.wfn_total.HF_Matrices.H_core_matr[(mu, nu)]);
         }
     }
 
     E_scf_vec.push(E_scf);
-    let mut E_tot = E_scf + mol.wfn_total.HFMatrices.V_nn_val;
+    let mut E_tot = E_scf + mol.wfn_total.HF_Matrices.V_nn_val;
     E_tot_vec.push(E_tot);
 
     //* Step 7: Iterate the SCF procedure until convergence
@@ -436,12 +437,12 @@ pub fn run_project3_3_h2o() {
 
         for mu in 0..mol.wfn_total.basis_set_total.no_cgtos {
             for nu in 0..mol.wfn_total.basis_set_total.no_cgtos {
-                F_matr[(mu, nu)] = mol.wfn_total.HFMatrices.H_core_matr[(mu, nu)];
+                F_matr[(mu, nu)] = mol.wfn_total.HF_Matrices.H_core_matr[(mu, nu)];
                 for lambda in 0..mol.wfn_total.basis_set_total.no_cgtos {
                     for sigma in 0..mol.wfn_total.basis_set_total.no_cgtos {
                         F_matr[(mu, nu)] += D_matr[(lambda, sigma)]
-                            * (2.0 * mol.wfn_total.HFMatrices.ERI_tensor[(mu, nu, lambda, sigma)]
-                                - mol.wfn_total.HFMatrices.ERI_tensor[(mu, lambda, nu, sigma)]);
+                            * (2.0 * mol.wfn_total.HF_Matrices.ERI_tensor[(mu, nu, lambda, sigma)]
+                                - mol.wfn_total.HF_Matrices.ERI_tensor[(mu, lambda, nu, sigma)]);
                     }
                 }
             }
@@ -473,12 +474,12 @@ pub fn run_project3_3_h2o() {
         for mu in 0..mol.wfn_total.basis_set_total.no_cgtos {
             for nu in 0..mol.wfn_total.basis_set_total.no_cgtos {
                 E_scf += D_matr[(mu, nu)]
-                    * (mol.wfn_total.HFMatrices.H_core_matr[(mu, nu)] + F_matr[(mu, nu)]);
+                    * (mol.wfn_total.HF_Matrices.H_core_matr[(mu, nu)] + F_matr[(mu, nu)]);
             }
         }
 
         E_scf_vec.push(E_scf);
-        E_tot = E_scf + mol.wfn_total.HFMatrices.V_nn_val;
+        E_tot = E_scf + mol.wfn_total.HF_Matrices.V_nn_val;
         E_tot_vec.push(E_tot);
 
         let mut rms_d_val: f64 = 0.0;
