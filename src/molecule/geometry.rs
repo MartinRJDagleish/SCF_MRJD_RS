@@ -338,9 +338,9 @@ impl Geometry {
 
 pub fn calc_r_ij_general(vec1: &Array1<f64>, vec2: &Array1<f64>) -> f64 {
     let mut r_ij: f64 = 0.0;
-    (0..3).for_each(|cart_coord| {
+    for cart_coord in 0..3 {
         r_ij += (vec2[cart_coord] - vec1[cart_coord]).powi(2);
-    });
+    };
 
     r_ij.sqrt()
 }

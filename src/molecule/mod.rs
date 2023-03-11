@@ -22,8 +22,7 @@ pub mod wfn;
 
 #[allow(non_snake_case)] // * -> I need this due to QM naming conventions
 impl Molecule {
-    pub fn new(geom_file: &str, charge: Option<i32>) -> Molecule {
-        let charge = charge.unwrap_or(0);
+    pub fn new(geom_file: &str, charge: i32) -> Molecule {
         let (Z_vals, geom_matr, no_atoms): (Vec<i32>, Array2<f64>, usize) =
             Self::read_crawford_inputfile(geom_file);
 
@@ -43,6 +42,21 @@ impl Molecule {
             hessian,
             wfn_total,
         }
+    }
+
+    fn update_no_occ_orb_rhf(&mut self) {
+        let mut no_occ_orb: usize = 0;
+        self.geom_obj.Z_vals.iter().for_each(|Z_val| {
+            no_occ_orb += *Z_val as usize;
+        });
+        if no_occ_orb > 0 {
+            no_occ_orb -= self.charge as usize;
+            self.wfn_total.basis_set_total.no_occ_orb = no_occ_orb / 2;
+        } else {
+            // no_occ_orb = 0;
+            println!("Warning: Charge is too high for the number of electrons! Charge set to 0!");
+        }
+
     }
 
     fn read_crawford_inputfile(geom_filename: &str) -> (Vec<i32>, Array2<f64>, usize) {
@@ -69,9 +83,9 @@ impl Molecule {
 
             Z_vals.push(line_split.next().unwrap().parse().unwrap());
 
-            (0..3).for_each(|cart_coord| {
+            for cart_coord in 0..3 {
                 geom_matr[(atom_idx, cart_coord)] = line_split.next().unwrap().parse().unwrap();
-            });
+            }
         }
 
         println!("\n...End of geometry input.\n");

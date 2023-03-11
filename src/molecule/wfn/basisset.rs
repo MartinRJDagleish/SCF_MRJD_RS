@@ -206,8 +206,39 @@ impl Default for PseElementSym {
 //     }
 // }
 
-pub fn match_pse_symb(match_string: &str) -> PseElementSym {
-    let PSE_element_sym_HashMap = [
+pub fn match_pse_symb(pse_hash_map: &HashMap<&str,PseElementSym>, match_string: &str) -> PseElementSym {
+
+    let pse_symb = match pse_hash_map.get(match_string) {
+        Some(value) => *value,
+        None => panic!("Element symbol not found! Error in basis set file!"),
+    };
+
+    pse_symb
+}
+
+pub fn parse_basis_set_file_gaussian(basis_set_name: &str) -> BasisSetTotalDef {
+    let mut basis_set_total_def: BasisSetTotalDef = BasisSetTotalDef {
+        name: basis_set_name.to_string(),
+        basis_set_defs_dict: HashMap::new(),
+    };
+
+    let basis_set_file_path: &str = match basis_set_name.to_ascii_lowercase().as_str() {
+        "sto-3g" => "inp/Project3_2/basis_sets/sto-3g.gbs",
+        "6-311g" => "inp/Project3_2/basis_sets/6-311g.gbs",
+        "def2-svp" => "inp/Project3_2/basis_sets/def2-svp.gbs",
+        "def2-tzvp" => "inp/Project3_2/basis_sets/def2-tzvp.gbs",
+        _ => {
+            panic!("Basis set not yet implemented!");
+        }
+    };
+
+    let basis_set_file = fs::File::open(basis_set_file_path).expect("Basis set file not found!");
+    let basis_set_reader = BufReader::new(basis_set_file);
+
+    let block_delimiter: &str = "****";
+
+    let mut basis_set_def: BasisSetDef = BasisSetDef::default(); //* using dummy element symbol
+    let PSE_elem_sym_HashMap = [
         ("H", PseElementSym::H),
         ("He", PseElementSym::He),
         ("Li", PseElementSym::Li),
@@ -329,43 +360,11 @@ pub fn match_pse_symb(match_string: &str) -> PseElementSym {
     ]
     .into_iter()
     .collect::<HashMap<_, _>>();
-    // let mut PSE_element_sym_HashMap = HashMap::<&str,PSE_element_sym>::new();
-
-    let pse_symb = match PSE_element_sym_HashMap.get(match_string) {
-        Some(value) => *value,
-        None => panic!("Element symbol not found!"),
-    };
-
-    pse_symb
-}
-
-pub fn parse_basis_set_file_gaussian(basis_set_name: &str) -> BasisSetTotalDef {
-    let mut basis_set_total_def: BasisSetTotalDef = BasisSetTotalDef {
-        name: basis_set_name.to_string(),
-        basis_set_defs_dict: HashMap::new(),
-    };
-
-    let basis_set_file_path: &str = match basis_set_name.to_ascii_lowercase().as_str() {
-        "sto-3g" => "inp/Project3_2/basis_sets/sto-3g.gbs",
-        "6-311g" => "inp/Project3_2/basis_sets/6-311g.gbs",
-        "def2-svp" => "inp/Project3_2/basis_sets/def2-svp.gbs",
-        "def2-tzvp" => "inp/Project3_2/basis_sets/def2-tzvp.gbs",
-        _ => {
-            panic!("Basis set not yet implemented!");
-        }
-    };
-
-    let basis_set_file = fs::File::open(basis_set_file_path).expect("Basis set file not found!");
-    let basis_set_reader = BufReader::new(basis_set_file);
-
-    let block_delimiter: &str = "****";
-
-    let mut basis_set_def: BasisSetDef = BasisSetDef::default(); //* using dummy element symbol
 
     for line in basis_set_reader.lines() {
         let line = line.unwrap();
         let data = line.trim();
-        let mut line_start: char = 0 as char;
+        let mut line_start = 0 as char;
         if !data.is_empty() {
             line_start = data.chars().next().unwrap();
         }
@@ -387,7 +386,7 @@ pub fn parse_basis_set_file_gaussian(basis_set_name: &str) -> BasisSetTotalDef {
                 //* Old version with string -> new version with enum
                 // basis_set.element_sym = line_split[0].to_string();
                 //* New version with enum
-                basis_set_def.element_sym = match_pse_symb(line_split[0]);
+                basis_set_def.element_sym = match_pse_symb(&PSE_elem_sym_HashMap, line_split[0]);
                 continue;
             } else if line_split[0] == "SP" {
                 let no_prim1: usize = line_split[1].parse::<usize>().unwrap();
@@ -443,13 +442,21 @@ pub fn parse_basis_set_file_gaussian(basis_set_name: &str) -> BasisSetTotalDef {
 pub fn create_basis_set_total(
     basis_set_total_def: BasisSetTotalDef,
     geom_matr: Array2<f64>,
-    Z_vals: Vec<i32>,
+    Z_vals: &[i32],
 ) -> BasisSetTotal {
     let mut basis_set_total = BasisSetTotal::new();
 
+    let mut Z_to_sym: HashMap<i32, PseElementSym> = HashMap::new();
+    let mut sym_to_Z: HashMap<PseElementSym, i32> = HashMap::new();
+    for (idx, sym) in PseElementSym::iter().enumerate() {
+        let idx = idx as i32;
+        Z_to_sym.insert(idx, sym);
+        sym_to_Z.insert(sym, idx);
+    }
+
     for (atom_idx, atom_pos) in geom_matr.axis_iter(ndarray::Axis(0)).enumerate() {
         let Z_val = Z_vals[atom_idx];
-        let elem_sym: PseElementSym = translate_Z_val_to_sym(Z_val);
+        let elem_sym: PseElementSym = translate_Z_val_to_sym(&Z_to_sym, Z_val);
 
         let atom_basis_set: &BasisSetDef = basis_set_total_def
             .basis_set_defs_dict
@@ -462,12 +469,6 @@ pub fn create_basis_set_total(
             if *L_val != L_char::SP {
                 let list_ang_mom_vec: Vec<Array1<i32>> = match L_val {
                     L_char::S => vec![array![0, 0, 0]],
-                    L_char::SP => vec![ // * This is never used -> separate code below
-                        array![0, 0, 0],
-                        array![1, 0, 0],
-                        array![0, 1, 0],
-                        array![0, 0, 1],
-                    ],
                     L_char::P => vec![array![1, 0, 0], array![0, 1, 0], array![0, 0, 1]],
                     L_char::D => vec![
                         array![2, 0, 0],
@@ -565,14 +566,7 @@ pub fn create_basis_set_total(
     basis_set_total
 }
 
-pub fn translate_Z_val_to_sym(Z_val: i32) -> PseElementSym {
-    let mut Z_to_sym: HashMap<i32, PseElementSym> = HashMap::new();
-
-    for (idx, sym) in PseElementSym::iter().enumerate() {
-        let idx = idx as i32;
-        Z_to_sym.insert(idx, sym);
-    }
-
+pub fn translate_Z_val_to_sym(Z_to_sym: &HashMap<i32,PseElementSym>, Z_val: i32) -> PseElementSym {
     let pse_symb = match Z_to_sym.get(&Z_val) {
         Some(value) => *value,
         None => panic!("Element symbol not found!"),
@@ -581,14 +575,7 @@ pub fn translate_Z_val_to_sym(Z_val: i32) -> PseElementSym {
     pse_symb
 }
 
-pub fn translate_sym_to_Z_val(sym: PseElementSym) -> i32 {
-    let mut sym_to_Z: HashMap<PseElementSym, i32> = HashMap::new();
-
-    for (idx, sym) in PseElementSym::iter().enumerate() {
-        let idx = idx as i32;
-        sym_to_Z.insert(sym, idx);
-    }
-
+pub fn translate_sym_to_Z_val(sym_to_Z: &HashMap<PseElementSym,i32>, sym: PseElementSym) -> i32 {
     let Z_val = match sym_to_Z.get(&sym) {
         Some(value) => *value,
         None => panic!("Element symbol not found!"),

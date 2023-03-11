@@ -4,6 +4,7 @@ use std::f64::consts::PI;
 
 pub mod basisset;
 pub mod integrals;
+pub mod scf;
 
 #[derive(Debug)]
 pub struct PGTO {
@@ -24,10 +25,11 @@ pub struct CGTO {
 pub struct BasisSetTotal {
     pub basis_set_cgtos: Vec<CGTO>,
     pub no_cgtos: usize,
+    pub no_occ_orb: usize,
 }
 
 #[derive(Debug, Default)]
-pub struct HFMatrices {
+pub struct HF_Matrices {
     pub S_matr: Array2<f64>,
     pub T_matr: Array2<f64>,
     pub V_ne_matr: Array2<f64>,
@@ -40,56 +42,23 @@ pub struct HFMatrices {
 #[derive(Debug, Default)]
 pub struct WfnTotal {
     pub basis_set_total: BasisSetTotal,
-    pub HFMatrices: HFMatrices,
+    pub HF_Matrices: HF_Matrices,
 }
-
-// impl Default for HFMatrices {
-//     fn default() -> Self {
-//         Self::new()
-//     }
-// }
-
-// impl HFMatrices {
-//     pub fn new() -> HFMatrices {
-//         let S_matr: Array2<f64> = Array2::zeros((1, 1));
-//         let T_matr: Array2<f64> = Array2::zeros((1, 1));
-//         let V_ne_matr: Array2<f64> = Array2::zeros((1, 1));
-//         let H_core_matr: Array2<f64> = Array2::zeros((1, 1));
-//         let ERI_arr1: Array1<f64> = Array1::zeros(1);
-//         let ERI_tensor: Array4<f64> = Array4::zeros((1, 1, 1, 1));
-//         let V_nn_val: f64 = 0.0;
-
-//         HFMatrices {
-//             S_matr,
-//             T_matr,
-//             V_ne_matr,
-//             H_core_matr,
-//             ERI_arr1,
-//             ERI_tensor,
-//             V_nn_val,
-//         }
-//     }
-// }
 
 #[allow(non_snake_case)]
 impl PGTO {
     pub fn new(
         alpha: f64,
         cgto_coeff: f64,
-        position: Array1<f64>,
+        gauss_center_pos: Array1<f64>,
         ang_mom_vec: Array1<i32>,
     ) -> Self {
-        // let alpha: f64 = 0.0;
-        // let cgto_coeff: f64 = 0.0;
-        // let position: Array1<f64> = Array1::zeros(3);
-        // let angular_momentum_vec: Array1<u8> = Array1::zeros(3);
-
         let norm_const: f64 = Self::calc_cart_norm_const(&alpha, &ang_mom_vec);
 
         PGTO {
             alpha,
             cgto_coeff,
-            gauss_center_pos: position,
+            gauss_center_pos,
             ang_mom_vec,
             norm_const,
         }
@@ -132,10 +101,12 @@ impl BasisSetTotal {
     fn new() -> Self {
         let basis_set_cgtos: Vec<CGTO> = Vec::new();
         let no_cgtos: usize = 0;
+        let no_occ: usize = 0;
 
         BasisSetTotal {
             basis_set_cgtos,
             no_cgtos,
+            no_occ_orb: no_occ
         }
     }
 
@@ -146,11 +117,11 @@ impl BasisSetTotal {
 
 impl WfnTotal {
     pub fn new() -> Self {
-        let HFMatrices = HFMatrices::default();
+        let HFMatrices = HF_Matrices::default();
         let basis_set_total = BasisSetTotal::new();
 
         WfnTotal {
-            HFMatrices,
+            HF_Matrices: HFMatrices,
             basis_set_total,
         }
     }
