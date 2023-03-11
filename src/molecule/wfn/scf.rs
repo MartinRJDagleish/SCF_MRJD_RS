@@ -1,5 +1,3 @@
-use std::arch::x86_64::_MM_ROUND_TOWARD_ZERO;
-
 use ndarray::prelude::*;
 
 use crate::molecule::{Molecule, wfn::basisset::{create_basis_set_total, parse_basis_set_file_gaussian}};

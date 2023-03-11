@@ -48,7 +48,7 @@ fn main() {
     // *****************************************************************
     // * Development of the code 
     // *****************************************************************
-    // let mut mol: Molecule = Molecule::new("inp/Project3_1/STO-3G/h2o_v2.xyz", Some(0));
+    let mut mol: Molecule = Molecule::new("inp/Project3_1/STO-3G/h2o_v2.xyz", 0);
 
     let _is_run_project1: bool = false; //* General molecule geometry stuff
     let _is_run_project2: bool = false; //* Hessian -> eigenfreqs from file
@@ -81,6 +81,12 @@ fn main() {
         run_project3_3_h2o();
     }
     // *****************************************************************
+
+    let is_run_dev: bool = false; //* Development of the code
+    if is_run_dev {
+        // use crate::molecule::wfn::scf::*;
+        // mol.RHF();
+    }
 
 
 
