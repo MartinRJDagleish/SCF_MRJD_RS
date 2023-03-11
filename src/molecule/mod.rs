@@ -22,8 +22,7 @@ pub mod wfn;
 
 #[allow(non_snake_case)] // * -> I need this due to QM naming conventions
 impl Molecule {
-    pub fn new(geom_file: &str, charge: Option<i32>) -> Molecule {
-        let charge = charge.unwrap_or(0);
+    pub fn new(geom_file: &str, charge: i32) -> Molecule {
         let (Z_vals, geom_matr, no_atoms): (Vec<i32>, Array2<f64>, usize) =
             Self::read_crawford_inputfile(geom_file);
 

@@ -14,7 +14,7 @@ pub fn run_project3_3() {
     //* 6-311G here
     println!("Defining the primitive gaussians");
     println!("Test molecule: H2 (6-311G)");
-    let mut mol_6_311g = molecule::Molecule::new("inp/Project3_2/geom/h2.xyz", Some(0));
+    let mut mol_6_311g = molecule::Molecule::new("inp/Project3_2/geom/h2.xyz", 0);
     //* The first H atom -> H1
     // H1_contr_gauss_1s
     mol_6_311g.wfn_total.basis_set_total.basis_set_cgtos = vec![CGTO::new(vec![PGTO::new(

@@ -6,7 +6,7 @@ use std::time::Instant;
 use crate::molecule::Molecule;
 
 // pub mod Crawford_projects;
-pub mod SCF_from_scratch;
+pub mod dev_SCF_from_scratch;
 pub mod molecule;
 
 // #[allow(non_snake_case)] // * -> I need this due to QM naming conventions
@@ -45,6 +45,9 @@ fn main() {
     );
     println!("{ASCII_art_logo}");
 
+    // *****************************************************************
+    // * Development of the code 
+    // *****************************************************************
     // let mut mol: Molecule = Molecule::new("inp/Project3_1/STO-3G/h2o_v2.xyz", Some(0));
 
     let _is_run_project1: bool = false; //* General molecule geometry stuff
@@ -67,16 +70,22 @@ fn main() {
     // }
 
     if is_run_project3_2 {
-        use crate::SCF_from_scratch::project3_2::*;
+        use crate::dev_SCF_from_scratch::project3_2::*;
         run_project3_2();
     }
 
     if is_run_project3_3 {
         // use crate::SCF_from_scratch::project3_3::*;
         // run_project3_3();
-        use crate::SCF_from_scratch::project3_3_h2o::*;
+        use crate::dev_SCF_from_scratch::project3_3_h2o::*;
         run_project3_3_h2o();
     }
+    // *****************************************************************
+
+
+
+
+
     //*****************************************************************
     //*****************************************************************
     //*****************************************************************

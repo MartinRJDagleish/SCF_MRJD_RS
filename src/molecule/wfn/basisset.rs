@@ -443,7 +443,7 @@ pub fn parse_basis_set_file_gaussian(basis_set_name: &str) -> BasisSetTotalDef {
 pub fn create_basis_set_total(
     basis_set_total_def: BasisSetTotalDef,
     geom_matr: Array2<f64>,
-    Z_vals: Vec<i32>,
+    Z_vals: &[i32],
 ) -> BasisSetTotal {
     let mut basis_set_total = BasisSetTotal::new();
 

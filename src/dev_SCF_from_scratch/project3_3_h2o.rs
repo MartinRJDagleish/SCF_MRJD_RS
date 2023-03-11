@@ -10,7 +10,7 @@ use crate::molecule::wfn::basisset::create_basis_set_total;
 use crate::molecule::wfn::basisset::parse_basis_set_file_gaussian;
 
 pub fn run_project3_3_h2o() {
-    let mut mol: Molecule = Molecule::new("inp/Project3_1/STO-3G/h2o_v2.xyz", Some(0));
+    let mut mol: Molecule = Molecule::new("inp/Project3_1/STO-3G/h2o_v2.xyz", 0);
     // let mut mol: Molecule = Molecule::new("inp/benzene_bohr.xyz", Some(0));
 
     //* Create basis for mol object */
@@ -18,7 +18,7 @@ pub fn run_project3_3_h2o() {
     let basis_set_total: BasisSetTotal = create_basis_set_total(
         parse_basis_set_file_gaussian(basis_set_name),
         mol.geom_obj.geom_matr.clone(),
-        mol.geom_obj.Z_vals.clone(),
+        &mol.geom_obj.Z_vals,
     );
 
     mol.wfn_total.basis_set_total = basis_set_total;
