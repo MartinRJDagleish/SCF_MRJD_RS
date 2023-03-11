@@ -365,6 +365,7 @@ pub fn run_project3_3_h2o() {
 
     //* Step 5.2: Get the coefficients of the initial guess Fock matrix F_0 in the MO basis
     let (orb_energy_arr, C_matr_MO_basis) = F_matr_0_pr.eigh(ndarray_linalg::UPLO::Upper).unwrap();
+    println!("C_matr_MO_basis:\n{:^5.6}\n", &C_matr_MO_basis);
     let C_matr_AO_basis: Array2<f64> = S_matr_sqrt_inv.dot(&C_matr_MO_basis);
     println!("C_matr_AO_basis:\n{:^5.6}\n", &C_matr_AO_basis);
 
@@ -393,6 +394,7 @@ pub fn run_project3_3_h2o() {
     let mut E_scf: f64 = 0.0;
     let mut E_scf_vec: Vec<f64> = Vec::new();
     let mut E_tot_vec: Vec<f64> = Vec::new();
+    let mut rms_d_vec: Vec<f64> = Vec::new();
 
     //* Here the Fock matrix is guessed to be the core Hamiltonian matrix
     //* That's why the initial SCF energy differs from the other SCF energy calcs
@@ -418,6 +420,7 @@ pub fn run_project3_3_h2o() {
 
         for mu in 0..mol.wfn_total.basis_set_total.no_cgtos {
             for nu in 0..mol.wfn_total.basis_set_total.no_cgtos {
+                F_matr[(mu, nu)] = mol.wfn_total.HFMatrices.H_core_matr[(mu, nu)];
                 for lambda in 0..mol.wfn_total.basis_set_total.no_cgtos {
                     for sigma in 0..mol.wfn_total.basis_set_total.no_cgtos {
                         F_matr[(mu, nu)] += D_matr[(lambda, sigma)]
@@ -469,11 +472,18 @@ pub fn run_project3_3_h2o() {
             }
         }
         rms_d_val = rms_d_val.sqrt();
+        rms_d_vec.push(rms_d_val);
 
-        println!("Iter  E_scf      E_total   RMS D");
+        if rms_d_val < 1e-6 {
+            break;
+        }
+    }
+
+    println!("Iter  E_scf      E_total   RMS D");
+    for (idx, energy) in E_scf_vec.iter().enumerate() {
         println!(
             " {}  {:^5.8} {:^5.8} {:^1.8}",
-            &scf_iter, &E_scf, &E_tot, &rms_d_val
+            &idx, &E_scf_vec[idx], &E_tot_vec[idx], &rms_d_vec[idx + 1]
         );
     }
 

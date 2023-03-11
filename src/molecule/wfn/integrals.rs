@@ -570,7 +570,7 @@ pub fn calc_nuc_attr_int_prim(
                         u,
                         v,
                         0,
-                        alpha1,
+                        &p,
                         &P_C_vec, // wrong: &gaussian_prod_center, here should be P-C vec
                         dist_P_C,
                     );
@@ -678,7 +678,7 @@ pub fn calc_elec_elec_repul_prim(
                                     u + nu,
                                     v + phi,
                                     0,
-                                    &alpha_ERI, //? this is wrong 
+                                    &alpha_ERI, 
                                     &P_Q_vec,
                                     dist_P_Q,
                                 )
