@@ -462,12 +462,6 @@ pub fn create_basis_set_total(
             if *L_val != L_char::SP {
                 let list_ang_mom_vec: Vec<Array1<i32>> = match L_val {
                     L_char::S => vec![array![0, 0, 0]],
-                    L_char::SP => vec![ // * This is never used -> separate code below
-                        array![0, 0, 0],
-                        array![1, 0, 0],
-                        array![0, 1, 0],
-                        array![0, 0, 1],
-                    ],
                     L_char::P => vec![array![1, 0, 0], array![0, 1, 0], array![0, 0, 1]],
                     L_char::D => vec![
                         array![2, 0, 0],
