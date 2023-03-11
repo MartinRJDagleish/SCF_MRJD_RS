@@ -3,6 +3,7 @@ use boys::micb25::boys;
 // use boys::exact::boys;
 use ndarray::prelude::*;
 use ndarray_linalg::Scalar;
+use rayon::result;
 use std::f64::consts::PI;
 // use rayon::prelude::*;
 
@@ -270,8 +271,9 @@ pub fn calc_R_coulomb_aux_herm_int(
     u: i32,
     v: i32,
     order_boys: u64,
-    alpha1: &f64,
-    alpha2: &f64,
+    p: &f64,
+    // alpha1: &f64,
+    // alpha2: &f64,
     P_C_vec: &Array1<f64>,
     dist_P_C: f64,
 ) -> f64 {
@@ -296,7 +298,7 @@ pub fn calc_R_coulomb_aux_herm_int(
     // alpha2 : f64
     //   Exponent of the second Gaussian function.
 
-    let p: f64 = alpha1 + alpha2;
+    // let p: f64 = alpha1 + alpha2;
     let boys_arg: f64 = p * dist_P_C * dist_P_C;
     let mut result: f64 = 0.0;
 
@@ -393,8 +395,7 @@ pub fn calc_R_coulomb_aux_herm_int(
                         u,
                         v - 2,
                         order_boys + 1,
-                        alpha1,
-                        alpha2,
+                        p,
                         P_C_vec,
                         dist_P_C,
                     );
@@ -405,8 +406,7 @@ pub fn calc_R_coulomb_aux_herm_int(
                     u,
                     v - 1,
                     order_boys + 1,
-                    alpha1,
-                    alpha2,
+                    p,
                     P_C_vec,
                     dist_P_C,
                 );
@@ -419,8 +419,7 @@ pub fn calc_R_coulomb_aux_herm_int(
                         u - 2,
                         v,
                         order_boys + 1,
-                        alpha1,
-                        alpha2,
+                        p,
                         P_C_vec,
                         dist_P_C,
                     );
@@ -431,8 +430,7 @@ pub fn calc_R_coulomb_aux_herm_int(
                     u - 1,
                     v,
                     order_boys + 1,
-                    alpha1,
-                    alpha2,
+                    p,
                     P_C_vec,
                     dist_P_C,
                 );
@@ -445,8 +443,7 @@ pub fn calc_R_coulomb_aux_herm_int(
                         u,
                         v,
                         order_boys + 1,
-                        alpha1,
-                        alpha2,
+                        p,
                         P_C_vec,
                         dist_P_C,
                     );
@@ -457,8 +454,7 @@ pub fn calc_R_coulomb_aux_herm_int(
                     u,
                     v,
                     order_boys + 1,
-                    alpha1,
-                    alpha2,
+                    p,
                     P_C_vec,
                     dist_P_C,
                 );
@@ -508,7 +504,8 @@ pub fn calc_nuc_attr_int_prim(
 ) -> f64 {
     let gaussian_prod_center: Array1<f64> =
         calc_gaussian_prod_center(*alpha1, *alpha2, gauss1_center_pos, gauss2_center_pos);
-    let p_recip = (alpha1 + alpha2).recip();
+    let p = alpha1 + alpha2;
+    let p_recip = p.recip();
     let dist_P_C: f64 = calc_r_ij_general(&gaussian_prod_center, nuc_center);
     let P_C_vec: Array1<f64> = (gaussian_prod_center - nuc_center);
 
@@ -574,7 +571,6 @@ pub fn calc_nuc_attr_int_prim(
                         v,
                         0,
                         alpha1,
-                        alpha2,
                         &P_C_vec, // wrong: &gaussian_prod_center, here should be P-C vec
                         dist_P_C,
                     );
@@ -625,15 +621,16 @@ pub fn calc_elec_elec_repul_prim(
 ) -> f64 {
     let p = alpha1 + alpha2;
     let q = alpha3 + alpha4;
+    let alpha_ERI = p * q / (p + q);
     let P: Array1<f64> = calc_gaussian_prod_center(
-        alpha1.to_owned(),
-        alpha2.to_owned(),
+        *alpha1,
+        *alpha2,
         gauss1_center_pos,
         gauss2_center_pos,
     );
     let Q: Array1<f64> = calc_gaussian_prod_center(
-        alpha3.to_owned(),
-        alpha4.to_owned(),
+        *alpha3,
+        *alpha4,
         gauss3_center_pos,
         gauss4_center_pos,
     );
@@ -645,68 +642,106 @@ pub fn calc_elec_elec_repul_prim(
     for t in 0..(ang_mom_vec1[0] + ang_mom_vec2[0] + 1) {
         for u in 0..(ang_mom_vec1[1] + ang_mom_vec2[1] + 1) {
             for v in 0..(ang_mom_vec1[2] + ang_mom_vec2[2] + 1) {
+
+                let tuv = [t, u, v];
+                let mut result_tmp: f64 = 1.0;
+                for cart_coord in 0..3 {
+                    result_tmp *= calc_E_herm_gauss_coeff(
+                        ang_mom_vec1[cart_coord],
+                        ang_mom_vec2[cart_coord],
+                        tuv[cart_coord], //* This is t, u, v depending on the cartesian coordinate
+                        gauss1_center_pos[cart_coord] - gauss2_center_pos[cart_coord],
+                        alpha1,
+                        alpha2,
+                    )
+                }
+
                 for tau in 0..(ang_mom_vec3[0] + ang_mom_vec4[0] + 1) {
                     for nu in 0..(ang_mom_vec3[1] + ang_mom_vec4[1] + 1) {
                         for phi in 0..(ang_mom_vec3[2] + ang_mom_vec4[2] + 1) {
-                            ERI_result += (-1.0).powi(tau + nu + phi)
-                                * calc_E_herm_gauss_coeff(
-                                    ang_mom_vec1[0],
-                                    ang_mom_vec2[0],
-                                    t,
-                                    gauss1_center_pos[0] - gauss2_center_pos[0],
-                                    alpha1,
-                                    alpha2,
-                                )
-                                * calc_E_herm_gauss_coeff(
-                                    ang_mom_vec1[1],
-                                    ang_mom_vec2[1],
-                                    u,
-                                    gauss1_center_pos[1] - gauss2_center_pos[1],
-                                    alpha1,
-                                    alpha2,
-                                )
-                                * calc_E_herm_gauss_coeff(
-                                    ang_mom_vec1[2],
-                                    ang_mom_vec2[2],
-                                    v,
-                                    gauss1_center_pos[2] - gauss2_center_pos[2],
-                                    alpha1,
-                                    alpha2,
-                                )
-                                * calc_E_herm_gauss_coeff(
-                                    ang_mom_vec3[0],
-                                    ang_mom_vec4[0],
-                                    tau,
-                                    gauss3_center_pos[0] - gauss4_center_pos[0],
-                                    alpha3,
-                                    alpha4,
-                                )
-                                * calc_E_herm_gauss_coeff(
-                                    ang_mom_vec3[1],
-                                    ang_mom_vec4[1],
-                                    nu,
-                                    gauss3_center_pos[1] - gauss4_center_pos[1],
-                                    alpha3,
-                                    alpha4,
-                                )
-                                * calc_E_herm_gauss_coeff(
-                                    ang_mom_vec3[2],
-                                    ang_mom_vec4[2],
-                                    phi,
-                                    gauss3_center_pos[2] - gauss4_center_pos[2],
-                                    alpha3,
-                                    alpha4,
-                                )
+
+                            let tau_nu_phi = [tau, nu, phi];
+                            for cart_coord in 0..3 {
+                                result_tmp *= calc_E_herm_gauss_coeff(
+                                        ang_mom_vec3[cart_coord],
+                                        ang_mom_vec4[cart_coord],
+                                        tau_nu_phi[cart_coord], //* This is tau, nu, phi depending on the cartesian coordinate
+                                        gauss3_center_pos[cart_coord] - gauss4_center_pos[cart_coord],
+                                        alpha3,
+                                        alpha4,
+                                    )
+                            }
+
+                            ERI_result += result_tmp * (-1.0).powi(tau + nu + phi)
                                 * calc_R_coulomb_aux_herm_int(
                                     t + tau,
                                     u + nu,
                                     v + phi,
                                     0,
-                                    &p,
-                                    &q,
+                                    &alpha_ERI, //? this is wrong 
                                     &P_Q_vec,
                                     dist_P_Q,
-                                );
+                                )
+
+                            // ERI_result += (-1.0).powi(tau + nu + phi)
+                            //     * calc_E_herm_gauss_coeff(
+                            //         ang_mom_vec1[0],
+                            //         ang_mom_vec2[0],
+                            //         t,
+                            //         gauss1_center_pos[0] - gauss2_center_pos[0],
+                            //         alpha1,
+                            //         alpha2,
+                            //     )
+                            //     * calc_E_herm_gauss_coeff(
+                            //         ang_mom_vec1[1],
+                            //         ang_mom_vec2[1],
+                            //         u,
+                            //         gauss1_center_pos[1] - gauss2_center_pos[1],
+                            //         alpha1,
+                            //         alpha2,
+                            //     )
+                            //     * calc_E_herm_gauss_coeff(
+                            //         ang_mom_vec1[2],
+                            //         ang_mom_vec2[2],
+                            //         v,
+                            //         gauss1_center_pos[2] - gauss2_center_pos[2],
+                            //         alpha1,
+                            //         alpha2,
+                            //     )
+                            //     * calc_E_herm_gauss_coeff(
+                            //         ang_mom_vec3[0],
+                            //         ang_mom_vec4[0],
+                            //         tau,
+                            //         gauss3_center_pos[0] - gauss4_center_pos[0],
+                            //         alpha3,
+                            //         alpha4,
+                            //     )
+                            //     * calc_E_herm_gauss_coeff(
+                            //         ang_mom_vec3[1],
+                            //         ang_mom_vec4[1],
+                            //         nu,
+                            //         gauss3_center_pos[1] - gauss4_center_pos[1],
+                            //         alpha3,
+                            //         alpha4,
+                            //     )
+                            //     * calc_E_herm_gauss_coeff(
+                            //         ang_mom_vec3[2],
+                            //         ang_mom_vec4[2],
+                            //         phi,
+                            //         gauss3_center_pos[2] - gauss4_center_pos[2],
+                            //         alpha3,
+                            //         alpha4,
+                            //     )
+                            //     * calc_R_coulomb_aux_herm_int(
+                            //         t + tau,
+                            //         u + nu,
+                            //         v + phi,
+                            //         0,
+                            //         &p,
+                            //         &q,
+                            //         &P_Q_vec,
+                            //         dist_P_Q,
+                            //     );
                         }
                     }
                 }
@@ -714,8 +749,7 @@ pub fn calc_elec_elec_repul_prim(
         }
     }
 
-    ERI_result *= 2.0 * PI.powf(2.5) * (p * q * (p + q).sqrt()).recip();
-    ERI_result
+    ERI_result * 2.0 * PI.powf(2.5) * (p * q * (p + q).sqrt()).recip()
 }
 
 pub fn calc_elec_elec_repul_cgto(cgto1: &CGTO, cgto2: &CGTO, cgto3: &CGTO, cgto4: &CGTO) -> f64 {
