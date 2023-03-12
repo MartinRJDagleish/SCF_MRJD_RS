@@ -39,7 +39,13 @@ impl SCF {
         );
 
         self.mol.update_no_occ_orb_rhf();
-        for cgto in self.mol.wfn_total.basis_set_total.basis_set_cgtos.iter_mut() {
+        for cgto in self
+            .mol
+            .wfn_total
+            .basis_set_total
+            .basis_set_cgtos
+            .iter_mut()
+        {
             cgto.calc_cart_norm_const_cgto();
         }
 
@@ -138,12 +144,22 @@ impl SCF {
                     F_matr[(mu, nu)] = self.mol.wfn_total.HF_Matrices.H_core_matr[(mu, nu)];
                     for lambda in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
                         for sigma in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
+                            let mu_nu_lambda_sigma =
+                                calc_ijkl_idx(mu + 1, nu + 1, lambda + 1, sigma + 1);
+                            let mu_lambda_nu_sigma =
+                                calc_ijkl_idx(mu + 1, lambda + 1, nu + 1, sigma + 1);
+
                             F_matr[(mu, nu)] += D_matr[(lambda, sigma)]
                                 * (2.0
-                                    * self.mol.wfn_total.HF_Matrices.ERI_tensor
-                                        [(mu, nu, lambda, sigma)]
-                                    - self.mol.wfn_total.HF_Matrices.ERI_tensor
-                                        [(mu, lambda, nu, sigma)]);
+                                    * self.mol.wfn_total.HF_Matrices.ERI_arr1[mu_nu_lambda_sigma]
+                                    - self.mol.wfn_total.HF_Matrices.ERI_arr1[mu_lambda_nu_sigma]);
+
+                            // F_matr[(mu, nu)] += D_matr[(lambda, sigma)]
+                            //     * (2.0
+                            //         * self.mol.wfn_total.HF_Matrices.ERI_tensor
+                            //             [mu_nu_l]
+                            //         - self.mol.wfn_total.HF_Matrices.ERI_tensor
+                            //             [(mu, lambda, nu, sigma)]);
                         }
                     }
                 }
@@ -220,6 +236,10 @@ impl SCF {
             );
             println!("{line}");
         }
+
+        // * Safe final values in SCF object
+        self.E_scf_final = E_scf_vec[E_scf_vec.len() - 1];
+        self.E_tot_final = E_tot_vec[E_tot_vec.len() - 1];
     }
 
     fn calc_1e_ints(&mut self, is_debug: bool) {
@@ -234,16 +254,16 @@ impl SCF {
         ));
         for i in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
             for j in 0..=i {
-                // if i == j {
-                    // self.mol.wfn_total.HF_Matrices.S_matr[(i, j)] = 1.0;
-                // } else {
+                if i == j {
+                    self.mol.wfn_total.HF_Matrices.S_matr[(i, j)] = 1.0;
+                } else {
                     self.mol.wfn_total.HF_Matrices.S_matr[(i, j)] = calc_overlap_int_cgto(
                         &self.mol.wfn_total.basis_set_total.basis_set_cgtos[i],
                         &self.mol.wfn_total.basis_set_total.basis_set_cgtos[j],
                     );
                     self.mol.wfn_total.HF_Matrices.S_matr[(j, i)] =
                         self.mol.wfn_total.HF_Matrices.S_matr[(i, j)];
-                // }
+                }
             }
         }
 
@@ -321,63 +341,95 @@ impl SCF {
     }
 
     fn calc_2e_ints(&mut self, is_debug: bool) {
-        // * Tensor variant (4D-Tensor)
-        self.mol.wfn_total.HF_Matrices.ERI_tensor = Array4::<f64>::zeros((
-            self.mol.wfn_total.basis_set_total.no_cgtos,
-            self.mol.wfn_total.basis_set_total.no_cgtos,
-            self.mol.wfn_total.basis_set_total.no_cgtos,
-            self.mol.wfn_total.basis_set_total.no_cgtos,
-        ));
+        // * Array variant (1D-Tensor == Array)
+
+        let mut n = self.mol.wfn_total.basis_set_total.no_cgtos;
+        n = calc_cmp_idx(n, n);
+        let ERI_arr1_max_idx = calc_cmp_idx(n, n);
+
+        self.mol.wfn_total.HF_Matrices.ERI_arr1 = Array1::<f64>::zeros(ERI_arr1_max_idx + 1);
+
         for i in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
             for j in 0..=i {
+                // for j in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
                 let ij = calc_cmp_idx(i, j);
                 for k in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
                     for l in 0..=k {
+                        // for l in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
                         let kl = calc_cmp_idx(k, l);
                         if ij >= kl {
-                            let ERI_val = calc_elec_elec_repul_cgto(
-                                &self.mol.wfn_total.basis_set_total.basis_set_cgtos[i],
-                                &self.mol.wfn_total.basis_set_total.basis_set_cgtos[j],
-                                &self.mol.wfn_total.basis_set_total.basis_set_cgtos[k],
-                                &self.mol.wfn_total.basis_set_total.basis_set_cgtos[l],
-                            );
-                            self.mol.wfn_total.HF_Matrices.ERI_tensor[(i, j, k, l)] = ERI_val;
-                            self.mol.wfn_total.HF_Matrices.ERI_tensor[(j, i, k, l)] = ERI_val;
-                            self.mol.wfn_total.HF_Matrices.ERI_tensor[(i, j, l, k)] = ERI_val;
-                            self.mol.wfn_total.HF_Matrices.ERI_tensor[(j, i, l, k)] = ERI_val;
-                            self.mol.wfn_total.HF_Matrices.ERI_tensor[(k, l, i, j)] = ERI_val;
-                            self.mol.wfn_total.HF_Matrices.ERI_tensor[(l, k, i, j)] = ERI_val;
-                            self.mol.wfn_total.HF_Matrices.ERI_tensor[(k, l, j, i)] = ERI_val;
-                            self.mol.wfn_total.HF_Matrices.ERI_tensor[(l, k, j, i)] = ERI_val;
+                            // let ijkl = calc_cmp_idx(ij, kl);
+                            let ijkl = calc_ijkl_idx(i + 1, j + 1, k + 1, l + 1);
+                            self.mol.wfn_total.HF_Matrices.ERI_arr1[ijkl] =
+                                calc_elec_elec_repul_cgto(
+                                    &self.mol.wfn_total.basis_set_total.basis_set_cgtos[i],
+                                    &self.mol.wfn_total.basis_set_total.basis_set_cgtos[j],
+                                    &self.mol.wfn_total.basis_set_total.basis_set_cgtos[k],
+                                    &self.mol.wfn_total.basis_set_total.basis_set_cgtos[l],
+                                );
                         }
                     }
                 }
             }
         }
 
+        // * Tensor variant (4D-Tensor)
+        // self.mol.wfn_total.HF_Matrices.ERI_tensor = Array4::<f64>::zeros((
+        //     self.mol.wfn_total.basis_set_total.no_cgtos,
+        //     self.mol.wfn_total.basis_set_total.no_cgtos,
+        //     self.mol.wfn_total.basis_set_total.no_cgtos,
+        //     self.mol.wfn_total.basis_set_total.no_cgtos,
+        // ));
+        // for i in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
+        //     for j in 0..=i {
+        //         let ij = calc_cmp_idx(i, j);
+        //         for k in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
+        //             for l in 0..=k {
+        //                 let kl = calc_cmp_idx(k, l);
+        //                 if ij >= kl {
+        //                     let ERI_val = calc_elec_elec_repul_cgto(
+        //                         &self.mol.wfn_total.basis_set_total.basis_set_cgtos[i],
+        //                         &self.mol.wfn_total.basis_set_total.basis_set_cgtos[j],
+        //                         &self.mol.wfn_total.basis_set_total.basis_set_cgtos[k],
+        //                         &self.mol.wfn_total.basis_set_total.basis_set_cgtos[l],
+        //                     );
+        //                     self.mol.wfn_total.HF_Matrices.ERI_tensor[(i, j, k, l)] = ERI_val;
+        //                     self.mol.wfn_total.HF_Matrices.ERI_tensor[(j, i, k, l)] = ERI_val;
+        //                     self.mol.wfn_total.HF_Matrices.ERI_tensor[(i, j, l, k)] = ERI_val;
+        //                     self.mol.wfn_total.HF_Matrices.ERI_tensor[(j, i, l, k)] = ERI_val;
+        //                     self.mol.wfn_total.HF_Matrices.ERI_tensor[(k, l, i, j)] = ERI_val;
+        //                     self.mol.wfn_total.HF_Matrices.ERI_tensor[(l, k, i, j)] = ERI_val;
+        //                     self.mol.wfn_total.HF_Matrices.ERI_tensor[(k, l, j, i)] = ERI_val;
+        //                     self.mol.wfn_total.HF_Matrices.ERI_tensor[(l, k, j, i)] = ERI_val;
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
+
         if is_debug {
             println!("V_ee tensor (ERI vals):");
-            println!("{:>8.5}\n", &self.mol.wfn_total.HF_Matrices.ERI_tensor);
+            println!("{:>8.5}\n", &self.mol.wfn_total.HF_Matrices.ERI_arr1);
         }
     }
 
-    fn MP2 () {
+    fn MP2() {
         todo!();
     }
 }
 
 pub fn calc_ijkl_idx(i: usize, j: usize, k: usize, l: usize) -> usize {
-    let ij: usize = if i > j {
+    let ij: usize = if i >= j {
         calc_cmp_idx(i, j)
     } else {
         calc_cmp_idx(j, i)
     };
-    let kl: usize = if k > l {
+    let kl: usize = if k >= l {
         calc_cmp_idx(k, l)
     } else {
         calc_cmp_idx(l, k)
     };
-    let ijkl: usize = if ij > kl {
+    let ijkl: usize = if ij >= kl {
         calc_cmp_idx(ij, kl)
     } else {
         calc_cmp_idx(kl, ij)
