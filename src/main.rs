@@ -3,7 +3,21 @@
 use humantime::format_duration;
 use std::time::Instant;
 
-use crate::molecule::{Molecule, wfn::scf};
+use crate::molecule::Molecule;
+use clap::Parser;
+
+/// Simple program to greet a person
+// #[command(author, version, about, long_about = None)]
+#[derive(Parser, Default, Debug)]
+#[clap(
+    author = "Martin Dagleish",
+    version,
+    about = "A RHF SCF programme written in Rust; 
+    implemented from scratch using the McMurchie-Davidson algorithm"
+)]
+struct Args {
+    test_str: String,
+}
 
 // pub mod Crawford_projects;
 pub mod dev_SCF_from_scratch;
@@ -46,7 +60,7 @@ fn main() {
     println!("{ASCII_art_logo}");
 
     // *****************************************************************
-    // * Development of the code 
+    // * Development of the code
     // *****************************************************************
     let mol: Molecule = Molecule::new("inp/Project3_1/STO-3G/h2o_v2.xyz", 0);
 
@@ -86,12 +100,12 @@ fn main() {
     if is_run_dev {
         use crate::molecule::wfn::scf::*;
         let mut scf = SCF::new(mol);
-        scf.RHF(false, "def2-SVP");
+        scf.RHF(true, "def2-SVP");
     }
 
+    let args = Args::parse();
 
-
-
+    println!("Hello {}!", args.test_str);
 
     //*****************************************************************
     //*****************************************************************

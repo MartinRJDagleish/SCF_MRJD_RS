@@ -353,7 +353,7 @@ impl SCF {
 
         if is_debug {
             println!("V_ee tensor (ERI vals):");
-            println!("{:^11.6}\n", &self.mol.wfn_total.HF_Matrices.ERI_tensor);
+            println!("{:>10.5}\n", &self.mol.wfn_total.HF_Matrices.ERI_tensor);
         }
     }
 }
