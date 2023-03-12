@@ -44,7 +44,7 @@ impl Molecule {
         }
     }
 
-    fn update_no_occ_orb_rhf(&mut self) {
+    pub fn update_no_occ_orb_rhf(&mut self) {
         let mut no_occ_orb: usize = 0;
         self.geom_obj.Z_vals.iter().for_each(|Z_val| {
             no_occ_orb += *Z_val as usize;

@@ -3,7 +3,7 @@
 use humantime::format_duration;
 use std::time::Instant;
 
-use crate::molecule::Molecule;
+use crate::molecule::{Molecule, wfn::scf};
 
 // pub mod Crawford_projects;
 pub mod dev_SCF_from_scratch;
@@ -48,13 +48,13 @@ fn main() {
     // *****************************************************************
     // * Development of the code 
     // *****************************************************************
-    let mut mol: Molecule = Molecule::new("inp/Project3_1/STO-3G/h2o_v2.xyz", 0);
+    let mol: Molecule = Molecule::new("inp/Project3_1/STO-3G/h2o_v2.xyz", 0);
 
     let _is_run_project1: bool = false; //* General molecule geometry stuff
     let _is_run_project2: bool = false; //* Hessian -> eigenfreqs from file
     let _is_run_project3_1: bool = false; //* SCF from precomputed integrals
     let is_run_project3_2: bool = false; //* Ints for SCF from "scratch"
-    let is_run_project3_3: bool = true; //* actual SCF from "scratch"
+    let is_run_project3_3: bool = false; //* actual SCF from "scratch"
     let _is_run_project4: bool = false; //* MP2 from precomputed integrals
 
     // if is_run_project1 {
@@ -82,10 +82,11 @@ fn main() {
     }
     // *****************************************************************
 
-    let is_run_dev: bool = false; //* Development of the code
+    let is_run_dev: bool = true; //* Development of the code
     if is_run_dev {
-        // use crate::molecule::wfn::scf::*;
-        // mol.RHF();
+        use crate::molecule::wfn::scf::*;
+        let mut scf = SCF::new(mol);
+        scf.RHF(false, "def2-SVP");
     }
 
 

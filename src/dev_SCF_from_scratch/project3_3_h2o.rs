@@ -10,7 +10,7 @@ use crate::molecule::wfn::basisset::create_basis_set_total;
 use crate::molecule::wfn::basisset::parse_basis_set_file_gaussian;
 
 use crate::molecule::wfn::scf::calc_cmp_idx;
-use crate::molecule::wfn::scf::calc_ijkl_idx;
+// use crate::molecule::wfn::scf::calc_ijkl_idx;
 
 pub fn run_project3_3_h2o() {
     let mut mol: Molecule = Molecule::new("inp/Project3_1/STO-3G/h2o_v2.xyz", 0);
@@ -26,6 +26,7 @@ pub fn run_project3_3_h2o() {
     );
 
     mol.wfn_total.basis_set_total = basis_set_total;
+    mol.update_no_occ_orb_rhf();
 
     // // O_contr_gauss_1s
     // let O_pos: Array1<f64> =
@@ -391,8 +392,9 @@ pub fn run_project3_3_h2o() {
     /*
     ? How do I get the correct number of occupied orbitals, when I have multiple CGTOs per orbital per atom?
     */
-    let no_occ_orb: usize = 5; // * 1 CGTO per orbital per atom
-                               // let no_occ_orb: usize = 21; // * 1 CGTO per orbital per atom
+    // let no_occ_orb: usize = 5; // * 1 CGTO per orbital per atom
+    // let no_occ_orb: usize = 21; // * 1 CGTO per orbital per atom
+    let no_occ_orb: usize = mol.wfn_total.basis_set_total.no_occ_orb;
 
     let mut D_matr: Array2<f64> = Array2::<f64>::zeros((
         mol.wfn_total.basis_set_total.no_cgtos,
