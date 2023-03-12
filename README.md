@@ -43,3 +43,12 @@ The code for the Crawford's group tutorials can be found in `src/Crawford_projec
     # Ubuntu based Linux distro:
     sudo apt install libgsl-dev
     ```
+
+# Sources / Thank you
+This project would not have been possible without the great introductory **[PDF](https://joshuagoings.com/assets/integrals.pdf)** by [Joshua Goings](https://github.com/jjgoings) (@jjgoings) and his Python / Cython implementation of **[McMurchie-Davidson](https://github.com/jjgoings/McMurchie-Davidson)**. 
+
+When starting this project the integral routines were quite a lot to learn, so in the beginning I translated his Python code to idiomatic Rust (to my understanding) and then tried to simplify things to my understanding. 
+
+Although the integral routines are mostly a copy, the structure of the code and the "building blocks" are made by myself. 
+
+Another thanks I would like to give to **[PySCF](https://github.com/pyscf/pyscf)**, which gave me the initial idea for a parser of `.gbs` files of basis set data, provided by **[BasisSetExchange](https://www.basissetexchange.org)**
