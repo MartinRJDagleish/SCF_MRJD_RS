@@ -37,7 +37,11 @@ impl SCF {
             self.mol.geom_obj.geom_matr.clone(),
             &self.mol.geom_obj.Z_vals,
         );
+
         self.mol.update_no_occ_orb_rhf();
+        for cgto in self.mol.wfn_total.basis_set_total.basis_set_cgtos.iter_mut() {
+            cgto.calc_cart_norm_const_cgto();
+        }
 
         // * Step 2: Calculate the 1e- integrals (S, T, V_ne, H_core) and V_nn
         self.calc_1e_ints(is_debug);
@@ -230,16 +234,16 @@ impl SCF {
         ));
         for i in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
             for j in 0..=i {
-                if i == j {
-                    self.mol.wfn_total.HF_Matrices.S_matr[(i, j)] = 1.0;
-                } else {
+                // if i == j {
+                    // self.mol.wfn_total.HF_Matrices.S_matr[(i, j)] = 1.0;
+                // } else {
                     self.mol.wfn_total.HF_Matrices.S_matr[(i, j)] = calc_overlap_int_cgto(
                         &self.mol.wfn_total.basis_set_total.basis_set_cgtos[i],
                         &self.mol.wfn_total.basis_set_total.basis_set_cgtos[j],
                     );
                     self.mol.wfn_total.HF_Matrices.S_matr[(j, i)] =
                         self.mol.wfn_total.HF_Matrices.S_matr[(i, j)];
-                }
+                // }
             }
         }
 
@@ -298,19 +302,19 @@ impl SCF {
 
         if is_debug {
             println!(
-                "Overlap matrix S:\n{:>10.5}\n",
+                "Overlap matrix S:\n{:>8.5}\n",
                 &self.mol.wfn_total.HF_Matrices.S_matr
             );
             println!(
-                "Kinetic energy matrix T:\n{:>10.5}\n",
+                "Kinetic energy matrix T:\n{:>8.5}\n",
                 &self.mol.wfn_total.HF_Matrices.T_matr
             );
             println!(
-                "Nuclear attraction matrix V_ne:\n{:>10.5}\n",
+                "Nuclear attraction matrix V_ne:\n{:>8.5}\n",
                 &self.mol.wfn_total.HF_Matrices.V_ne_matr
             );
             println!(
-                "Core Hamiltonian matrix H_core:\n{:>10.5}\n",
+                "Core Hamiltonian matrix H_core:\n{:>8.5}\n",
                 &self.mol.wfn_total.HF_Matrices.H_core_matr
             );
         }
@@ -353,8 +357,12 @@ impl SCF {
 
         if is_debug {
             println!("V_ee tensor (ERI vals):");
-            println!("{:>10.5}\n", &self.mol.wfn_total.HF_Matrices.ERI_tensor);
+            println!("{:>8.5}\n", &self.mol.wfn_total.HF_Matrices.ERI_tensor);
         }
+    }
+
+    fn MP2 () {
+        todo!();
     }
 }
 

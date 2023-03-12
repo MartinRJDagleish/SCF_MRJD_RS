@@ -1,12 +1,13 @@
 use boys;
 use ndarray::prelude::*;
+use ndarray_linalg::Scalar;
 use std::f64::consts::PI;
 
 pub mod basisset;
 pub mod integrals;
 pub mod scf;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct PGTO {
     pub alpha: f64,
     pub cgto_coeff: f64,
@@ -53,7 +54,7 @@ impl PGTO {
         gauss_center_pos: Array1<f64>,
         ang_mom_vec: Array1<i32>,
     ) -> Self {
-        let norm_const: f64 = Self::calc_cart_norm_const(&alpha, &ang_mom_vec);
+        let norm_const: f64 = Self::calc_cart_norm_const_pgto(&alpha, &ang_mom_vec);
 
         PGTO {
             alpha,
@@ -64,24 +65,12 @@ impl PGTO {
         }
     }
 
-    pub fn calc_cart_norm_const(alpha: &f64, ang_mom_vec: &Array1<i32>) -> f64 {
+    fn calc_cart_norm_const_pgto(alpha: &f64, ang_mom_vec: &Array1<i32>) -> f64 {
         let numerator: f64 = (2.0 * alpha / PI).powf(1.5) * (4.0 * alpha).powi(ang_mom_vec.sum());
-        let denom: i32 = ang_mom_vec
-            .mapv(|x| Self::double_factorial(2 * x - 1))
-            .product();
+        let denom: i32 = ang_mom_vec.mapv(|x| double_factorial(2 * x - 1)).product();
 
         (numerator / denom as f64).sqrt()
     }
-
-    fn double_factorial(n: i32) -> i32 {
-        match n {
-            -1 => 1,
-            0 => 1,
-            1 => 1,
-            _ => n * Self::double_factorial(n - 2),
-        }
-    }
-
 }
 
 impl CGTO {
@@ -90,6 +79,32 @@ impl CGTO {
         let no_pgtos: usize = pgto_vec.len();
 
         CGTO { pgto_vec, no_pgtos }
+    }
+
+    fn calc_cart_norm_const_cgto(&mut self) {
+        let mut norm_const_cgto = 0.0_f64;
+
+        let L = self.pgto_vec[0].ang_mom_vec.sum();
+        let pi_factor = PI.powf(1.5) / (2.0.powi(L))
+            * (self.pgto_vec[0]
+                .ang_mom_vec
+                .map(|x| double_factorial(2 * x - 1)))
+            .product() as f64;
+
+        for pgto1 in &self.pgto_vec {
+            for pgto2 in &self.pgto_vec {
+                norm_const_cgto +=
+                    pgto1.cgto_coeff * pgto2.cgto_coeff * pgto1.norm_const * pgto2.norm_const
+                        / (pgto1.alpha + pgto2.alpha).powf(L as f64 + 1.5);
+            }
+        }
+
+        norm_const_cgto *= pi_factor;
+        norm_const_cgto = norm_const_cgto.powf(-0.5);
+
+        for pgto in self.pgto_vec.iter_mut() {
+            pgto.norm_const *= norm_const_cgto;
+        }
     }
 
     pub fn update_no_pgtos(&mut self) {
@@ -106,7 +121,7 @@ impl BasisSetTotal {
         BasisSetTotal {
             basis_set_cgtos,
             no_cgtos,
-            no_occ_orb: no_occ
+            no_occ_orb: no_occ,
         }
     }
 
@@ -354,9 +369,8 @@ impl WfnTotal {
                                                 .norm_const
                                             * self.basis_set_total.basis_set_cgtos[l].pgto_vec[p]
                                                 .norm_const; //* This is N
-                                        let prod_coeffs: f64 = self
-                                            .basis_set_total
-                                            .basis_set_cgtos[i]
+                                        let prod_coeffs: f64 = self.basis_set_total.basis_set_cgtos
+                                            [i]
                                             .pgto_vec[m]
                                             .cgto_coeff
                                             * self.basis_set_total.basis_set_cgtos[j].pgto_vec[n]
@@ -468,5 +482,14 @@ impl WfnTotal {
             }
         }
         V_ee_matr
+    }
+}
+
+pub fn double_factorial(n: i32) -> i32 {
+    match n {
+        -1 => 1,
+        0 => 1,
+        1 => 1,
+        _ => n * double_factorial(n - 2),
     }
 }

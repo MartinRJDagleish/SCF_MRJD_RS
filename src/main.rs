@@ -4,20 +4,20 @@ use humantime::format_duration;
 use std::time::Instant;
 
 use crate::molecule::Molecule;
-use clap::Parser;
+// use clap::Parser;
 
 /// Simple program to greet a person
 // #[command(author, version, about, long_about = None)]
-#[derive(Parser, Default, Debug)]
-#[clap(
-    author = "Martin Dagleish",
-    version,
-    about = "A RHF SCF programme written in Rust; 
-    implemented from scratch using the McMurchie-Davidson algorithm"
-)]
-struct Args {
-    test_str: String,
-}
+// #[derive(Parser, Default, Debug)]
+// #[clap(
+//     author = "Martin Dagleish",
+//     version,
+//     about = "A RHF SCF programme written in Rust; 
+//     implemented from scratch using the McMurchie-Davidson algorithm"
+// )]
+// struct Args {
+//     test_str: String,
+// }
 
 // pub mod Crawford_projects;
 pub mod dev_SCF_from_scratch;
@@ -99,13 +99,12 @@ fn main() {
     let is_run_dev: bool = true; //* Development of the code
     if is_run_dev {
         use crate::molecule::wfn::scf::*;
-        let mut scf = SCF::new(mol);
+        let mut scf: SCF = SCF::new(mol);
         scf.RHF(true, "def2-SVP");
     }
 
-    let args = Args::parse();
-
-    println!("Hello {}!", args.test_str);
+    // let args = Args::parse();
+    // println!("Hello {}!", args.test_str);
 
     //*****************************************************************
     //*****************************************************************
