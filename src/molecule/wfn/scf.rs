@@ -17,14 +17,23 @@ pub struct SCF {
     pub mol: Molecule,
     pub E_scf_final: f64,
     pub E_tot_final: f64,
+    pub C_matr_final: Array2<f64>,
+    pub D_matr_final: Array2<f64>,
+    pub orb_energies_final: Array1<f64>,
 }
 
 impl SCF {
     pub fn new(mol: Molecule) -> Self {
+        let C_matr_final = Array::default((0, 0));
+        let D_matr_final = Array::default((0, 0));
+        let orb_energies_final = Array::default(0);
         SCF {
             mol,
             E_scf_final: 0.0,
             E_tot_final: 0.0,
+            C_matr_final,
+            D_matr_final,
+            orb_energies_final,
         }
     }
 
@@ -82,9 +91,9 @@ impl SCF {
         }
 
         //* Step 5.2: Get the coefficients of the initial guess Fock matrix F_0 in the MO basis
-        let (orb_energy_arr, C_matr_MO_basis) =
+        let (mut orb_energy_arr, mut C_matr_MO_basis) =
             F_matr_0_pr.eigh(ndarray_linalg::UPLO::Upper).unwrap();
-        let C_matr_AO_basis: Array2<f64> = S_matr_sqrt_inv.dot(&C_matr_MO_basis);
+        let mut C_matr_AO_basis: Array2<f64> = S_matr_sqrt_inv.dot(&C_matr_MO_basis);
 
         if is_debug {
             println!("orb_energy_arr:\n{:>11.6}\n", &orb_energy_arr);
@@ -173,9 +182,9 @@ impl SCF {
                 .dot(&S_matr_sqrt_inv.clone());
 
             //* Step 8: Get the coefficients of the Fock matrix F in the MO basis
-            let (orb_energy_arr, C_matr_MO_basis) =
+            (orb_energy_arr, C_matr_MO_basis) =
                 F_matr_pr.eigh(ndarray_linalg::UPLO::Upper).unwrap();
-            let C_matr_AO_basis: Array2<f64> = S_matr_sqrt_inv.dot(&C_matr_MO_basis);
+            C_matr_AO_basis = S_matr_sqrt_inv.dot(&C_matr_MO_basis);
             let D_matr_prev: Array2<f64> = D_matr.clone();
 
             for mu in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
@@ -212,6 +221,10 @@ impl SCF {
                 break;
             }
         }
+
+        self.C_matr_final = C_matr_AO_basis;
+        self.D_matr_final = D_matr;
+        self.orb_energies_final = orb_energy_arr;
 
         let header_scf_str = format!(
             "{:^3} {:^16}{:^16}{:^12}",
@@ -413,8 +426,198 @@ impl SCF {
         }
     }
 
-    fn MP2() {
-        todo!();
+    pub fn MP2(&mut self, is_debug: bool, basis_set_name: &str) {
+        // * only rerun HF, if it has not been run before
+        if self.mol.wfn_total.HF_Matrices.ERI_arr1.is_empty() {
+            Self::RHF(self, is_debug, basis_set_name);
+        }
+        println!("\nThis is the end of RHF");
+        println!("Starting MP2...\n");
+        let no_cgtos = self.mol.wfn_total.basis_set_total.no_cgtos;
+        let no_occ_orb = self.mol.wfn_total.basis_set_total.no_occ_orb;
+
+        let orb_energies_ground_state = self.orb_energies_final.slice(s![..no_occ_orb]).to_owned();
+        let orb_energies_exc_state = self.orb_energies_final.slice(s![no_occ_orb..]).to_owned();
+
+        let C_occ = self.C_matr_final.slice(s![.., ..no_occ_orb]).to_owned();
+        let C_virt = self.C_matr_final.slice(s![.., no_occ_orb..]).to_owned();
+
+        let orb_energies = self.orb_energies_final.to_owned();
+        let C_matr = self.C_matr_final.to_owned();
+        // * Calc 2e ints if not already done
+        if self.mol.wfn_total.HF_Matrices.ERI_arr1.is_empty() {
+            Self::calc_2e_ints(self, false);
+        }
+
+        let is_naive_mp2 = true;
+        let is_smarter_mp2 = false;
+
+        let mut n = self.mol.wfn_total.basis_set_total.no_cgtos;
+        n = calc_cmp_idx(n, n);
+        let ERI_arr1_max_idx = calc_cmp_idx(n, n);
+        let mut ERI_MO_MP2 = Array1::<f64>::zeros(ERI_arr1_max_idx + 1);
+
+        if is_naive_mp2 {
+            // * Naive implementation with nested for loops
+            for i in 0..no_cgtos {
+                for j in 0..=i {
+                    let ij = calc_cmp_idx(i, j);
+                    for k in 0..no_cgtos {
+                        for l in 0..=k {
+                            let kl = calc_cmp_idx(k, l);
+                            if ij >= kl {
+                                let ijkl = calc_ijkl_idx(i + 1, j + 1, k + 1, l + 1);
+                                for mu in 0..no_cgtos {
+                                    for nu in 0..no_cgtos {
+                                        for lambda in 0..no_cgtos {
+                                            for sigma in 0..no_cgtos {
+                                                let mu_nu_lambda_sigma = calc_ijkl_idx(
+                                                    mu + 1,
+                                                    nu + 1,
+                                                    lambda + 1,
+                                                    sigma + 1,
+                                                );
+                                                ERI_MO_MP2[ijkl] += C_matr[[mu, i]]
+                                                    * C_matr[[nu, j]]
+                                                    * C_matr[[lambda, k]]
+                                                    * C_matr[[sigma, l]]
+                                                    * self.mol.wfn_total.HF_Matrices.ERI_arr1
+                                                        [mu_nu_lambda_sigma];
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // TODO: FIX smarter MP2 -> not yet working
+        if is_smarter_mp2 {
+            // * 4 for-loops
+
+            let mut tmp_matr = Array2::<f64>::zeros((no_cgtos, no_cgtos));
+
+            // * 1st for-loop */
+            for l in 0..no_cgtos - no_occ_orb {
+                for mu in 0..no_cgtos {
+                    for nu in 0..no_cgtos {
+                        for lambda in 0..no_cgtos {
+                            for sigma in 0..no_cgtos {
+                                // let ijkl = calc_ijkl_idx(i + 1, j + 1, k + 1, l + 1);
+                                let mu_nu_lambda_sigma =
+                                    calc_ijkl_idx(mu + 1, nu + 1, lambda + 1, sigma + 1);
+                                tmp_matr[(l, mu_nu_lambda_sigma)] += C_matr[(mu, l)]
+                                    * self.mol.wfn_total.HF_Matrices.ERI_arr1[mu_nu_lambda_sigma];
+                                tmp_matr[(mu_nu_lambda_sigma, l)] =
+                                    tmp_matr[(l, mu_nu_lambda_sigma)];
+                            }
+                        }
+                    }
+                }
+            }
+
+            //* 2nd for-loop */
+            for k in no_occ_orb..no_cgtos {
+                for mu in 0..no_cgtos {
+                    for nu in 0..no_cgtos {
+                        for lambda in 0..no_cgtos {
+                            for sigma in 0..no_cgtos {
+                                // let ijkl = calc_ijkl_idx(i + 1, j + 1, k + 1, l + 1);
+                                let mu_nu_lambda_sigma =
+                                    calc_ijkl_idx(mu + 1, nu + 1, lambda + 1, sigma + 1);
+                                tmp_matr[(k, mu_nu_lambda_sigma)] += C_matr[(nu, k)]
+                                    * self.mol.wfn_total.HF_Matrices.ERI_arr1[mu_nu_lambda_sigma];
+                                tmp_matr[(mu_nu_lambda_sigma, k)] =
+                                    tmp_matr[(k, mu_nu_lambda_sigma)];
+                            }
+                        }
+                    }
+                }
+            }
+
+            //* 3rd for-loop */
+            for j in 0..no_cgtos - no_occ_orb {
+                for mu in 0..no_cgtos {
+                    for nu in 0..no_cgtos {
+                        for lambda in 0..no_cgtos {
+                            for sigma in 0..no_cgtos {
+                                // let ijkl = calc_ijkl_idx(i + 1, j + 1, k + 1, l + 1);
+                                let mu_nu_lambda_sigma =
+                                    calc_ijkl_idx(mu + 1, nu + 1, lambda + 1, sigma + 1);
+                                tmp_matr[(j, mu_nu_lambda_sigma)] += C_matr[(lambda, j)]
+                                    * self.mol.wfn_total.HF_Matrices.ERI_arr1[mu_nu_lambda_sigma];
+                                tmp_matr[(mu_nu_lambda_sigma, j)] =
+                                    tmp_matr[(j, mu_nu_lambda_sigma)];
+                            }
+                        }
+                    }
+                }
+            }
+
+            //* 4th for-loop */
+            for i in no_occ_orb..no_cgtos {
+                for mu in 0..no_cgtos {
+                    for nu in 0..no_cgtos {
+                        for lambda in 0..no_cgtos {
+                            for sigma in 0..no_cgtos {
+                                // let ijkl = calc_ijkl_idx(i + 1, j + 1, k + 1, l + 1);
+                                let mu_nu_lambda_sigma =
+                                    calc_ijkl_idx(mu + 1, nu + 1, lambda + 1, sigma + 1);
+                                tmp_matr[(i, mu_nu_lambda_sigma)] += C_matr[(sigma, i)]
+                                    * self.mol.wfn_total.HF_Matrices.ERI_arr1[mu_nu_lambda_sigma];
+                                tmp_matr[(mu_nu_lambda_sigma, i)] =
+                                    tmp_matr[(i, mu_nu_lambda_sigma)];
+                            }
+                        }
+                    }
+                }
+            }
+
+            println!("tmp_matr:");
+            println!("{:>8.5}\n", &tmp_matr);
+            // ERI_MO_MP2
+            // //* Save result in ERI_MO_MP2 */
+            // for i in 0..no_cgtos {
+            //     for j in 0..=i {
+            //         let ij = calc_cmp_idx(i, j);
+            //         for k in 0..no_cgtos {
+            //             for l in 0..=k {
+            //                 let kl = calc_cmp_idx(k, l);
+            //                 let ijkl = calc_ijkl_idx(i + 1, j + 1, k + 1, l + 1);
+            //                 ERI_MO_MP2[ijkl] = tmp_matr[(i, j)] * tmp_matr[(k, l)];
+            //             }
+            //         }
+            //     }
+            // }
+        }
+
+        if is_debug {
+            println!("ERI_MO_MP2 tensor (ERI vals):");
+            println!("{:>8.5}\n", &ERI_MO_MP2);
+        }
+
+        // * Calc MP2 energy
+        let mut MP2_E = 0.0;
+        for i in 0..no_occ_orb {
+            for a in no_occ_orb..no_cgtos {
+                for j in 0..no_occ_orb {
+                    for b in no_occ_orb..no_cgtos {
+                        let iajb = calc_ijkl_idx(i + 1, a + 1, j + 1, b + 1);
+                        let ibja = calc_ijkl_idx(i + 1, b + 1, j + 1, a + 1);
+                        MP2_E += ERI_MO_MP2[iajb] * (2.0 * ERI_MO_MP2[iajb] - ERI_MO_MP2[ibja])
+                            / (orb_energies[i] + orb_energies[j]
+                                - orb_energies[a]
+                                - orb_energies[b]);
+                    }
+                }
+            }
+        }
+
+        println!("MP2 energy: {:>10.5}", MP2_E);
+        println!("New total energy: {:>10.5}", self.E_tot_final + MP2_E);
     }
 }
 
@@ -437,6 +640,7 @@ pub fn calc_ijkl_idx(i: usize, j: usize, k: usize, l: usize) -> usize {
     ijkl
 }
 
+#[inline]
 pub fn calc_cmp_idx(idx1: usize, idx2: usize) -> usize {
     (idx1 * (idx1 + 1)) / 2 + idx2
 }

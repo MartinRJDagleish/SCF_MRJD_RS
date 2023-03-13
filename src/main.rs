@@ -12,7 +12,7 @@ use crate::molecule::Molecule;
 // #[clap(
 //     author = "Martin Dagleish",
 //     version,
-//     about = "A RHF SCF programme written in Rust; 
+//     about = "A RHF SCF programme written in Rust;
 //     implemented from scratch using the McMurchie-Davidson algorithm"
 // )]
 // struct Args {
@@ -100,7 +100,8 @@ fn main() {
     if is_run_dev {
         use crate::molecule::wfn::scf::*;
         let mut scf: SCF = SCF::new(mol);
-        scf.RHF(true, "def2-SVP");
+        // scf.RHF(true, "sto-3g");
+        scf.MP2(false, "def2-SVP");
     }
 
     // let args = Args::parse();
