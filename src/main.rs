@@ -100,8 +100,9 @@ fn main() {
     if is_run_dev {
         use crate::molecule::wfn::scf::*;
         let mut scf: SCF = SCF::new(mol);
-        // scf.RHF(true, "sto-3g");
-        scf.MP2(false, "def2-SVP");
+        // scf.RHF_ser(false, "sto-3g");
+        scf.RHF_par(true, "sto-3g");
+        // scf.MP2(false, "def2-SVP");
     }
 
     // let args = Args::parse();

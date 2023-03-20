@@ -1,5 +1,9 @@
-use ndarray::prelude::*;
+use ndarray::{prelude::*, Zip};
 use ndarray_linalg::{Eigh, Inverse, SymmetricSqrt};
+
+use ndarray::parallel::prelude::*;
+
+use std::sync::Mutex;
 
 use crate::molecule::{
     wfn::{
@@ -37,7 +41,7 @@ impl SCF {
         }
     }
 
-    pub fn RHF(&mut self, is_debug: bool, basis_set_name: &str) {
+    pub fn RHF_par(&mut self, is_debug: bool, basis_set_name: &str) {
         // * Step 1: Create basis set for molecule -> mol object gets passed to SCF object
 
         //* Create basis for mol object */
@@ -107,13 +111,54 @@ impl SCF {
             self.mol.wfn_total.basis_set_total.no_cgtos,
         ));
 
-        for mu in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
-            for nu in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
-                for m in 0..self.mol.wfn_total.basis_set_total.no_occ_orb {
-                    D_matr[(mu, nu)] += C_matr_AO_basis[(mu, m)] * C_matr_AO_basis[(nu, m)];
-                }
-            }
-        }
+        // * For testing
+        let mut D_matr = Mutex::new(D_matr);
+        let no_occ_orb = self.mol.wfn_total.basis_set_total.no_occ_orb;
+
+        //* D^0 matrix */
+        //* Trying to parallelize it */
+        Zip::indexed(C_matr_AO_basis.axis_iter(Axis(0)))
+            .par_for_each(|mu, row1| {
+            Zip::indexed(C_matr_AO_basis.outer_iter())
+                .par_for_each(|nu, row2| {
+                    let mut d = D_matr.lock().unwrap();
+                    println!(
+                        "mu = {}, nu = {}, row1 = {:>11.6}, row2 = {:>11.6}\n",
+                        mu, nu, row1, row2);
+                    let slice1 = row1.slice(s![..no_occ_orb]);
+                    let slice2 = row2.slice(s![..no_occ_orb]);
+                    d[(mu,nu)] = slice1.dot(&row2);
+            });
+        });
+
+        let mut D_matr = D_matr.into_inner().unwrap();
+
+        // D_matr.outer_iter_mut()
+        //     .into_par_iter()
+        //     .enumerate()
+        //     .for_each(|(mu, mut row_D)| {
+        //         C_matr_AO_basis.outer_iter()
+        //             .into_par_iter()
+        //             .enumerate()
+        //             .for_each(|(nu, row_C)| {
+        //                 let mut sum = 0.0;
+        //                 for m in 0..self.mol.wfn_total.basis_set_total.no_occ_orb {
+        //                     sum += row_C[m] * C_matr_AO_basis[(nu, m)];
+        //                 }
+        //                 row_D[mu] += sum * row_C[nu];
+        //             });
+        //     });
+
+        // * Original code:
+        // * Serial code 
+        // for mu in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
+        //     for nu in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
+        //         for m in 0..self.mol.wfn_total.basis_set_total.no_occ_orb {
+        //             D_matr[(mu, nu)] += C_matr_AO_basis[(mu, m)] * C_matr_AO_basis[(nu, m)];
+        //         }
+        //     }
+        // }
+
 
         if is_debug {
             println!("D^0_matr (inital density matrix):\n{:>11.6}\n", &D_matr);
@@ -143,10 +188,61 @@ impl SCF {
         // ! THE SCF ITERATIONS START HERE
         for scf_iter in 0..scf_maxiter {
             //* Step 6: Form the Fock matrix F in the AO basis
-            let mut F_matr: Array2<f64> = Array2::<f64>::zeros((
-                self.mol.wfn_total.basis_set_total.no_cgtos,
-                self.mol.wfn_total.basis_set_total.no_cgtos,
-            ));
+            let n = self.mol.wfn_total.basis_set_total.no_cgtos;
+            let mut F_matr = Array2::<f64>::zeros((n, n));
+
+            F_matr.assign(&self.mol.wfn_total.HF_Matrices.H_core_matr);
+
+            let idx_pairs: Vec<(usize, usize)> = (0..n)
+                .flat_map(|mu| (0..mu).map(move |nu| (mu, nu)))
+                .collect();
+
+            // println!("Before: {:>8.5}", &F_matr);
+
+            // Zip::indexed(&mut F_matr)
+            //     .par_for_each(|(i,j), | {
+            //         for lambda in 0..n {
+            //             for sigma in 0..=lambda {
+            //                 let mu_nu_lambda_sigma =
+            //                     calc_ijkl_idx(mu + 1, nu + 1, lambda + 1, sigma + 1);
+            //                 let mu_lambda_nu_sigma =
+            //                     calc_ijkl_idx(mu + 1, lambda + 1, nu + 1, sigma + 1);
+
+            //                 *F_matr_val += D_matr[(lambda, sigma)]
+            //                     * (self.mol.wfn_total.HF_Matrices.G_matr[(mu_nu_lambda_sigma - 1)]
+            //                         - 0.5
+            //                             * self.mol.wfn_total.HF_Matrices.G_matr
+            //                                 [(mu_lambda_nu_sigma - 1)]);
+            //             }
+            //         }
+            //     });
+
+            // let F_matr_mutex = Arc::new(Mutex::new(F_matr));
+            // let F_matr_mutex = Mutex::new(&mut F_matr);
+
+            // let par_iter = idx_pairs.par_iter();
+
+            // par_iter.for_each(|(mu, nu)| {
+            //     let mut F_matr_val: f64 = 0.0;
+            //     for lambda in 0..n {
+            //         for sigma in 0..=lambda {
+            //             let mu_nu_lambda_sigma =
+            //                 calc_ijkl_idx(mu + 1, nu + 1, lambda + 1, sigma + 1);
+            //             let mu_lambda_nu_sigma =
+            //                 calc_ijkl_idx(mu + 1, lambda + 1, nu + 1, sigma + 1);
+
+            //             F_matr_val += D_matr[(lambda, sigma)]
+            //                 * (2.0 * self.mol.wfn_total.HF_Matrices.ERI_arr1[mu_nu_lambda_sigma]
+            //                     - self.mol.wfn_total.HF_Matrices.ERI_arr1[mu_lambda_nu_sigma]);
+            //         }
+            //     }
+            //     let mut F_matr_guard = F_matr_mutex.lock().unwrap();
+            //     F_matr_guard[(*mu,*nu)] += F_matr_val;
+            //     F_matr_guard[(*nu,*mu)] += F_matr_val;
+            // });
+            // let F_matr = F_matr_mutex.into_inner().unwrap().to_owned();
+
+            // println!("After: {:>8.5}", &F_matr);
 
             for mu in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
                 for nu in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
@@ -162,13 +258,223 @@ impl SCF {
                                 * (2.0
                                     * self.mol.wfn_total.HF_Matrices.ERI_arr1[mu_nu_lambda_sigma]
                                     - self.mol.wfn_total.HF_Matrices.ERI_arr1[mu_lambda_nu_sigma]);
+                        }
+                    }
+                }
+            }
 
-                            // F_matr[(mu, nu)] += D_matr[(lambda, sigma)]
-                            //     * (2.0
-                            //         * self.mol.wfn_total.HF_Matrices.ERI_tensor
-                            //             [mu_nu_l]
-                            //         - self.mol.wfn_total.HF_Matrices.ERI_tensor
-                            //             [(mu, lambda, nu, sigma)]);
+            //* Step 7: Form the Fock matrix F in the MO basis
+            let F_matr_pr: Array2<f64> = S_matr_sqrt_inv
+                .clone()
+                .reversed_axes()
+                .dot(&F_matr)
+                .dot(&S_matr_sqrt_inv.clone());
+
+            //* Step 8: Get the coefficients of the Fock matrix F in the MO basis
+            (orb_energy_arr, C_matr_MO_basis) =
+                F_matr_pr.eigh(ndarray_linalg::UPLO::Upper).unwrap();
+            C_matr_AO_basis = S_matr_sqrt_inv.dot(&C_matr_MO_basis);
+            let D_matr_prev: Array2<f64> = D_matr.clone();
+
+            for mu in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
+                for nu in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
+                    D_matr[(mu, nu)] = 0.0;
+                    for m in 0..self.mol.wfn_total.basis_set_total.no_occ_orb {
+                        D_matr[(mu, nu)] += C_matr_AO_basis[(mu, m)] * C_matr_AO_basis[(nu, m)];
+                    }
+                }
+            }
+
+            E_scf = 0.0;
+            for mu in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
+                for nu in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
+                    E_scf += D_matr[(mu, nu)]
+                        * (self.mol.wfn_total.HF_Matrices.H_core_matr[(mu, nu)] + F_matr[(mu, nu)]);
+                }
+            }
+
+            E_scf_vec.push(E_scf);
+            E_tot = E_scf + self.mol.wfn_total.HF_Matrices.V_nn_val;
+            E_tot_vec.push(E_tot);
+
+            let mut rms_d_val: f64 = 0.0;
+            for mu in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
+                for nu in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
+                    rms_d_val += (D_matr[(mu, nu)] - D_matr_prev[(mu, nu)]).powi(2);
+                }
+            }
+            rms_d_val = rms_d_val.sqrt();
+            rms_d_vec.push(rms_d_val);
+
+            if rms_d_val < 1e-6 {
+                break;
+            }
+        }
+
+        self.C_matr_final = C_matr_AO_basis;
+        self.D_matr_final = D_matr;
+        self.orb_energies_final = orb_energy_arr;
+
+        let header_scf_str = format!(
+            "{:^3} {:^16}{:^16}{:^12}",
+            "Iter", "E_scf", "E_total", "RMS D"
+        );
+        println!("{header_scf_str}");
+
+        // * First line extra
+        let line = format!(
+            "{:>3} {: >16.8}{: >16.8}{: >12.8}",
+            "0", &E_scf_vec[0], &E_tot_vec[0], " "
+        );
+        println!("{line}");
+
+        for idx in 1..E_scf_vec.len() {
+            let line = format!(
+                "{:>3} {: >16.8}{: >16.8}{: >12.8}",
+                &idx,
+                &E_scf_vec[idx],
+                &E_tot_vec[idx],
+                &rms_d_vec[idx - 1]
+            );
+            println!("{line}");
+        }
+
+        // * Safe final values in SCF object
+        self.E_scf_final = E_scf_vec[E_scf_vec.len() - 1];
+        self.E_tot_final = E_tot_vec[E_tot_vec.len() - 1];
+    }
+
+    pub fn RHF_ser(&mut self, is_debug: bool, basis_set_name: &str) {
+        // * Step 1: Create basis set for molecule -> mol object gets passed to SCF object
+
+        //* Create basis for mol object */
+        self.mol.wfn_total.basis_set_total = create_basis_set_total(
+            parse_basis_set_file_gaussian(basis_set_name),
+            self.mol.geom_obj.geom_matr.clone(),
+            &self.mol.geom_obj.Z_vals,
+        );
+
+        self.mol.update_no_occ_orb_rhf();
+        for cgto in self
+            .mol
+            .wfn_total
+            .basis_set_total
+            .basis_set_cgtos
+            .iter_mut()
+        {
+            cgto.calc_cart_norm_const_cgto();
+        }
+
+        // * Step 2: Calculate the 1e- integrals (S, T, V_ne, H_core) and V_nn
+        self.calc_1e_ints(is_debug);
+
+        //* Step 3: Calc the 2e-ints (V_ee) */
+        self.calc_2e_ints(is_debug);
+
+        //* Step 4: Build the orthogonalization matrix S^(-1/2)
+        let S_matr_sqrt: Array2<f64> = self
+            .mol
+            .wfn_total
+            .HF_Matrices
+            .S_matr
+            .ssqrt(ndarray_linalg::UPLO::Upper)
+            .unwrap();
+        let S_matr_sqrt_inv: Array2<f64> = S_matr_sqrt.inv().unwrap();
+
+        if is_debug {
+            println!("S^(-1/2):\n{:>11.6}\n", &S_matr_sqrt_inv);
+        }
+
+        //* Step 5: Form the initial guess density matrix D_0
+        //* Step 5.1: Form the initial guess Fock matrix F_0 in the AO basis
+        let F_matr_0_pr: Array2<f64> = S_matr_sqrt_inv
+            .clone()
+            .reversed_axes()
+            .dot(&self.mol.wfn_total.HF_Matrices.H_core_matr)
+            .dot(&S_matr_sqrt_inv.clone());
+
+        if is_debug {
+            println!("F_matr_0_pr:\n{:>11.6}\n", &F_matr_0_pr);
+        }
+
+        //* Step 5.2: Get the coefficients of the initial guess Fock matrix F_0 in the MO basis
+        let (mut orb_energy_arr, mut C_matr_MO_basis) =
+            F_matr_0_pr.eigh(ndarray_linalg::UPLO::Upper).unwrap();
+        let mut C_matr_AO_basis: Array2<f64> = S_matr_sqrt_inv.dot(&C_matr_MO_basis);
+
+        if is_debug {
+            println!("orb_energy_arr:\n{:>11.6}\n", &orb_energy_arr);
+            println!("C_matr_MO_basis:\n{:>11.6}\n", &C_matr_MO_basis);
+            println!("C_matr_AO_basis:\n{:>11.6}\n", &C_matr_AO_basis);
+        }
+
+        //* Step 5.3: Form the initial guess density matrix D_0
+        let mut D_matr: Array2<f64> = Array2::<f64>::zeros((
+            self.mol.wfn_total.basis_set_total.no_cgtos,
+            self.mol.wfn_total.basis_set_total.no_cgtos,
+        ));
+
+
+        for mu in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
+            for nu in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
+                for m in 0..self.mol.wfn_total.basis_set_total.no_occ_orb {
+                    D_matr[(mu, nu)] += C_matr_AO_basis[(mu, m)] * C_matr_AO_basis[(nu, m)];
+                }
+            }
+        }
+
+
+        if is_debug {
+            println!("D^0_matr (inital density matrix):\n{:>11.6}\n", &D_matr);
+        }
+
+        let mut E_scf: f64 = 0.0;
+        let mut E_scf_vec: Vec<f64> = Vec::new();
+        let mut E_tot_vec: Vec<f64> = Vec::new();
+        let mut rms_d_vec: Vec<f64> = Vec::new();
+
+        //* Here the Fock matrix is guessed to be the core Hamiltonian matrix
+        //* That's why the initial SCF energy differs from the other SCF energy calcs
+        for mu in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
+            for nu in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
+                E_scf +=
+                    D_matr[(mu, nu)] * 2.0 * (self.mol.wfn_total.HF_Matrices.H_core_matr[(mu, nu)]);
+            }
+        }
+
+        E_scf_vec.push(E_scf);
+        let mut E_tot = E_scf + self.mol.wfn_total.HF_Matrices.V_nn_val;
+        E_tot_vec.push(E_tot);
+
+        //* Step 7: Iterate the SCF procedure until convergence
+        let scf_maxiter: usize = 50;
+
+        // ! THE SCF ITERATIONS START HERE
+        for scf_iter in 0..scf_maxiter {
+            //* Step 6: Form the Fock matrix F in the AO basis
+            let n = self.mol.wfn_total.basis_set_total.no_cgtos;
+            let mut F_matr = Array2::<f64>::zeros((n, n));
+
+            F_matr.assign(&self.mol.wfn_total.HF_Matrices.H_core_matr);
+
+            let idx_pairs: Vec<(usize, usize)> = (0..n)
+                .flat_map(|mu| (0..mu).map(move |nu| (mu, nu)))
+                .collect();
+
+            for mu in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
+                for nu in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
+                    F_matr[(mu, nu)] = self.mol.wfn_total.HF_Matrices.H_core_matr[(mu, nu)];
+                    for lambda in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
+                        for sigma in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
+                            let mu_nu_lambda_sigma =
+                                calc_ijkl_idx(mu + 1, nu + 1, lambda + 1, sigma + 1);
+                            let mu_lambda_nu_sigma =
+                                calc_ijkl_idx(mu + 1, lambda + 1, nu + 1, sigma + 1);
+
+                            F_matr[(mu, nu)] += D_matr[(lambda, sigma)]
+                                * (2.0
+                                    * self.mol.wfn_total.HF_Matrices.ERI_arr1[mu_nu_lambda_sigma]
+                                    - self.mol.wfn_total.HF_Matrices.ERI_arr1[mu_lambda_nu_sigma]);
                         }
                     }
                 }
@@ -429,7 +735,7 @@ impl SCF {
     pub fn MP2(&mut self, is_debug: bool, basis_set_name: &str) {
         // * only rerun HF, if it has not been run before
         if self.mol.wfn_total.HF_Matrices.ERI_arr1.is_empty() {
-            Self::RHF(self, is_debug, basis_set_name);
+            Self::RHF_ser(self, is_debug, basis_set_name);
         }
         println!("\nThis is the end of RHF");
         println!("Starting MP2...\n");

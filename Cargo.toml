@@ -7,11 +7,11 @@ edition = "2021" # Rust edition to use
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-ndarray = "0.15.6"
+ndarray = {version = "0.15.6", features = ["rayon"]}
 ndarray-linalg = {version = "0.16.0", features = ["openblas-system"]}
 physical_constants = "0.5.0"
 humantime = "2.1.0"
 boys = "0.1.0"
 strum = "0.24.1"
 strum_macros = "0.24.3"
-clap = { version = "4.1.8", features = ["derive"] }
+clap = { version = "4.1.11", features = ["derive"] }
