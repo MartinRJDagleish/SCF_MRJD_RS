@@ -101,7 +101,7 @@ fn main() {
         use crate::molecule::wfn::scf::*;
         let mut scf: SCF = SCF::new(mol);
         // scf.RHF_ser(false, "sto-3g");
-        scf.RHF_par(true, "sto-3g");
+        scf.RHF_par(false, "sto-3g");
         // scf.MP2(false, "def2-SVP");
     }
 

@@ -68,6 +68,10 @@ impl SCF {
         //* Step 3: Calc the 2e-ints (V_ee) */
         self.calc_2e_ints(is_debug);
 
+        // * CONSTANTS from mol object
+        let no_occ_orb = self.mol.wfn_total.basis_set_total.no_occ_orb;
+        let no_cgtos = self.mol.wfn_total.basis_set_total.no_cgtos;
+
         //* Step 4: Build the orthogonalization matrix S^(-1/2)
         let S_matr_sqrt: Array2<f64> = self
             .mol
@@ -106,77 +110,46 @@ impl SCF {
         }
 
         //* Step 5.3: Form the initial guess density matrix D_0
-        let mut D_matr: Array2<f64> = Array2::<f64>::zeros((
-            self.mol.wfn_total.basis_set_total.no_cgtos,
-            self.mol.wfn_total.basis_set_total.no_cgtos,
-        ));
-
-        // * For testing
-        let mut D_matr = Mutex::new(D_matr);
-        let no_occ_orb = self.mol.wfn_total.basis_set_total.no_occ_orb;
+        let D_matr = Mutex::new(Array2::<f64>::zeros((no_cgtos, no_cgtos)));
 
         //* D^0 matrix */
         //* Trying to parallelize it */
-        Zip::indexed(C_matr_AO_basis.axis_iter(Axis(0)))
-            .par_for_each(|mu, row1| {
-            Zip::indexed(C_matr_AO_basis.outer_iter())
-                .par_for_each(|nu, row2| {
-                    let mut d = D_matr.lock().unwrap();
-                    println!(
-                        "mu = {}, nu = {}, row1 = {:>11.6}, row2 = {:>11.6}\n",
-                        mu, nu, row1, row2);
-                    let slice1 = row1.slice(s![..no_occ_orb]);
-                    let slice2 = row2.slice(s![..no_occ_orb]);
-                    d[(mu,nu)] = slice1.dot(&row2);
+        Zip::indexed(C_matr_AO_basis.axis_iter(Axis(0))).par_for_each(|mu, row1| {
+            Zip::indexed(C_matr_AO_basis.outer_iter()).par_for_each(|nu, row2| {
+                let mut d = D_matr.lock().unwrap();
+                let slice1 = row1.slice(s![..no_occ_orb]);
+                let slice2 = row2.slice(s![..no_occ_orb]);
+                d[(mu, nu)] = slice1.dot(&slice2);
             });
         });
 
         let mut D_matr = D_matr.into_inner().unwrap();
 
-        // D_matr.outer_iter_mut()
-        //     .into_par_iter()
-        //     .enumerate()
-        //     .for_each(|(mu, mut row_D)| {
-        //         C_matr_AO_basis.outer_iter()
-        //             .into_par_iter()
-        //             .enumerate()
-        //             .for_each(|(nu, row_C)| {
-        //                 let mut sum = 0.0;
-        //                 for m in 0..self.mol.wfn_total.basis_set_total.no_occ_orb {
-        //                     sum += row_C[m] * C_matr_AO_basis[(nu, m)];
-        //                 }
-        //                 row_D[mu] += sum * row_C[nu];
-        //             });
-        //     });
-
-        // * Original code:
-        // * Serial code 
-        // for mu in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
-        //     for nu in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
-        //         for m in 0..self.mol.wfn_total.basis_set_total.no_occ_orb {
-        //             D_matr[(mu, nu)] += C_matr_AO_basis[(mu, m)] * C_matr_AO_basis[(nu, m)];
-        //         }
-        //     }
-        // }
-
-
         if is_debug {
             println!("D^0_matr (inital density matrix):\n{:>11.6}\n", &D_matr);
         }
 
-        let mut E_scf: f64 = 0.0;
         let mut E_scf_vec: Vec<f64> = Vec::new();
         let mut E_tot_vec: Vec<f64> = Vec::new();
         let mut rms_d_vec: Vec<f64> = Vec::new();
 
         //* Here the Fock matrix is guessed to be the core Hamiltonian matrix
         //* That's why the initial SCF energy differs from the other SCF energy calcs
-        for mu in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
-            for nu in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
-                E_scf +=
-                    D_matr[(mu, nu)] * 2.0 * (self.mol.wfn_total.HF_Matrices.H_core_matr[(mu, nu)]);
-            }
-        }
+
+        //* Parallel code
+        let mut E_scf = Zip::from(&D_matr)
+            .and(&self.mol.wfn_total.HF_Matrices.H_core_matr)
+            .into_par_iter()
+            .map(|(d_matr_val, h_core_val)| d_matr_val * 2.0 * h_core_val)
+            .sum();
+
+        // * Serial code
+        // for mu in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
+        //     for nu in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
+        //         E_scf +=
+        //             D_matr[(mu, nu)] * 2.0 * (self.mol.wfn_total.HF_Matrices.H_core_matr[(mu, nu)]);
+        //     }
+        // }
 
         E_scf_vec.push(E_scf);
         let mut E_tot = E_scf + self.mol.wfn_total.HF_Matrices.V_nn_val;
@@ -193,75 +166,61 @@ impl SCF {
 
             F_matr.assign(&self.mol.wfn_total.HF_Matrices.H_core_matr);
 
-            let idx_pairs: Vec<(usize, usize)> = (0..n)
-                .flat_map(|mu| (0..mu).map(move |nu| (mu, nu)))
-                .collect();
+            //* Parallel code V2
+            let F_matr = Mutex::new(F_matr);
 
-            // println!("Before: {:>8.5}", &F_matr);
+            (0..no_cgtos).into_par_iter().for_each(|mu| {
+                (0..no_cgtos).into_par_iter().for_each(|nu| {
+                    (0..no_cgtos).into_par_iter().for_each(|lambda| {
+                        (0..no_cgtos).into_par_iter().for_each(|sigma| {
+                            let mu_nu_lambda_sigma = calc_ijkl_idx(mu, nu, lambda, sigma);
+                            let mu_lambda_nu_sigma = calc_ijkl_idx(mu, lambda, nu, sigma);
+                            let mut f = F_matr.lock().unwrap();
+                            f[(mu, nu)] += D_matr[(lambda, sigma)]
+                                * (2.0
+                                    * self.mol.wfn_total.HF_Matrices.ERI_arr1[mu_nu_lambda_sigma]
+                                    - self.mol.wfn_total.HF_Matrices.ERI_arr1[mu_lambda_nu_sigma]);
+                        });
+                    });
+                });
+            });
 
-            // Zip::indexed(&mut F_matr)
-            //     .par_for_each(|(i,j), | {
-            //         for lambda in 0..n {
-            //             for sigma in 0..=lambda {
+            let mut F_matr = F_matr.into_inner().unwrap();
+
+            // //* Parallel code V1 (still wrong)
+            // let F_matr = Mutex::new(F_matr);
+            // for mu in 0..no_cgtos {
+            //     for nu in 0..no_cgtos {
+            //         Zip::indexed(&D_matr).par_for_each(|(lambda, sigma), d_matr_val| {
+            //             let mu_nu_lambda_sigma = calc_ijkl_idx(mu, nu, lambda, sigma);
+            //             let mu_lambda_nu_sigma = calc_ijkl_idx(mu, lambda, nu, sigma);
+            //             let mut f = F_matr.lock().unwrap();
+            //             f[(mu, nu)] += d_matr_val
+            //                 * (2.0 * self.mol.wfn_total.HF_Matrices.ERI_arr1[mu_nu_lambda_sigma]
+            //                     - self.mol.wfn_total.HF_Matrices.ERI_arr1[mu_lambda_nu_sigma]);
+            //         });
+            //     }
+            // }
+            // let mut F_matr = F_matr.into_inner().unwrap();
+
+            // //* Serial code
+            // for mu in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
+            //     for nu in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
+            //         F_matr[(mu, nu)] = self.mol.wfn_total.HF_Matrices.H_core_matr[(mu, nu)];
+            //         for lambda in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
+            //             for sigma in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
             //                 let mu_nu_lambda_sigma =
             //                     calc_ijkl_idx(mu + 1, nu + 1, lambda + 1, sigma + 1);
             //                 let mu_lambda_nu_sigma =
             //                     calc_ijkl_idx(mu + 1, lambda + 1, nu + 1, sigma + 1);
-
-            //                 *F_matr_val += D_matr[(lambda, sigma)]
-            //                     * (self.mol.wfn_total.HF_Matrices.G_matr[(mu_nu_lambda_sigma - 1)]
-            //                         - 0.5
-            //                             * self.mol.wfn_total.HF_Matrices.G_matr
-            //                                 [(mu_lambda_nu_sigma - 1)]);
+            //                 F_matr[(mu, nu)] += D_matr[(lambda, sigma)]
+            //                     * (2.0
+            //                         * self.mol.wfn_total.HF_Matrices.ERI_arr1[mu_nu_lambda_sigma]
+            //                         - self.mol.wfn_total.HF_Matrices.ERI_arr1[mu_lambda_nu_sigma]);
             //             }
             //         }
-            //     });
-
-            // let F_matr_mutex = Arc::new(Mutex::new(F_matr));
-            // let F_matr_mutex = Mutex::new(&mut F_matr);
-
-            // let par_iter = idx_pairs.par_iter();
-
-            // par_iter.for_each(|(mu, nu)| {
-            //     let mut F_matr_val: f64 = 0.0;
-            //     for lambda in 0..n {
-            //         for sigma in 0..=lambda {
-            //             let mu_nu_lambda_sigma =
-            //                 calc_ijkl_idx(mu + 1, nu + 1, lambda + 1, sigma + 1);
-            //             let mu_lambda_nu_sigma =
-            //                 calc_ijkl_idx(mu + 1, lambda + 1, nu + 1, sigma + 1);
-
-            //             F_matr_val += D_matr[(lambda, sigma)]
-            //                 * (2.0 * self.mol.wfn_total.HF_Matrices.ERI_arr1[mu_nu_lambda_sigma]
-            //                     - self.mol.wfn_total.HF_Matrices.ERI_arr1[mu_lambda_nu_sigma]);
-            //         }
             //     }
-            //     let mut F_matr_guard = F_matr_mutex.lock().unwrap();
-            //     F_matr_guard[(*mu,*nu)] += F_matr_val;
-            //     F_matr_guard[(*nu,*mu)] += F_matr_val;
-            // });
-            // let F_matr = F_matr_mutex.into_inner().unwrap().to_owned();
-
-            // println!("After: {:>8.5}", &F_matr);
-
-            for mu in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
-                for nu in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
-                    F_matr[(mu, nu)] = self.mol.wfn_total.HF_Matrices.H_core_matr[(mu, nu)];
-                    for lambda in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
-                        for sigma in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
-                            let mu_nu_lambda_sigma =
-                                calc_ijkl_idx(mu + 1, nu + 1, lambda + 1, sigma + 1);
-                            let mu_lambda_nu_sigma =
-                                calc_ijkl_idx(mu + 1, lambda + 1, nu + 1, sigma + 1);
-
-                            F_matr[(mu, nu)] += D_matr[(lambda, sigma)]
-                                * (2.0
-                                    * self.mol.wfn_total.HF_Matrices.ERI_arr1[mu_nu_lambda_sigma]
-                                    - self.mol.wfn_total.HF_Matrices.ERI_arr1[mu_lambda_nu_sigma]);
-                        }
-                    }
-                }
-            }
+            // }
 
             //* Step 7: Form the Fock matrix F in the MO basis
             let F_matr_pr: Array2<f64> = S_matr_sqrt_inv
@@ -276,34 +235,64 @@ impl SCF {
             C_matr_AO_basis = S_matr_sqrt_inv.dot(&C_matr_MO_basis);
             let D_matr_prev: Array2<f64> = D_matr.clone();
 
-            for mu in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
-                for nu in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
-                    D_matr[(mu, nu)] = 0.0;
-                    for m in 0..self.mol.wfn_total.basis_set_total.no_occ_orb {
-                        D_matr[(mu, nu)] += C_matr_AO_basis[(mu, m)] * C_matr_AO_basis[(nu, m)];
-                    }
-                }
-            }
+            //* Parallel code
+            let D_matr = Mutex::new(Array2::<f64>::zeros((no_cgtos, no_cgtos)));
+            Zip::indexed(C_matr_AO_basis.axis_iter(Axis(0))).par_for_each(|mu, row1| {
+                Zip::indexed(C_matr_AO_basis.outer_iter()).par_for_each(|nu, row2| {
+                    let mut d = D_matr.lock().unwrap();
+                    let slice1 = row1.slice(s![..no_occ_orb]);
+                    let slice2 = row2.slice(s![..no_occ_orb]);
+                    d[(mu, nu)] = slice1.dot(&slice2);
+                });
+            });
+            let D_matr = D_matr.into_inner().unwrap();
 
-            E_scf = 0.0;
-            for mu in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
-                for nu in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
-                    E_scf += D_matr[(mu, nu)]
-                        * (self.mol.wfn_total.HF_Matrices.H_core_matr[(mu, nu)] + F_matr[(mu, nu)]);
-                }
-            }
+            //* Serial code
+            // for mu in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
+            //     for nu in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
+            //         D_matr[(mu, nu)] = 0.0;
+            //         for m in 0..self.mol.wfn_total.basis_set_total.no_occ_orb {
+            //             D_matr[(mu, nu)] += C_matr_AO_basis[(mu, m)] * C_matr_AO_basis[(nu, m)];
+            //         }
+            //     }
+            // }
+
+            //* Parallel code
+            E_scf = Zip::from(&D_matr)
+                .and(&self.mol.wfn_total.HF_Matrices.H_core_matr)
+                .and(&F_matr)
+                .into_par_iter()
+                .map(|(d_matr_val, h_core_val, f_matr_val)| d_matr_val * (h_core_val + f_matr_val))
+                .sum();
+
+            //* Serial code
+            // for mu in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
+            //     for nu in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
+            //         E_scf += D_matr[(mu, nu)]
+            //             * (self.mol.wfn_total.HF_Matrices.H_core_matr[(mu, nu)] + F_matr[(mu, nu)]);
+            //     }
+            // }
 
             E_scf_vec.push(E_scf);
             E_tot = E_scf + self.mol.wfn_total.HF_Matrices.V_nn_val;
             E_tot_vec.push(E_tot);
 
-            let mut rms_d_val: f64 = 0.0;
-            for mu in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
-                for nu in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
-                    rms_d_val += (D_matr[(mu, nu)] - D_matr_prev[(mu, nu)]).powi(2);
-                }
-            }
-            rms_d_val = rms_d_val.sqrt();
+            //* Parllel code
+            let rms_d_val = Zip::from(&D_matr)
+                .and(&D_matr_prev)
+                .into_par_iter()
+                .map(|(d_matr_val, d_matr_prev_val)| (d_matr_val - d_matr_prev_val).powi(2))
+                .sum::<f64>()
+                .sqrt();
+
+            //* Serial code
+            // let mut rms_d_val: f64 = 0.0;
+            // for mu in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
+            //     for nu in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
+            //         rms_d_val += (D_matr[(mu, nu)] - D_matr_prev[(mu, nu)]).powi(2);
+            //     }
+            // }
+            // rms_d_val = rms_d_val.sqrt();
             rms_d_vec.push(rms_d_val);
 
             if rms_d_val < 1e-6 {
@@ -414,7 +403,6 @@ impl SCF {
             self.mol.wfn_total.basis_set_total.no_cgtos,
         ));
 
-
         for mu in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
             for nu in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
                 for m in 0..self.mol.wfn_total.basis_set_total.no_occ_orb {
@@ -422,7 +410,6 @@ impl SCF {
                 }
             }
         }
-
 
         if is_debug {
             println!("D^0_matr (inital density matrix):\n{:>11.6}\n", &D_matr);
