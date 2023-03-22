@@ -20,7 +20,7 @@ use crate::molecule::Molecule;
 // }
 
 // pub mod Crawford_projects;
-pub mod dev_SCF_from_scratch;
+// pub mod dev_SCF_from_scratch;
 pub mod molecule;
 
 // #[allow(non_snake_case)] // * -> I need this due to QM naming conventions
@@ -64,12 +64,12 @@ fn main() {
     // *****************************************************************
     let mol: Molecule = Molecule::new("inp/Project3_1/STO-3G/h2o_v2.xyz", 0);
 
-    let _is_run_project1: bool = false; //* General molecule geometry stuff
-    let _is_run_project2: bool = false; //* Hessian -> eigenfreqs from file
-    let _is_run_project3_1: bool = false; //* SCF from precomputed integrals
-    let is_run_project3_2: bool = false; //* Ints for SCF from "scratch"
-    let is_run_project3_3: bool = false; //* actual SCF from "scratch"
-    let _is_run_project4: bool = false; //* MP2 from precomputed integrals
+    // let _is_run_project1: bool = false; //* General molecule geometry stuff
+    // let _is_run_project2: bool = false; //* Hessian -> eigenfreqs from file
+    // let _is_run_project3_1: bool = false; //* SCF from precomputed integrals
+    // let is_run_project3_2: bool = false; //* Ints for SCF from "scratch"
+    // let is_run_project3_3: bool = false; //* actual SCF from "scratch"
+    // let _is_run_project4: bool = false; //* MP2 from precomputed integrals
 
     // if is_run_project1 {
     //     Crawford_projects::project1::run_project1(mol.clone());
@@ -83,26 +83,24 @@ fn main() {
     //     Crawford_projects::project3_1::run_project3_1(mol.clone(), is_run_project4);
     // }
 
-    if is_run_project3_2 {
-        use crate::dev_SCF_from_scratch::project3_2::*;
-        run_project3_2();
-    }
+    // if is_run_project3_2 {
+    //     use crate::dev_SCF_from_scratch::project3_2::*;
+    //     run_project3_2();
+    // }
 
-    if is_run_project3_3 {
-        // use crate::SCF_from_scratch::project3_3::*;
-        // run_project3_3();
-        use crate::dev_SCF_from_scratch::project3_3_h2o::*;
-        run_project3_3_h2o();
-    }
+    // if is_run_project3_3 {
+    //     // use crate::SCF_from_scratch::project3_3::*;
+    //     // run_project3_3();
+    //     use crate::dev_SCF_from_scratch::project3_3_h2o::*;
+    //     run_project3_3_h2o();
+    // }
     // *****************************************************************
 
     let is_run_dev: bool = true; //* Development of the code
     if is_run_dev {
         use crate::molecule::wfn::scf::*;
         let mut scf: SCF = SCF::new(mol);
-        // println!("Serial SCF");
-        // scf.RHF_ser(true, "sto-3g");
-        scf.RHF_par(false, "sto-3g");
+        scf.RHF_par(false, "def2-SVP");
         // scf.MP2(false, "def2-SVP");
     }
 

@@ -156,6 +156,18 @@ impl SCF {
         let mut E_tot = E_scf + self.mol.wfn_total.HF_Matrices.V_nn_val;
         E_tot_vec.push(E_tot);
 
+        // ? Printing for SCF
+        let header_scf_str = format!(
+            "{:^3} {:^16}{:^16}{:^12}",
+            "Iter", "E_scf", "E_total", "RMS D"
+        );
+        println!("{header_scf_str}");
+        // First iteration separately
+        println!(
+            "{:>3} {: >16.8}{: >16.8}{: >12.8}",
+            "0", &E_scf, &E_tot, " "
+        );
+
         //* Step 7: Iterate the SCF procedure until convergence
         // ! THE SCF ITERATIONS START HERE
         let scf_maxiter: usize = 50;
@@ -187,8 +199,6 @@ impl SCF {
             });
 
             let F_matr = F_matr_mutex.into_inner().unwrap();
-
-            println!("F_matr_par:\n{:>11.6}\n", &F_matr);
 
             // //* Parallel code V1 (still wrong)
             // let F_matr = Mutex::new(F_matr);
@@ -248,7 +258,6 @@ impl SCF {
                 });
             });
             D_matr = D_matr_mutex.into_inner().unwrap(); //* DO NOT SHADOW vars in Rust -> D_matr from outer scoop will be used otherwise */
-
             //* Serial code
             // for mu in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
             //     for nu in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
@@ -297,6 +306,16 @@ impl SCF {
             // rms_d_val = rms_d_val.sqrt();
             rms_d_vec.push(rms_d_val);
 
+            // * Printing the SCF results
+            let line = format!(
+                "{:>3} {: >16.8}{: >16.8}{: >12.8}",
+                &scf_iter+1,
+                &E_scf,
+                &E_tot,
+                &rms_d_val
+            );
+            println!("{line}");
+
             if rms_d_val < 1e-6 {
                 break;
             }
@@ -306,29 +325,23 @@ impl SCF {
         self.D_matr_final = D_matr;
         self.orb_energies_final = orb_energy_arr;
 
-        let header_scf_str = format!(
-            "{:^3} {:^16}{:^16}{:^12}",
-            "Iter", "E_scf", "E_total", "RMS D"
-        );
-        println!("{header_scf_str}");
-
         // * First line extra
-        let line = format!(
-            "{:>3} {: >16.8}{: >16.8}{: >12.8}",
-            "0", &E_scf_vec[0], &E_tot_vec[0], " "
-        );
-        println!("{line}");
+        // let line = format!(
+        //     "{:>3} {: >16.8}{: >16.8}{: >12.8}",
+        //     "0", &E_scf_vec[0], &E_tot_vec[0], " "
+        // );
+        // println!("{line}");
 
-        for idx in 1..E_scf_vec.len() {
-            let line = format!(
-                "{:>3} {: >16.8}{: >16.8}{: >12.8}",
-                &idx,
-                &E_scf_vec[idx],
-                &E_tot_vec[idx],
-                &rms_d_vec[idx - 1]
-            );
-            println!("{line}");
-        }
+        // for idx in 1..E_scf_vec.len() {
+        //     let line = format!(
+        //         "{:>3} {: >16.8}{: >16.8}{: >12.8}",
+        //         &idx,
+        //         &E_scf_vec[idx],
+        //         &E_tot_vec[idx],
+        //         &rms_d_vec[idx - 1]
+        //     );
+        //     println!("{line}");
+        // }
 
         // * Safe final values in SCF object
         self.E_scf_final = E_scf_vec[E_scf_vec.len() - 1];
@@ -912,6 +925,7 @@ impl SCF {
     }
 }
 
+#[inline]
 pub fn calc_ijkl_idx(i: usize, j: usize, k: usize, l: usize) -> usize {
     let ij: usize = if i >= j {
         calc_cmp_idx(i, j)
