@@ -9,6 +9,7 @@ bond_thresh = 1.2
 rad2deg = 180.0 / math.pi
 deg2rad = 1.0 / rad2deg
 
+
 # covalent (or ionic) radii by atomic element (Angstroms) from
 # "Inorganic Chemistry" 3rd ed, Housecroft, Appendix 6, pgs 1013-1014
 cov_rads = {  'H' : 0.37, 'C' : 0.77, 'O' : 0.73, 'N' : 0.75, 'F' : 0.71,
