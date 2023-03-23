@@ -63,7 +63,8 @@ impl SCF {
         }
 
         // * Step 2: Calculate the 1e- integrals (S, T, V_ne, H_core) and V_nn
-        self.calc_1e_ints_ser(is_debug);
+        // self.calc_1e_ints_ser(is_debug);
+        self.calc_1e_ints_par(is_debug);
 
         //* Step 3: Calc the 2e-ints (V_ee) */
         self.calc_2e_ints_ser(is_debug);
@@ -566,41 +567,81 @@ impl SCF {
             calc_V_nn_val(&self.mol.geom_obj.geom_matr, &self.mol.geom_obj.Z_vals);
 
         //* Step 2.1: Calculate the overlap matrix S
-        self.mol.wfn_total.HF_Matrices.S_matr = Array2::<f64>::zeros((n, n));
-        for i in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
-            for j in 0..=i {
+        let S_matr_tmp = Array2::<f64>::zeros((n, n));
+        let S_matr_mutex = Mutex::new(S_matr_tmp);
+        // let overlap_val_mutex = Mutex::new(0.0);
+
+        (0..n).into_par_iter().for_each(|i| {
+            (0..=i).into_par_iter().for_each(|j| {
+                let mut s = S_matr_mutex.lock().unwrap();
+                // let mut s = overlap_val_mutex.lock().unwrap();
                 if i == j {
-                    self.mol.wfn_total.HF_Matrices.S_matr[(i, j)] = 1.0;
+                    s[(i, j)] = 1.0;
+                    // s = 1.0;
                 } else {
-                    self.mol.wfn_total.HF_Matrices.S_matr[(i, j)] = calc_overlap_int_cgto(
+                    s[(i, j)] = calc_overlap_int_cgto(
                         &self.mol.wfn_total.basis_set_total.basis_set_cgtos[i],
                         &self.mol.wfn_total.basis_set_total.basis_set_cgtos[j],
                     );
-                    self.mol.wfn_total.HF_Matrices.S_matr[(j, i)] =
-                        self.mol.wfn_total.HF_Matrices.S_matr[(i, j)];
+                    s[(j, i)] = s[(i, j)];
                 }
-            }
-        }
+            })
+        });
+
+        self.mol.wfn_total.HF_Matrices.S_matr = S_matr_mutex.into_inner().unwrap();
+
+        // for i in 0..n {
+        //     for j in 0..=i {
+        //         if i == j {
+        //             self.mol.wfn_total.HF_Matrices.S_matr[(i, j)] = 1.0;
+        //         } else {
+        //             self.mol.wfn_total.HF_Matrices.S_matr[(i, j)] = calc_overlap_int_cgto(
+        //                 &self.mol.wfn_total.basis_set_total.basis_set_cgtos[i],
+        //                 &self.mol.wfn_total.basis_set_total.basis_set_cgtos[j],
+        //             );
+        //             self.mol.wfn_total.HF_Matrices.S_matr[(j, i)] =
+        //                 self.mol.wfn_total.HF_Matrices.S_matr[(i, j)];
+        //         }
+        //     }
+        // }
 
         //* Step 2.2: Calculate the kinetic energy matrix T
-        self.mol.wfn_total.HF_Matrices.T_matr = Array2::<f64>::zeros((n, n));
+        let T_matr_tmp = Array2::<f64>::zeros((n, n));
+        let T_matr_mutex = Mutex::new(T_matr_tmp);
 
-        for i in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
-            for j in 0..=i {
-                self.mol.wfn_total.HF_Matrices.T_matr[(i, j)] = calc_kin_energy_int_cgto(
+        (0..n).into_par_iter().for_each(|i| {
+            (0..=i).into_par_iter().for_each(|j| {
+                let mut t = T_matr_mutex.lock().unwrap();
+                t[(i, j)] = calc_kin_energy_int_cgto(
                     &self.mol.wfn_total.basis_set_total.basis_set_cgtos[i],
                     &self.mol.wfn_total.basis_set_total.basis_set_cgtos[j],
                 );
-                self.mol.wfn_total.HF_Matrices.T_matr[(j, i)] =
-                    self.mol.wfn_total.HF_Matrices.T_matr[(i, j)];
-            }
-        }
+
+                t[(j, i)] = t[(i, j)];
+            })
+        });
+
+        self.mol.wfn_total.HF_Matrices.T_matr = T_matr_mutex.into_inner().unwrap();
+
+        // for i in 0..n {
+        //     for j in 0..=i {
+        //         self.mol.wfn_total.HF_Matrices.T_matr[(i, j)] = calc_kin_energy_int_cgto(
+        //             &self.mol.wfn_total.basis_set_total.basis_set_cgtos[i],
+        //             &self.mol.wfn_total.basis_set_total.basis_set_cgtos[j],
+        //         );
+        //         self.mol.wfn_total.HF_Matrices.T_matr[(j, i)] =
+        //             self.mol.wfn_total.HF_Matrices.T_matr[(i, j)];
+        //     }
+        // }
 
         //* Step 2.3: Calculate the nuclear attraction matrix V_ne
-        self.mol.wfn_total.HF_Matrices.V_ne_matr = Array2::<f64>::zeros((n, n));
+        let V_ne_matr_tmp = Array2::<f64>::zeros((n, n));
+        let V_ne_matr_mutex = Mutex::new(V_ne_matr_tmp);
+        // self.mol.wfn_total.HF_Matrices.V_ne_matr = Array2::<f64>::zeros((n, n));
 
-        for i in 0..n {
-            for j in 0..=i {
+        (0..n).into_par_iter().for_each(|i| {
+            (0..=i).into_par_iter().for_each(|j| {
+                let mut v = V_ne_matr_mutex.lock().unwrap();
                 for (idx, atom_pos) in self
                     .mol
                     .geom_obj
@@ -608,21 +649,42 @@ impl SCF {
                     .axis_iter(ndarray::Axis(0))
                     .enumerate()
                 {
-                    self.mol.wfn_total.HF_Matrices.V_ne_matr[(i, j)] +=
-                        (-self.mol.geom_obj.Z_vals[idx] as f64)
-                            * calc_nuc_attr_int_cgto(
-                                &self.mol.wfn_total.basis_set_total.basis_set_cgtos[i],
-                                &self.mol.wfn_total.basis_set_total.basis_set_cgtos[j],
-                                &atom_pos.to_owned(),
-                            );
+                    v[(i, j)] += (-self.mol.geom_obj.Z_vals[idx] as f64)
+                        * calc_nuc_attr_int_cgto(
+                            &self.mol.wfn_total.basis_set_total.basis_set_cgtos[i],
+                            &self.mol.wfn_total.basis_set_total.basis_set_cgtos[j],
+                            &atom_pos.to_owned(),
+                        );
                 }
-                self.mol.wfn_total.HF_Matrices.V_ne_matr[(j, i)] =
-                    self.mol.wfn_total.HF_Matrices.V_ne_matr[(i, j)];
-            }
-        }
+                v[(j, i)] = v[(i, j)];
+            })
+        });
+        self.mol.wfn_total.HF_Matrices.V_ne_matr = V_ne_matr_mutex.into_inner().unwrap();
+
+        // for i in 0..n {
+        //     for j in 0..=i {
+        //         for (idx, atom_pos) in self
+        //             .mol
+        //             .geom_obj
+        //             .geom_matr
+        //             .axis_iter(ndarray::Axis(0))
+        //             .enumerate()
+        //         {
+        //             self.mol.wfn_total.HF_Matrices.V_ne_matr[(i, j)] +=
+        //                 (-self.mol.geom_obj.Z_vals[idx] as f64)
+        //                     * calc_nuc_attr_int_cgto(
+        //                         &self.mol.wfn_total.basis_set_total.basis_set_cgtos[i],
+        //                         &self.mol.wfn_total.basis_set_total.basis_set_cgtos[j],
+        //                         &atom_pos.to_owned(),
+        //                     );
+        //         }
+        //         self.mol.wfn_total.HF_Matrices.V_ne_matr[(j, i)] =
+        //             self.mol.wfn_total.HF_Matrices.V_ne_matr[(i, j)];
+        //     }
+        // }
 
         //* Step 2.4: Form the core Hamiltonian matrix H_core
-        self.mol.wfn_total.HF_Matrices.H_core_matr = Array2::<f64>::zeros((n, n));
+        // self.mol.wfn_total.HF_Matrices.H_core_matr = Array2::<f64>::zeros((n, n));
         self.mol.wfn_total.HF_Matrices.H_core_matr =
             &self.mol.wfn_total.HF_Matrices.T_matr + &self.mol.wfn_total.HF_Matrices.V_ne_matr;
 
@@ -645,7 +707,7 @@ impl SCF {
             );
         }
     }
-    
+
     fn calc_1e_ints_ser(&mut self, is_debug: bool) {
         let n = self.mol.wfn_total.basis_set_total.no_cgtos;
         // * Build matrices for SCF */
