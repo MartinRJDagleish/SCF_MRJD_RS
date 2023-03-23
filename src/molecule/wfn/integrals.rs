@@ -2,9 +2,10 @@ use crate::molecule::wfn::CGTO;
 use boys::micb25::boys;
 // use boys::exact::boys;
 use ndarray::prelude::*;
+use ndarray_linalg::Norm;
 use std::f64::consts::PI;
 
-use crate::molecule::geometry::calc_r_ij_general;
+// use crate::molecule::geometry::calc_r_ij_general;
 
 pub fn calc_E_herm_gauss_coeff(
     l1: i32,
@@ -397,15 +398,7 @@ pub fn calc_R_coulomb_aux_herm_int(
                     );
             }
             result += P_C_vec[2]
-                * calc_R_coulomb_aux_herm_int(
-                    t,
-                    u,
-                    v - 1,
-                    order_boys + 1,
-                    p,
-                    P_C_vec,
-                    dist_P_C,
-                );
+                * calc_R_coulomb_aux_herm_int(t, u, v - 1, order_boys + 1, p, P_C_vec, dist_P_C);
         }
         (0, _, _) => {
             if u > 1 {
@@ -421,15 +414,7 @@ pub fn calc_R_coulomb_aux_herm_int(
                     );
             }
             result += P_C_vec[1]
-                * calc_R_coulomb_aux_herm_int(
-                    t,
-                    u - 1,
-                    v,
-                    order_boys + 1,
-                    p,
-                    P_C_vec,
-                    dist_P_C,
-                );
+                * calc_R_coulomb_aux_herm_int(t, u - 1, v, order_boys + 1, p, P_C_vec, dist_P_C);
         }
         (_, _, _) => {
             if t > 1 {
@@ -445,15 +430,7 @@ pub fn calc_R_coulomb_aux_herm_int(
                     );
             }
             result += P_C_vec[0]
-                * calc_R_coulomb_aux_herm_int(
-                    t - 1,
-                    u,
-                    v,
-                    order_boys + 1,
-                    p,
-                    P_C_vec,
-                    dist_P_C,
-                );
+                * calc_R_coulomb_aux_herm_int(t - 1, u, v, order_boys + 1, p, P_C_vec, dist_P_C);
         }
     }
 
@@ -502,13 +479,10 @@ pub fn calc_nuc_attr_int_prim(
         calc_gaussian_prod_center(*alpha1, *alpha2, gauss1_center_pos, gauss2_center_pos);
     let p = alpha1 + alpha2;
     let p_recip = p.recip();
-    let dist_P_C: f64 = calc_r_ij_general(&gaussian_prod_center, nuc_center);
-    let P_C_vec = gaussian_prod_center - nuc_center;
+    let P_C_vec = &gaussian_prod_center - nuc_center;
+    let dist_P_C = P_C_vec.norm();
 
     let mut result_V_ne_prim: f64 = 0.0;
-    // (l1, l2) = ang_mom_vec1[0], ang_mom_vec2[0];
-    // (m1, m2) = ang_mom_vec1[1], ang_mom_vec2[1];
-    // (n1, n2) = ang_mom_vec1[2], ang_mom_vec2[2];
 
     for t in 0..(ang_mom_vec1[0] + ang_mom_vec2[0] + 1) {
         for u in 0..(ang_mom_vec1[1] + ang_mom_vec2[1] + 1) {
@@ -562,11 +536,7 @@ pub fn calc_nuc_attr_int_prim(
 
                 result_V_ne_prim += result_tmp
                     * calc_R_coulomb_aux_herm_int(
-                        t,
-                        u,
-                        v,
-                        0,
-                        &p,
+                        t, u, v, 0, &p,
                         &P_C_vec, // wrong: &gaussian_prod_center, here should be P-C vec
                         dist_P_C,
                     );
@@ -618,27 +588,18 @@ pub fn calc_elec_elec_repul_prim(
     let p = alpha1 + alpha2;
     let q = alpha3 + alpha4;
     let alpha_ERI = p * q / (p + q);
-    let P: Array1<f64> = calc_gaussian_prod_center(
-        *alpha1,
-        *alpha2,
-        gauss1_center_pos,
-        gauss2_center_pos,
-    );
-    let Q: Array1<f64> = calc_gaussian_prod_center(
-        *alpha3,
-        *alpha4,
-        gauss3_center_pos,
-        gauss4_center_pos,
-    );
-    let dist_P_Q: f64 = calc_r_ij_general(&P, &Q);
+    let P: Array1<f64> =
+        calc_gaussian_prod_center(*alpha1, *alpha2, gauss1_center_pos, gauss2_center_pos);
+    let Q: Array1<f64> =
+        calc_gaussian_prod_center(*alpha3, *alpha4, gauss3_center_pos, gauss4_center_pos);
     let P_Q_vec: Array1<f64> = &P - &Q;
+    let dist_P_Q: f64 = P_Q_vec.norm();
 
     let mut ERI_result: f64 = 0.0;
 
     for t in 0..(ang_mom_vec1[0] + ang_mom_vec2[0] + 1) {
         for u in 0..(ang_mom_vec1[1] + ang_mom_vec2[1] + 1) {
             for v in 0..(ang_mom_vec1[2] + ang_mom_vec2[2] + 1) {
-
                 let tuv = [t, u, v];
                 let mut result_tmp1: f64 = 1.0;
                 for cart_coord in 0..3 {
@@ -655,27 +616,28 @@ pub fn calc_elec_elec_repul_prim(
                 for tau in 0..(ang_mom_vec3[0] + ang_mom_vec4[0] + 1) {
                     for nu in 0..(ang_mom_vec3[1] + ang_mom_vec4[1] + 1) {
                         for phi in 0..(ang_mom_vec3[2] + ang_mom_vec4[2] + 1) {
-
                             let tau_nu_phi = [tau, nu, phi];
                             let mut result_tmp2: f64 = 1.0; //* added result_tmp2 to make it work */
                             for cart_coord in 0..3 {
                                 result_tmp2 *= calc_E_herm_gauss_coeff(
-                                        ang_mom_vec3[cart_coord],
-                                        ang_mom_vec4[cart_coord],
-                                        tau_nu_phi[cart_coord], //* This is tau, nu, phi depending on the cartesian coordinate
-                                        gauss3_center_pos[cart_coord] - gauss4_center_pos[cart_coord],
-                                        alpha3,
-                                        alpha4,
-                                    )
+                                    ang_mom_vec3[cart_coord],
+                                    ang_mom_vec4[cart_coord],
+                                    tau_nu_phi[cart_coord], //* This is tau, nu, phi depending on the cartesian coordinate
+                                    gauss3_center_pos[cart_coord] - gauss4_center_pos[cart_coord],
+                                    alpha3,
+                                    alpha4,
+                                )
                             }
 
-                            ERI_result += result_tmp1 * result_tmp2 * (-1.0_f64).powi(tau + nu + phi)
+                            ERI_result += result_tmp1
+                                * result_tmp2
+                                * (-1.0_f64).powi(tau + nu + phi)
                                 * calc_R_coulomb_aux_herm_int(
                                     t + tau,
                                     u + nu,
                                     v + phi,
                                     0,
-                                    &alpha_ERI, 
+                                    &alpha_ERI,
                                     &P_Q_vec,
                                     dist_P_Q,
                                 )
@@ -794,10 +756,10 @@ pub fn calc_V_nn_val(geom_matr: &Array2<f64>, Z_vals: &[i32]) -> f64 {
                 continue;
             }
             if i < j {
-                let Z_val1 = *Z_vals.get(i).unwrap();
-                let Z_val2 = *Z_vals.get(j).unwrap();
+                let Z_val1 = *Z_vals.get(i).unwrap_or(&0);
+                let Z_val2 = *Z_vals.get(j).unwrap_or(&0);
                 V_nn_val += ((Z_val1 * Z_val2) as f64)
-                    / calc_r_ij_general(&atom1_pos.to_owned(), &atom2_pos.to_owned());
+                    / (atom2_pos.to_owned() - atom1_pos.to_owned()).norm();
             }
         }
     }
