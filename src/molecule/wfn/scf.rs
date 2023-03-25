@@ -1192,7 +1192,7 @@ impl SCF {
     pub fn MP2(&mut self, is_debug: bool, basis_set_name: &str) {
         // * only rerun HF, if it has not been run before
         if self.mol.wfn_total.HF_Matrices.ERI_arr1.is_empty() {
-            Self::RHF_ser(self, is_debug, basis_set_name);
+            Self::RHF_par(self, is_debug, basis_set_name);
         }
         println!("\nThis is the end of RHF");
         println!("Starting MP2...\n");

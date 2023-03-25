@@ -1,12 +1,15 @@
 use crate::molecule::wfn::CGTO;
 use boys::micb25::boys;
 // use boys::exact::boys;
-use ndarray::prelude::*;
+use ndarray::{parallel::prelude::*, prelude::*};
 use ndarray_linalg::Norm;
 use std::f64::consts::PI;
 
+// use std::sync::atomic::{atomic}
+
 // use crate::molecule::geometry::calc_r_ij_general;
 
+#[inline]
 pub fn calc_E_herm_gauss_coeff(
     l1: i32,
     l2: i32,
@@ -67,6 +70,7 @@ pub fn calc_E_herm_gauss_coeff(
     }
 }
 
+#[inline]
 pub fn calc_overlap_int_prim(
     alpha1: &f64,
     alpha2: &f64,
@@ -104,7 +108,7 @@ pub fn calc_overlap_int_prim(
             ang_mom_vec1[cart_coord],
             ang_mom_vec2[cart_coord],
             0,
-            gauss1_center_pos[cart_coord] - gauss2_center_pos[cart_coord], //* abs does not fix the problem
+            gauss1_center_pos[cart_coord] - gauss2_center_pos[cart_coord],
             alpha1,
             alpha2,
         );
@@ -128,24 +132,52 @@ pub fn calc_overlap_int_cgto(cgto1: &CGTO, cgto2: &CGTO) -> f64 {
     //   The overlap integral between the two contracted Gaussian functions.
     //
 
-    let mut overlap_int_val: f64 = 0.0;
-    for pgto1 in cgto1.pgto_vec.iter() {
-        for pgto2 in cgto2.pgto_vec.iter() {
-            overlap_int_val += pgto1.norm_const
-                * pgto2.norm_const
-                * pgto1.cgto_coeff
-                * pgto2.cgto_coeff
-                * calc_overlap_int_prim(
-                    &pgto1.alpha,
-                    &pgto2.alpha,
-                    &pgto1.ang_mom_vec,
-                    &pgto2.ang_mom_vec,
-                    &pgto1.gauss_center_pos,
-                    &pgto2.gauss_center_pos,
-                );
-        }
-    }
-    overlap_int_val
+    //* Parallel code */
+    // * double par_iter with map and sum -> produces overlap_int
+    cgto1
+        .pgto_vec
+        .par_iter()
+        .map(|pgto1| {
+            cgto2
+                .pgto_vec
+                .par_iter()
+                .map(|pgto2| {
+                    pgto1.norm_const
+                        * pgto2.norm_const
+                        * pgto1.cgto_coeff
+                        * pgto2.cgto_coeff
+                        * calc_overlap_int_prim(
+                            &pgto1.alpha,
+                            &pgto2.alpha,
+                            &pgto1.ang_mom_vec,
+                            &pgto2.ang_mom_vec,
+                            &pgto1.gauss_center_pos,
+                            &pgto2.gauss_center_pos,
+                        )
+                })
+                .sum::<f64>()
+        })
+        .sum::<f64>()
+
+    //* Serial code */
+    // let mut overlap_int_val: f64 = 0.0;
+    // for pgto1 in cgto1.pgto_vec.iter() {
+    //     for pgto2 in cgto2.pgto_vec.iter() {
+    //         overlap_int_val += pgto1.norm_const
+    //             * pgto2.norm_const
+    //             * pgto1.cgto_coeff
+    //             * pgto2.cgto_coeff
+    //             * calc_overlap_int_prim(
+    //                 &pgto1.alpha,
+    //                 &pgto2.alpha,
+    //                 &pgto1.ang_mom_vec,
+    //                 &pgto2.ang_mom_vec,
+    //                 &pgto1.gauss_center_pos,
+    //                 &pgto2.gauss_center_pos,
+    //             );
+    //     }
+    // }
+    // overlap_int_val
 }
 
 pub fn calc_kin_energy_int_prim(
@@ -243,10 +275,10 @@ pub fn calc_kin_energy_int_cgto(cgto1: &CGTO, cgto2: &CGTO) -> f64 {
     //   The kinetic energy integral between the two contracted Gaussian functions.
     //
 
-    let mut kinetic_energy_int_val: f64 = 0.0;
-    for pgto1 in cgto1.pgto_vec.iter() {
-        for pgto2 in cgto2.pgto_vec.iter() {
-            kinetic_energy_int_val += pgto1.norm_const
+    //* Parallel code */
+    cgto1.pgto_vec.par_iter().map(|pgto1| {
+        cgto2.pgto_vec.par_iter().map(|pgto2| {
+            pgto1.norm_const
                 * pgto2.norm_const
                 * pgto1.cgto_coeff
                 * pgto2.cgto_coeff
@@ -257,13 +289,33 @@ pub fn calc_kin_energy_int_cgto(cgto1: &CGTO, cgto2: &CGTO) -> f64 {
                     &pgto2.ang_mom_vec,
                     &pgto1.gauss_center_pos,
                     &pgto2.gauss_center_pos,
-                );
-        }
-    }
+                )
+        }).sum::<f64>()
+    }).sum::<f64>()
 
-    kinetic_energy_int_val
+    //* Serial code */
+    // let mut kinetic_energy_int_val: f64 = 0.0;
+    // for pgto1 in cgto1.pgto_vec.iter() {
+    //     for pgto2 in cgto2.pgto_vec.iter() {
+    //         kinetic_energy_int_val += pgto1.norm_const
+    //             * pgto2.norm_const
+    //             * pgto1.cgto_coeff
+    //             * pgto2.cgto_coeff
+    //             * calc_kin_energy_int_prim(
+    //                 &pgto1.alpha,
+    //                 &pgto2.alpha,
+    //                 &pgto1.ang_mom_vec,
+    //                 &pgto2.ang_mom_vec,
+    //                 &pgto1.gauss_center_pos,
+    //                 &pgto2.gauss_center_pos,
+    //             );
+    //     }
+    // }
+
+    // kinetic_energy_int_val
 }
 
+#[inline]
 pub fn calc_R_coulomb_aux_herm_int(
     t: i32,
     u: i32,
@@ -437,6 +489,7 @@ pub fn calc_R_coulomb_aux_herm_int(
     result
 }
 
+#[inline(always)]
 pub fn calc_gaussian_prod_center(
     alpha1: f64,
     alpha2: f64,
@@ -548,10 +601,11 @@ pub fn calc_nuc_attr_int_prim(
 }
 
 pub fn calc_nuc_attr_int_cgto(cgto1: &CGTO, cgto2: &CGTO, nuc_center: &Array1<f64>) -> f64 {
-    let mut nuc_attr_int_val: f64 = 0.0;
-    for pgto1 in cgto1.pgto_vec.iter() {
-        for pgto2 in cgto2.pgto_vec.iter() {
-            nuc_attr_int_val += pgto1.norm_const
+
+    //* Parallel code */
+    cgto1.pgto_vec.par_iter().map(|pgto1| 
+        cgto2.pgto_vec.par_iter().map(|pgto2| 
+            pgto1.norm_const
                 * pgto2.norm_const
                 * pgto1.cgto_coeff
                 * pgto2.cgto_coeff
@@ -563,11 +617,31 @@ pub fn calc_nuc_attr_int_cgto(cgto1: &CGTO, cgto2: &CGTO, nuc_center: &Array1<f6
                     &pgto1.gauss_center_pos,
                     &pgto2.gauss_center_pos,
                     nuc_center,
-                );
-        }
-    }
+                )
+        ).sum::<f64>()
+    ).sum::<f64>()
 
-    nuc_attr_int_val
+    //* Serial code */
+    // let mut nuc_attr_int_val: f64 = 0.0;
+    // for pgto1 in cgto1.pgto_vec.iter() {
+    //     for pgto2 in cgto2.pgto_vec.iter() {
+    //         nuc_attr_int_val += pgto1.norm_const
+    //             * pgto2.norm_const
+    //             * pgto1.cgto_coeff
+    //             * pgto2.cgto_coeff
+    //             * calc_nuc_attr_int_prim(
+    //                 &pgto1.alpha,
+    //                 &pgto2.alpha,
+    //                 &pgto1.ang_mom_vec,
+    //                 &pgto2.ang_mom_vec,
+    //                 &pgto1.gauss_center_pos,
+    //                 &pgto2.gauss_center_pos,
+    //                 nuc_center,
+    //             );
+    //     }
+    // }
+
+    // nuc_attr_int_val
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -712,13 +786,13 @@ pub fn calc_elec_elec_repul_prim(
 }
 
 pub fn calc_elec_elec_repul_cgto(cgto1: &CGTO, cgto2: &CGTO, cgto3: &CGTO, cgto4: &CGTO) -> f64 {
-    let mut ERI_val: f64 = 0.0;
 
-    for pgto1 in cgto1.pgto_vec.iter() {
-        for pgto2 in cgto2.pgto_vec.iter() {
-            for pgto3 in cgto3.pgto_vec.iter() {
-                for pgto4 in cgto4.pgto_vec.iter() {
-                    ERI_val += pgto1.norm_const
+    // * Parallel code
+    cgto1.pgto_vec.par_iter().map(|pgto1| {
+        cgto2.pgto_vec.par_iter().map(|pgto2| {
+            cgto3.pgto_vec.par_iter().map(|pgto3| {
+                cgto4.pgto_vec.par_iter().map(|pgto4| {
+                    pgto1.norm_const
                         * pgto2.norm_const
                         * pgto3.norm_const
                         * pgto4.norm_const
@@ -739,13 +813,50 @@ pub fn calc_elec_elec_repul_cgto(cgto1: &CGTO, cgto2: &CGTO, cgto3: &CGTO, cgto4
                             &pgto2.gauss_center_pos,
                             &pgto3.gauss_center_pos,
                             &pgto4.gauss_center_pos,
-                        );
-                }
-            }
-        }
-    }
+                        )
+                })
+                .sum::<f64>()
+            })
+            .sum::<f64>()
+        })
+        .sum::<f64>()
+    })
+    .sum::<f64>()
 
-    ERI_val
+    // * Serial code
+    // let mut ERI_val: f64 = 0.0;
+    // for pgto1 in cgto1.pgto_vec.iter() {
+    //     for pgto2 in cgto2.pgto_vec.iter() {
+    //         for pgto3 in cgto3.pgto_vec.iter() {
+    //             for pgto4 in cgto4.pgto_vec.iter() {
+    //                 ERI_val += pgto1.norm_const
+    //                     * pgto2.norm_const
+    //                     * pgto3.norm_const
+    //                     * pgto4.norm_const
+    //                     * pgto1.cgto_coeff
+    //                     * pgto2.cgto_coeff
+    //                     * pgto3.cgto_coeff
+    //                     * pgto4.cgto_coeff
+    //                     * calc_elec_elec_repul_prim(
+    //                         &pgto1.alpha,
+    //                         &pgto2.alpha,
+    //                         &pgto3.alpha,
+    //                         &pgto4.alpha,
+    //                         &pgto1.ang_mom_vec,
+    //                         &pgto2.ang_mom_vec,
+    //                         &pgto3.ang_mom_vec,
+    //                         &pgto4.ang_mom_vec,
+    //                         &pgto1.gauss_center_pos,
+    //                         &pgto2.gauss_center_pos,
+    //                         &pgto3.gauss_center_pos,
+    //                         &pgto4.gauss_center_pos,
+    //                     );
+    //             }
+    //         }
+    //     }
+    // }
+
+    // ERI_val
 }
 
 pub fn calc_V_nn_val(geom_matr: &Array2<f64>, Z_vals: &[i32]) -> f64 {
