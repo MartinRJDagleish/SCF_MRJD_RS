@@ -177,6 +177,26 @@ impl SCF {
             //* Step 6: Form the Fock matrix F in the AO basis
             let mut F_matr = Array2::<f64>::zeros((no_cgtos, no_cgtos));
             F_matr.assign(&self.mol.wfn_total.HF_Matrices.H_core_matr);
+            let F_matr_temp = F_matr.view_mut();
+
+            // * Paralll code V3 (par_map_assign_into)
+            // Zip::indexed(&mut F_matr_temp).par_map_assign_into(|(mu, nu), f| {
+            //     // *f = self.mol.wfn_total.HF_Matrices.H_core_matr[(mu, nu)];
+            //     for lambda in 0..no_cgtos {
+            //         for sigma in 0..no_cgtos {
+            //             let mu_nu_lambda_sigma =
+            //                 calc_ijkl_idx(mu + 1, nu + 1, lambda + 1, sigma + 1);
+            //             let mu_lambda_nu_sigma =
+            //                 calc_ijkl_idx(mu + 1, lambda + 1, nu + 1, sigma + 1);
+            //             *f += D_matr[(lambda, sigma)]
+            //                 * (2.0 * self.mol.wfn_total.HF_Matrices.ERI_arr1[mu_nu_lambda_sigma]
+            //                     - self.mol.wfn_total.HF_Matrices.ERI_arr1[mu_lambda_nu_sigma]);
+            //         }
+            //     }
+            // });
+            // // fn calc_F_matr() -> Array1<f64> {
+
+            // }
 
             //* Parallel code V2
             let F_matr_mutex = Mutex::new(F_matr);
@@ -567,28 +587,44 @@ impl SCF {
             calc_V_nn_val(&self.mol.geom_obj.geom_matr, &self.mol.geom_obj.Z_vals);
 
         //* Step 2.1: Calculate the overlap matrix S
-        let S_matr_tmp = Array2::<f64>::zeros((n, n));
-        let S_matr_mutex = Mutex::new(S_matr_tmp);
-        // let overlap_val_mutex = Mutex::new(0.0);
+        //* New version: par_map_assign_into */
+        // let S_matr_tmp = Array2::<f64>::zeros((n, n));
+        self.mol.wfn_total.HF_Matrices.S_matr = Array2::<f64>::zeros((n, n));
 
-        (0..n).into_par_iter().for_each(|i| {
-            (0..=i).into_par_iter().for_each(|j| {
-                let mut s = S_matr_mutex.lock().unwrap();
-                // let mut s = overlap_val_mutex.lock().unwrap();
-                if i == j {
-                    s[(i, j)] = 1.0;
-                    // s = 1.0;
-                } else {
-                    s[(i, j)] = calc_overlap_int_cgto(
-                        &self.mol.wfn_total.basis_set_total.basis_set_cgtos[i],
-                        &self.mol.wfn_total.basis_set_total.basis_set_cgtos[j],
-                    );
-                    s[(j, i)] = s[(i, j)];
-                }
-            })
+        Zip::indexed(&mut self.mol.wfn_total.HF_Matrices.S_matr).par_for_each(|(i, j), x| {
+            if i == j {
+                *x = 1.0;
+            } else {
+                *x = calc_overlap_int_cgto(
+                    &self.mol.wfn_total.basis_set_total.basis_set_cgtos[i],
+                    &self.mol.wfn_total.basis_set_total.basis_set_cgtos[j],
+                )
+            }
         });
 
-        self.mol.wfn_total.HF_Matrices.S_matr = S_matr_mutex.into_inner().unwrap();
+        // ************************************************
+        // let S_matr_tmp = Array2::<f64>::zeros((n, n));
+        // let S_matr_mutex = Mutex::new(S_matr_tmp);
+        // let overlap_val_mutex = Mutex::new(0.0);
+
+        // (0..n).into_par_iter().for_each(|i| {
+        //     (0..=i).into_par_iter().for_each(|j| {
+        //         let mut s = S_matr_mutex.lock().unwrap();
+        //         // let mut s = overlap_val_mutex.lock().unwrap();
+        //         if i == j {
+        //             s[(i, j)] = 1.0;
+        //             // s = 1.0;
+        //         } else {
+        //             s[(i, j)] = calc_overlap_int_cgto(
+        //                 &self.mol.wfn_total.basis_set_total.basis_set_cgtos[i],
+        //                 &self.mol.wfn_total.basis_set_total.basis_set_cgtos[j],
+        //             );
+        //             s[(j, i)] = s[(i, j)];
+        //         }
+        //     })
+        // });
+
+        // self.mol.wfn_total.HF_Matrices.S_matr = S_matr_mutex.into_inner().unwrap();
 
         // for i in 0..n {
         //     for j in 0..=i {
@@ -606,22 +642,42 @@ impl SCF {
         // }
 
         //* Step 2.2: Calculate the kinetic energy matrix T
-        let T_matr_tmp = Array2::<f64>::zeros((n, n));
-        let T_matr_mutex = Mutex::new(T_matr_tmp);
-
-        (0..n).into_par_iter().for_each(|i| {
-            (0..=i).into_par_iter().for_each(|j| {
-                let mut t = T_matr_mutex.lock().unwrap();
-                t[(i, j)] = calc_kin_energy_int_cgto(
-                    &self.mol.wfn_total.basis_set_total.basis_set_cgtos[i],
-                    &self.mol.wfn_total.basis_set_total.basis_set_cgtos[j],
-                );
-
-                t[(j, i)] = t[(i, j)];
-            })
+        //* New version: par_map_assign_into */
+        self.mol.wfn_total.HF_Matrices.T_matr = Array2::<f64>::zeros((n, n));
+        Zip::indexed(&mut self.mol.wfn_total.HF_Matrices.T_matr).par_for_each(|(idx1, idx2), x| {
+            if idx1 >= idx2 {
+                *x = calc_kin_energy_int_cgto(
+                    &self.mol.wfn_total.basis_set_total.basis_set_cgtos[idx1],
+                    &self.mol.wfn_total.basis_set_total.basis_set_cgtos[idx2],
+                )
+            } else {
+                *x = 0.0;
+            }
         });
+        // * copy lower triangle to upper triangle
+        for i in 0..n {
+            for j in 0..i {
+                self.mol.wfn_total.HF_Matrices.T_matr[(j, i)] =
+                    self.mol.wfn_total.HF_Matrices.T_matr[(i, j)];
+            }
+        }
 
-        self.mol.wfn_total.HF_Matrices.T_matr = T_matr_mutex.into_inner().unwrap();
+        // let T_matr_tmp = Array2::<f64>::zeros((n, n));
+        // let T_matr_mutex = Mutex::new(T_matr_tmp);
+
+        // (0..n).into_par_iter().for_each(|i| {
+        //     (0..=i).into_par_iter().for_each(|j| {
+        //         let mut t = T_matr_mutex.lock().unwrap();
+        //         t[(i, j)] = calc_kin_energy_int_cgto(
+        //             &self.mol.wfn_total.basis_set_total.basis_set_cgtos[i],
+        //             &self.mol.wfn_total.basis_set_total.basis_set_cgtos[j],
+        //         );
+
+        //         t[(j, i)] = t[(i, j)];
+        //     })
+        // });
+
+        // self.mol.wfn_total.HF_Matrices.T_matr = T_matr_mutex.into_inner().unwrap();
 
         // for i in 0..n {
         //     for j in 0..=i {
@@ -635,31 +691,66 @@ impl SCF {
         // }
 
         //* Step 2.3: Calculate the nuclear attraction matrix V_ne
-        let V_ne_matr_tmp = Array2::<f64>::zeros((n, n));
-        let V_ne_matr_mutex = Mutex::new(V_ne_matr_tmp);
-        // self.mol.wfn_total.HF_Matrices.V_ne_matr = Array2::<f64>::zeros((n, n));
 
-        (0..n).into_par_iter().for_each(|i| {
-            (0..=i).into_par_iter().for_each(|j| {
-                let mut v = V_ne_matr_mutex.lock().unwrap();
-                for (idx, atom_pos) in self
-                    .mol
-                    .geom_obj
-                    .geom_matr
-                    .axis_iter(ndarray::Axis(0))
-                    .enumerate()
-                {
-                    v[(i, j)] += (-self.mol.geom_obj.Z_vals[idx] as f64)
-                        * calc_nuc_attr_int_cgto(
-                            &self.mol.wfn_total.basis_set_total.basis_set_cgtos[i],
-                            &self.mol.wfn_total.basis_set_total.basis_set_cgtos[j],
-                            &atom_pos.to_owned(),
-                        );
+        // * New version: par_map_assign_into */
+        self.mol.wfn_total.HF_Matrices.V_ne_matr = Array2::<f64>::zeros((n, n));
+        Zip::indexed(&mut self.mol.wfn_total.HF_Matrices.V_ne_matr).par_for_each(
+            |(idx1, idx2), x| {
+                if idx1 >= idx2 {
+                    // let mut v_ne_val = 0.0_f64;
+                    for (atom_idx, atom_pos) in self
+                        .mol
+                        .geom_obj
+                        .geom_matr
+                        .axis_iter(ndarray::Axis(0))
+                        .enumerate()
+                    {
+                        *x += (-self.mol.geom_obj.Z_vals[atom_idx] as f64)
+                            * calc_nuc_attr_int_cgto(
+                                &self.mol.wfn_total.basis_set_total.basis_set_cgtos[idx1],
+                                &self.mol.wfn_total.basis_set_total.basis_set_cgtos[idx2],
+                                &atom_pos.to_owned(),
+                            );
+                    }
+                } else {
+                    *x = 0.0;
                 }
-                v[(j, i)] = v[(i, j)];
-            })
-        });
-        self.mol.wfn_total.HF_Matrices.V_ne_matr = V_ne_matr_mutex.into_inner().unwrap();
+            },
+        );
+
+        // * copy lower triangle to upper triangle
+        for i in 0..n {
+            for j in 0..i {
+                self.mol.wfn_total.HF_Matrices.V_ne_matr[(j, i)] =
+                    self.mol.wfn_total.HF_Matrices.V_ne_matr[(i, j)];
+            }
+        }
+
+        // let V_ne_matr_tmp = Array2::<f64>::zeros((n, n));
+        // let V_ne_matr_mutex = Mutex::new(V_ne_matr_tmp);
+        // // self.mol.wfn_total.HF_Matrices.V_ne_matr = Array2::<f64>::zeros((n, n));
+
+        // (0..n).into_par_iter().for_each(|i| {
+        //     (0..=i).into_par_iter().for_each(|j| {
+        //         let mut v = V_ne_matr_mutex.lock().unwrap();
+        //         for (idx, atom_pos) in self
+        //             .mol
+        //             .geom_obj
+        //             .geom_matr
+        //             .axis_iter(ndarray::Axis(0))
+        //             .enumerate()
+        //         {
+        //             v[(i, j)] += (-self.mol.geom_obj.Z_vals[idx] as f64)
+        //                 * calc_nuc_attr_int_cgto(
+        //                     &self.mol.wfn_total.basis_set_total.basis_set_cgtos[i],
+        //                     &self.mol.wfn_total.basis_set_total.basis_set_cgtos[j],
+        //                     &atom_pos.to_owned(),
+        //                 );
+        //         }
+        //         v[(j, i)] = v[(i, j)];
+        //     })
+        // });
+        // self.mol.wfn_total.HF_Matrices.V_ne_matr = V_ne_matr_mutex.into_inner().unwrap();
 
         // for i in 0..n {
         //     for j in 0..=i {
