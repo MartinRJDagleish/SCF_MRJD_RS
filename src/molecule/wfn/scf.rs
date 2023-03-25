@@ -58,6 +58,7 @@ impl SCF {
             .basis_set_total
             .basis_set_cgtos
             .iter_mut()
+        //TODO: Can I do this in parallel? -> par_iter_mut needs more impl work
         {
             cgto.calc_cart_norm_const_cgto();
         }
@@ -67,7 +68,7 @@ impl SCF {
         self.calc_1e_ints_par(is_debug);
 
         //* Step 3: Calc the 2e-ints (V_ee) */
-        self.calc_2e_ints_ser(is_debug);
+        self.calc_2e_ints_par(is_debug);
 
         // * CONSTANTS from mol object
         let no_occ_orb = self.mol.wfn_total.basis_set_total.no_occ_orb;
@@ -110,20 +111,29 @@ impl SCF {
         }
 
         //* Step 5.3: Form the initial guess density matrix D_0
-        let D_matr_mutex = Mutex::new(Array2::<f64>::zeros((no_cgtos, no_cgtos)));
 
-        //* D^0 matrix */
-        //* Trying to parallelize it */
-        Zip::indexed(C_matr_AO_basis.axis_iter(Axis(0))).par_for_each(|mu, row1| {
-            Zip::indexed(C_matr_AO_basis.outer_iter()).par_for_each(|nu, row2| {
-                let mut d = D_matr_mutex.lock().unwrap();
-                let slice1 = row1.slice(s![..no_occ_orb]);
-                let slice2 = row2.slice(s![..no_occ_orb]);
-                d[(mu, nu)] = slice1.dot(&slice2);
-            });
+        let mut D_matr = Array2::<f64>::zeros((no_cgtos, no_cgtos));
+
+        Zip::indexed(&mut D_matr).par_for_each(|(mu, nu), d_val| {
+            let slice1 = C_matr_AO_basis.slice(s![mu, ..no_occ_orb]);
+            let slice2 = C_matr_AO_basis.slice(s![nu, ..no_occ_orb]);
+            *d_val = slice1.dot(&slice2);
         });
 
-        let mut D_matr = D_matr_mutex.into_inner().unwrap();
+        // let D_matr_mutex = Mutex::new(Array2::<f64>::zeros((no_cgtos, no_cgtos)));
+
+        // //* D^0 matrix */
+        // //* Trying to parallelize it */
+        // Zip::indexed(C_matr_AO_basis.axis_iter(Axis(0))).par_for_each(|mu, row1| {
+        //     Zip::indexed(C_matr_AO_basis.outer_iter()).par_for_each(|nu, row2| {
+        //         let mut d = D_matr_mutex.lock().unwrap();
+        //         let slice1 = row1.slice(s![..no_occ_orb]);
+        //         let slice2 = row2.slice(s![..no_occ_orb]);
+        //         d[(mu, nu)] = slice1.dot(&slice2);
+        //     });
+        // });
+
+        // let mut D_matr = D_matr_mutex.into_inner().unwrap();
 
         if is_debug {
             println!("D^0_matr (inital density matrix):\n{:>11.6}\n", &D_matr);
@@ -177,7 +187,23 @@ impl SCF {
             //* Step 6: Form the Fock matrix F in the AO basis
             let mut F_matr = Array2::<f64>::zeros((no_cgtos, no_cgtos));
             F_matr.assign(&self.mol.wfn_total.HF_Matrices.H_core_matr);
-            let F_matr_temp = F_matr.view_mut();
+
+            Zip::indexed(&mut F_matr).par_for_each(|(mu, nu), f_val| {
+                for lambda in 0..no_cgtos {
+                    for sigma in 0..no_cgtos {
+                        // let mu_nu_lambda_sigma =
+                        //     calc_ijkl_idx(mu + 1, nu + 1, lambda + 1, sigma + 1);
+                        // let mu_lambda_nu_sigma =
+                        //     calc_ijkl_idx(mu + 1, lambda + 1, nu + 1, sigma + 1);
+                        *f_val += D_matr[(lambda, sigma)]
+                            * (2.0
+                                * self.mol.wfn_total.HF_Matrices.ERI_tensor
+                                    [(mu, nu, lambda, sigma)]
+                                - self.mol.wfn_total.HF_Matrices.ERI_tensor
+                                    [(mu, lambda, nu, sigma)]);
+                    }
+                }
+            });
 
             // * Paralll code V3 (par_map_assign_into)
             // Zip::indexed(&mut F_matr_temp).par_map_assign_into(|(mu, nu), f| {
@@ -199,27 +225,29 @@ impl SCF {
             // }
 
             //* Parallel code V2
-            let F_matr_mutex = Mutex::new(F_matr);
+            // let F_matr_mutex = Mutex::new(F_matr);
 
-            (0..no_cgtos).into_par_iter().for_each(|mu| {
-                (0..no_cgtos).into_par_iter().for_each(|nu| {
-                    (0..no_cgtos).into_par_iter().for_each(|lambda| {
-                        (0..no_cgtos).into_par_iter().for_each(|sigma| {
-                            let mu_nu_lambda_sigma =
-                                calc_ijkl_idx(mu + 1, nu + 1, lambda + 1, sigma + 1);
-                            let mu_lambda_nu_sigma =
-                                calc_ijkl_idx(mu + 1, lambda + 1, nu + 1, sigma + 1);
-                            let mut f = F_matr_mutex.lock().unwrap();
-                            f[(mu, nu)] += D_matr[(lambda, sigma)]
-                                * (2.0
-                                    * self.mol.wfn_total.HF_Matrices.ERI_arr1[mu_nu_lambda_sigma]
-                                    - self.mol.wfn_total.HF_Matrices.ERI_arr1[mu_lambda_nu_sigma]);
-                        });
-                    });
-                });
-            });
+            // (0..no_cgtos).into_par_iter().for_each(|mu| {
+            //     (0..no_cgtos).into_par_iter().for_each(|nu| {
+            //         (0..no_cgtos).into_par_iter().for_each(|lambda| {
+            //             (0..no_cgtos).into_par_iter().for_each(|sigma| {
+            //                 // let mu_nu_lambda_sigma =
+            //                 //     calc_ijkl_idx(mu + 1, nu + 1, lambda + 1, sigma + 1);
+            //                 // let mu_lambda_nu_sigma =
+            //                 //     calc_ijkl_idx(mu + 1, lambda + 1, nu + 1, sigma + 1);
+            //                 let mut f = F_matr_mutex.lock().unwrap();
+            //                 f[(mu, nu)] += D_matr[(lambda, sigma)]
+            //                     * (2.0
+            //                         * self.mol.wfn_total.HF_Matrices.ERI_tensor
+            //                             [(mu, nu, lambda, sigma)]
+            //                         - self.mol.wfn_total.HF_Matrices.ERI_tensor
+            //                             [(mu, lambda, nu, sigma)]);
+            //             });
+            //         });
+            //     });
+            // });
 
-            let F_matr = F_matr_mutex.into_inner().unwrap();
+            // let F_matr = F_matr_mutex.into_inner().unwrap();
 
             // //* Parallel code V1 (still wrong)
             // let F_matr = Mutex::new(F_matr);
@@ -268,26 +296,33 @@ impl SCF {
             C_matr_AO_basis = S_matr_sqrt_inv.dot(&C_matr_MO_basis);
             let D_matr_prev: Array2<f64> = D_matr.clone();
 
-            //* Parallel code
-            let D_matr_mutex = Mutex::new(Array2::<f64>::zeros((no_cgtos, no_cgtos)));
-            Zip::indexed(C_matr_AO_basis.outer_iter()).par_for_each(|mu, row1| {
-                Zip::indexed(C_matr_AO_basis.outer_iter()).par_for_each(|nu, row2| {
-                    let mut d = D_matr_mutex.lock().unwrap();
-                    let slice1 = row1.slice(s![..no_occ_orb]);
-                    let slice2 = row2.slice(s![..no_occ_orb]);
-                    d[(mu, nu)] = slice1.dot(&slice2);
-                });
+            //* D_matr indexed with par_for_each
+            Zip::indexed(&mut D_matr).par_for_each(|(mu, nu), d_val| {
+                let slice1 = C_matr_AO_basis.slice(s![mu, ..no_occ_orb]);
+                let slice2 = C_matr_AO_basis.slice(s![nu, ..no_occ_orb]);
+                *d_val = slice1.dot(&slice2);
             });
-            D_matr = D_matr_mutex.into_inner().unwrap(); //* DO NOT SHADOW vars in Rust -> D_matr from outer scoop will be used otherwise */
-                                                         //* Serial code
-                                                         // for mu in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
-                                                         //     for nu in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
-                                                         //         D_matr[(mu, nu)] = 0.0;
-                                                         //         for m in 0..self.mol.wfn_total.basis_set_total.no_occ_orb {
-                                                         //             D_matr[(mu, nu)] += C_matr_AO_basis[(mu, m)] * C_matr_AO_basis[(nu, m)];
-                                                         //         }
-                                                         //     }
-                                                         // }
+
+            //* Parallel code
+            // let D_matr_mutex = Mutex::new(Array2::<f64>::zeros((no_cgtos, no_cgtos)));
+            // Zip::indexed(C_matr_AO_basis.outer_iter()).par_for_each(|mu, row1| {
+            //     Zip::indexed(C_matr_AO_basis.outer_iter()).par_for_each(|nu, row2| {
+            //         let mut d = D_matr_mutex.lock().unwrap();
+            //         let slice1 = row1.slice(s![..no_occ_orb]);
+            //         let slice2 = row2.slice(s![..no_occ_orb]);
+            //         d[(mu, nu)] = slice1.dot(&slice2);
+            //     });
+            // });
+            // D_matr = D_matr_mutex.into_inner().unwrap(); //* DO NOT SHADOW vars in Rust -> D_matr from outer scoop will be used otherwise */
+            //                                              //* Serial code
+            //                                              // for mu in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
+            //                                              //     for nu in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
+            //                                              //         D_matr[(mu, nu)] = 0.0;
+            //                                              //         for m in 0..self.mol.wfn_total.basis_set_total.no_occ_orb {
+            //                                              //             D_matr[(mu, nu)] += C_matr_AO_basis[(mu, m)] * C_matr_AO_basis[(nu, m)];
+            //                                              //         }
+            //                                              //     }
+            //                                              // }
 
             //* Parallel code
             E_scf = Zip::from(&D_matr)
@@ -587,20 +622,48 @@ impl SCF {
             calc_V_nn_val(&self.mol.geom_obj.geom_matr, &self.mol.geom_obj.Z_vals);
 
         //* Step 2.1: Calculate the overlap matrix S
-        //* New version: par_map_assign_into */
-        // let S_matr_tmp = Array2::<f64>::zeros((n, n));
+        //* New version: par_for_each and indexed */
         self.mol.wfn_total.HF_Matrices.S_matr = Array2::<f64>::zeros((n, n));
 
-        Zip::indexed(&mut self.mol.wfn_total.HF_Matrices.S_matr).par_for_each(|(i, j), x| {
+        Zip::indexed(&mut self.mol.wfn_total.HF_Matrices.S_matr).par_for_each(|(i, j), s_val| {
             if i == j {
-                *x = 1.0;
-            } else {
-                *x = calc_overlap_int_cgto(
+                *s_val = 1.0;
+            } else if i >= j {
+                //* Calculate only lower triangle matrix */
+                *s_val = calc_overlap_int_cgto(
                     &self.mol.wfn_total.basis_set_total.basis_set_cgtos[i],
                     &self.mol.wfn_total.basis_set_total.basis_set_cgtos[j],
                 )
+            } else {
+                *s_val = 0.0;
             }
         });
+
+        // * Assign lower triangle to upper triangle with slices -> larger chunks
+        for i in 0..n - 1 {
+            let slice = self
+                .mol
+                .wfn_total
+                .HF_Matrices
+                .S_matr
+                .slice(s![i + 1..n, i])
+                .to_shared();
+            self.mol
+                .wfn_total
+                .HF_Matrices
+                .S_matr
+                .slice_mut(s![i, i + 1..n])
+                .assign(&slice);
+        }
+
+        // let S_matr_lower = self.mol.wfn_total.HF_Matrices.S_matr.t().to_owned();
+        // Zip::indexed(&mut self.mol.wfn_total.HF_Matrices.S_matr)
+        //     .and(&S_matr_lower)
+        //     .par_for_each(|(i, j), s_val, s_val_lower| {
+        //         if i < j {
+        //             *s_val = *s_val_lower;
+        //         }
+        //     });
 
         // ************************************************
         // let S_matr_tmp = Array2::<f64>::zeros((n, n));
@@ -644,23 +707,43 @@ impl SCF {
         //* Step 2.2: Calculate the kinetic energy matrix T
         //* New version: par_map_assign_into */
         self.mol.wfn_total.HF_Matrices.T_matr = Array2::<f64>::zeros((n, n));
-        Zip::indexed(&mut self.mol.wfn_total.HF_Matrices.T_matr).par_for_each(|(idx1, idx2), x| {
-            if idx1 >= idx2 {
-                *x = calc_kin_energy_int_cgto(
-                    &self.mol.wfn_total.basis_set_total.basis_set_cgtos[idx1],
-                    &self.mol.wfn_total.basis_set_total.basis_set_cgtos[idx2],
-                )
-            } else {
-                *x = 0.0;
-            }
-        });
-        // * copy lower triangle to upper triangle
-        for i in 0..n {
-            for j in 0..i {
-                self.mol.wfn_total.HF_Matrices.T_matr[(j, i)] =
-                    self.mol.wfn_total.HF_Matrices.T_matr[(i, j)];
-            }
+        Zip::indexed(&mut self.mol.wfn_total.HF_Matrices.T_matr).par_for_each(
+            |(idx1, idx2), t_val| {
+                if idx1 >= idx2 {
+                    *t_val = calc_kin_energy_int_cgto(
+                        &self.mol.wfn_total.basis_set_total.basis_set_cgtos[idx1],
+                        &self.mol.wfn_total.basis_set_total.basis_set_cgtos[idx2],
+                    )
+                } else {
+                    *t_val = 0.0;
+                }
+            },
+        );
+
+        for i in 0..n - 1 {
+            let slice = self
+                .mol
+                .wfn_total
+                .HF_Matrices
+                .T_matr
+                .slice(s![i + 1..n, i])
+                .to_shared();
+            self.mol
+                .wfn_total
+                .HF_Matrices
+                .T_matr
+                .slice_mut(s![i, i + 1..n])
+                .assign(&slice);
         }
+
+        // let T_matr_lower = self.mol.wfn_total.HF_Matrices.T_matr.t().to_owned();
+        // Zip::indexed(&mut self.mol.wfn_total.HF_Matrices.T_matr)
+        //     .and(&T_matr_lower)
+        //     .par_for_each(|(i, j), t_val, t_val_lower| {
+        //         if i < j {
+        //             *t_val = *t_val_lower;
+        //         }
+        //     });
 
         // let T_matr_tmp = Array2::<f64>::zeros((n, n));
         // let T_matr_mutex = Mutex::new(T_matr_tmp);
@@ -692,10 +775,10 @@ impl SCF {
 
         //* Step 2.3: Calculate the nuclear attraction matrix V_ne
 
-        // * New version: par_map_assign_into */
+        // * New version: par_for_each */
         self.mol.wfn_total.HF_Matrices.V_ne_matr = Array2::<f64>::zeros((n, n));
         Zip::indexed(&mut self.mol.wfn_total.HF_Matrices.V_ne_matr).par_for_each(
-            |(idx1, idx2), x| {
+            |(idx1, idx2), v_ne_val| {
                 if idx1 >= idx2 {
                     // let mut v_ne_val = 0.0_f64;
                     for (atom_idx, atom_pos) in self
@@ -705,26 +788,56 @@ impl SCF {
                         .axis_iter(ndarray::Axis(0))
                         .enumerate()
                     {
-                        *x += (-self.mol.geom_obj.Z_vals[atom_idx] as f64)
+                        *v_ne_val += (-self.mol.geom_obj.Z_vals[atom_idx] as f64)
                             * calc_nuc_attr_int_cgto(
                                 &self.mol.wfn_total.basis_set_total.basis_set_cgtos[idx1],
                                 &self.mol.wfn_total.basis_set_total.basis_set_cgtos[idx2],
                                 &atom_pos.to_owned(),
                             );
                     }
+                    // self.mol.wfn_total.HF_Matrices.V_ne_matr[(idx1, idx2)] = *v_ne_val;
                 } else {
-                    *x = 0.0;
+                    *v_ne_val = 0.0;
                 }
             },
         );
 
         // * copy lower triangle to upper triangle
-        for i in 0..n {
-            for j in 0..i {
-                self.mol.wfn_total.HF_Matrices.V_ne_matr[(j, i)] =
-                    self.mol.wfn_total.HF_Matrices.V_ne_matr[(i, j)];
-            }
+        // * assign version
+        for i in (0..n - 1) {
+            let slice = self
+                .mol
+                .wfn_total
+                .HF_Matrices
+                .V_ne_matr
+                .slice(s![i + 1..n, i])
+                .to_shared();
+            self.mol
+                .wfn_total
+                .HF_Matrices
+                .V_ne_matr
+                .slice_mut(s![i, i + 1..n])
+                .assign(&slice);
         }
+
+        // * parallel version
+        // let V_matr_lower = self.mol.wfn_total.HF_Matrices.V_ne_matr.t().to_owned();
+
+        // Zip::indexed(&mut self.mol.wfn_total.HF_Matrices.V_ne_matr)
+        //     .and(&V_matr_lower)
+        //     .par_for_each(|(idx1, idx2), v_ne_val, v_ne_val_t| {
+        //         if idx1 < idx2 {
+        //             *v_ne_val = *v_ne_val_t;
+        //         }
+        //     });
+
+        // * serial version
+        // for i in 0..n {
+        //     for j in 0..i {
+        //         self.mol.wfn_total.HF_Matrices.V_ne_matr[(j, i)] =
+        //             self.mol.wfn_total.HF_Matrices.V_ne_matr[(i, j)];
+        //     }
+        // }
 
         // let V_ne_matr_tmp = Array2::<f64>::zeros((n, n));
         // let V_ne_matr_mutex = Mutex::new(V_ne_matr_tmp);
@@ -886,6 +999,123 @@ impl SCF {
         }
     }
 
+    fn calc_2e_ints_par(&mut self, is_debug: bool) {
+        // * Array variant (1D-Tensor == Array)
+
+        let n = self.mol.wfn_total.basis_set_total.no_cgtos;
+        // let n_idx = calc_cmp_idx(n, n);
+        // let ERI_arr1_max_idx = calc_cmp_idx(n_idx, n_idx);
+
+        // self.mol.wfn_total.HF_Matrices.ERI_arr1 = Array1::<f64>::zeros(ERI_arr1_max_idx + 1);
+
+        // // (0..n).into_par_iter().for_each(|i| {
+        // //     (0..=i).into_par_iter().for_each(|j| {
+        // //     });
+        // // });
+
+        // for i in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
+        //     for j in 0..=i {
+        //         // for j in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
+        //         let ij = calc_cmp_idx(i, j);
+        //         for k in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
+        //             for l in 0..=k {
+        //                 // for l in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
+        //                 let kl = calc_cmp_idx(k, l);
+        //                 if ij >= kl {
+        //                     // let ijkl = calc_cmp_idx(ij, kl);
+        //                     let ijkl = calc_ijkl_idx(i + 1, j + 1, k + 1, l + 1);
+        //                     self.mol.wfn_total.HF_Matrices.ERI_arr1[ijkl] =
+        //                         calc_elec_elec_repul_cgto(
+        //                             &self.mol.wfn_total.basis_set_total.basis_set_cgtos[i],
+        //                             &self.mol.wfn_total.basis_set_total.basis_set_cgtos[j],
+        //                             &self.mol.wfn_total.basis_set_total.basis_set_cgtos[k],
+        //                             &self.mol.wfn_total.basis_set_total.basis_set_cgtos[l],
+        //                         );
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
+
+        // * Tensor variant (4D-Tensor), but in parallel?
+        self.mol.wfn_total.HF_Matrices.ERI_tensor = Array4::<f64>::zeros((n, n, n, n));
+
+        Zip::indexed(&mut self.mol.wfn_total.HF_Matrices.ERI_tensor).par_for_each(
+            |(i, j, k, l), eri_val| {
+                let ij = calc_cmp_idx(i, j);
+                let kl = calc_cmp_idx(k, l);
+                if ij >= kl {
+                    *eri_val = calc_elec_elec_repul_cgto(
+                        &self.mol.wfn_total.basis_set_total.basis_set_cgtos[i],
+                        &self.mol.wfn_total.basis_set_total.basis_set_cgtos[j],
+                        &self.mol.wfn_total.basis_set_total.basis_set_cgtos[k],
+                        &self.mol.wfn_total.basis_set_total.basis_set_cgtos[l],
+                    );
+                }
+            },
+        );
+
+        // * Serial to copy ERI_val to all 8 permutations
+        for i in 0..n {
+            for j in 0..=i {
+                let ij = calc_cmp_idx(i, j);
+                for k in 0..n {
+                    for l in 0..=k {
+                        let kl = calc_cmp_idx(k, l);
+                        if ij >= kl {
+                            let ERI_val = self.mol.wfn_total.HF_Matrices.ERI_tensor[[i, j, k, l]];
+                            self.mol.wfn_total.HF_Matrices.ERI_tensor[(j, i, k, l)] = ERI_val;
+                            self.mol.wfn_total.HF_Matrices.ERI_tensor[(i, j, l, k)] = ERI_val;
+                            self.mol.wfn_total.HF_Matrices.ERI_tensor[(j, i, l, k)] = ERI_val;
+                            self.mol.wfn_total.HF_Matrices.ERI_tensor[(k, l, i, j)] = ERI_val;
+                            self.mol.wfn_total.HF_Matrices.ERI_tensor[(l, k, i, j)] = ERI_val;
+                            self.mol.wfn_total.HF_Matrices.ERI_tensor[(k, l, j, i)] = ERI_val;
+                            self.mol.wfn_total.HF_Matrices.ERI_tensor[(l, k, j, i)] = ERI_val;
+                        }
+                    }
+                }
+            }
+        }
+
+        // self.mol.wfn_total.HF_Matrices.ERI_tensor = Array4::<f64>::zeros((
+        //     self.mol.wfn_total.basis_set_total.no_cgtos,
+        //     self.mol.wfn_total.basis_set_total.no_cgtos,
+        //     self.mol.wfn_total.basis_set_total.no_cgtos,
+        //     self.mol.wfn_total.basis_set_total.no_cgtos,
+        // ));
+        // for i in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
+        //     for j in 0..=i {
+        //         let ij = calc_cmp_idx(i, j);
+        //         for k in 0..self.mol.wfn_total.basis_set_total.no_cgtos {
+        //             for l in 0..=k {
+        //                 let kl = calc_cmp_idx(k, l);
+        //                 if ij >= kl {
+        //                     let ERI_val = calc_elec_elec_repul_cgto(
+        //                         &self.mol.wfn_total.basis_set_total.basis_set_cgtos[i],
+        //                         &self.mol.wfn_total.basis_set_total.basis_set_cgtos[j],
+        //                         &self.mol.wfn_total.basis_set_total.basis_set_cgtos[k],
+        //                         &self.mol.wfn_total.basis_set_total.basis_set_cgtos[l],
+        //                     );
+        //                     self.mol.wfn_total.HF_Matrices.ERI_tensor[(i, j, k, l)] = ERI_val;
+        //                     self.mol.wfn_total.HF_Matrices.ERI_tensor[(j, i, k, l)] = ERI_val;
+        //                     self.mol.wfn_total.HF_Matrices.ERI_tensor[(i, j, l, k)] = ERI_val;
+        //                     self.mol.wfn_total.HF_Matrices.ERI_tensor[(j, i, l, k)] = ERI_val;
+        //                     self.mol.wfn_total.HF_Matrices.ERI_tensor[(k, l, i, j)] = ERI_val;
+        //                     self.mol.wfn_total.HF_Matrices.ERI_tensor[(l, k, i, j)] = ERI_val;
+        //                     self.mol.wfn_total.HF_Matrices.ERI_tensor[(k, l, j, i)] = ERI_val;
+        //                     self.mol.wfn_total.HF_Matrices.ERI_tensor[(l, k, j, i)] = ERI_val;
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
+
+        if is_debug {
+            println!("V_ee tensor (ERI vals):");
+            println!("{:>8.5}\n", &self.mol.wfn_total.HF_Matrices.ERI_arr1);
+        }
+    }
+
     fn calc_2e_ints_ser(&mut self, is_debug: bool) {
         // * Array variant (1D-Tensor == Array)
 
@@ -979,7 +1209,7 @@ impl SCF {
         let C_matr = self.C_matr_final.to_owned();
         // * Calc 2e ints if not already done
         if self.mol.wfn_total.HF_Matrices.ERI_arr1.is_empty() {
-            Self::calc_2e_ints_ser(self, false);
+            Self::calc_2e_ints_par(self, false);
         }
 
         let is_naive_mp2 = true;
@@ -1174,7 +1404,7 @@ pub fn calc_ijkl_idx(i: usize, j: usize, k: usize, l: usize) -> usize {
     ijkl
 }
 
-#[inline]
+#[inline(always)]
 pub fn calc_cmp_idx(idx1: usize, idx2: usize) -> usize {
     (idx1 * (idx1 + 1)) / 2 + idx2
 }

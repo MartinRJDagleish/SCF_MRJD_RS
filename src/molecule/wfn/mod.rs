@@ -46,6 +46,15 @@ pub struct WfnTotal {
     pub HF_Matrices: HF_Matrices,
 }
 
+// impl Iterator for CGTO {
+//     type Item = PGTO;
+
+//     fn next(&mut self) -> Option<Self::Item> {
+//         self.pgto_vec.pop()
+//     }
+// }
+
+
 #[allow(non_snake_case)]
 impl PGTO {
     pub fn new(
