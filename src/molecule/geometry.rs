@@ -1,6 +1,5 @@
 // use super::Molecule;
 use ndarray::prelude::*;
-use ndarray_linalg::Norm;
 
 #[derive(Clone,  Debug)]
 pub struct Geometry {

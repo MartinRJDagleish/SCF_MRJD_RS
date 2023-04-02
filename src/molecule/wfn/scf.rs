@@ -1,5 +1,5 @@
-use ndarray::{prelude::*, Zip};
-use ndarray_linalg::{Eigh, Inverse, SymmetricSqrt, UPLO};
+use ndarray::{concatenate, prelude::*, stack, Zip};
+use ndarray_linalg::{Eigh, Inverse, SymmetricSqrt, UPLO, Solve};
 
 use ndarray::parallel::prelude::*;
 
@@ -41,7 +41,7 @@ impl SCF {
             D_matr_final,
             orb_energies_final,
             F_matr_set,
-            error_matr_set
+            error_matr_set,
         }
     }
 
@@ -134,25 +134,9 @@ impl SCF {
             D_matr.slice_mut(s![i, i + 1..no_cgtos]).assign(&slice);
         }
 
-        // let D_matr_mutex = Mutex::new(Array2::<f64>::zeros((no_cgtos, no_cgtos)));
-
-        // //* D^0 matrix */
-        // //* Trying to parallelize it */
-        // Zip::indexed(C_matr_AO_basis.axis_iter(Axis(0))).par_for_each(|mu, row1| {
-        //     Zip::indexed(C_matr_AO_basis.outer_iter()).par_for_each(|nu, row2| {
-        //         let mut d = D_matr_mutex.lock().unwrap();
-        //         let slice1 = row1.slice(s![..no_occ_orb]);
-        //         let slice2 = row2.slice(s![..no_occ_orb]);
-        //         d[(mu, nu)] = slice1.dot(&slice2);
-        //     });
-        // });
-
-        // let mut D_matr = D_matr_mutex.into_inner().unwrap();
-
         if is_debug {
             println!("D^0_matr (inital density matrix):\n{:>11.6}\n", &D_matr);
         }
-
 
         //* Here the Fock matrix is guessed to be the core Hamiltonian matrix
         //* That's why the initial SCF energy differs from the other SCF energy calcs
@@ -217,46 +201,79 @@ impl SCF {
                 self.F_matr_set.remove(0); //* remove oldest */
             }
             self.F_matr_set.push(F_matr.clone()); //* copy the new F_matr to fock_set */
-
-            // TODO: think about the position of the code (which F_i, D_i to use)
-            let mut error_matr = F_matr.dot(&D_matr).dot(&self.mol.wfn_total.HF_Matrices.S_matr)
-                - self.mol.wfn_total.HF_Matrices.S_matr.dot(&D_matr).dot(&F_matr);
+                                                  // TODO: think about the position of the code (which F_i, D_i to use)
+            let mut error_matr = F_matr
+                .dot(&D_matr)
+                .dot(&self.mol.wfn_total.HF_Matrices.S_matr)
+                - self
+                    .mol
+                    .wfn_total
+                    .HF_Matrices
+                    .S_matr
+                    .dot(&D_matr)
+                    .dot(&F_matr);
+            // if self.error_matr_set.len() == max_fock_no {
+            //     self.error_matr_set.remove(0); //* remove oldest */
+            // }
             self.error_matr_set.push(error_matr.clone()); //* copy the new error_matr to error_set */
+            let error_set_len = self.error_matr_set.len();
 
-            if self.error_matr_set.len() >= 2 {
-                let mut B_matr = Array2::<f64>::zeros((self.error_matr_set.len(), self.error_matr_set.len()));
-                for i in 0..self.error_matr_set.len() {
-                    for j in 0..=i {
-                        B_matr[(i, j)] = Zip::from(&self.error_matr_set[i])
-                            .and(&self.error_matr_set[j])
+            let mut F_matr_pr = Array2::<f64>::zeros((no_cgtos, no_cgtos));
+
+            if error_set_len >= 2 {
+                // let mut B_matr = Array2::<f64>::zeros((error_set_len+1, error_set_len+1));
+                // let mut c_vec = Array2::<f64>::zeros((error_set_len+1, 1));
+                let mut B_matr = Array2::<f64>::zeros((error_set_len, error_set_len));
+                let mut sol_vec = Array1::<f64>::zeros(error_set_len+1);
+                sol_vec[error_set_len] = -1.0;
+                
+                // * ACTUALLY: Frobenius inner product of matrices (B_ij = error_matr_i * error_matr_j)
+                Zip::indexed(&mut B_matr).par_for_each(|(idx1, idx2), b_val| {
+                    if idx1 >= idx2 {
+                        *b_val = Zip::from(&self.error_matr_set[idx1])
+                            .and(&self.error_matr_set[idx2])
                             .into_par_iter()
-                            .map(|(error_matr_val1, error_matr_val2)| error_matr_val1 * error_matr_val2)
+                            .map(|(error_matr_val1, error_matr_val2)| {
+                                error_matr_val1 * error_matr_val2
+                            })
                             .sum();
-                        B_matr[(j, i)] = B_matr[(i, j)];
                     }
+                });
+
+                for i in 0..error_set_len - 1 {
+                    let slice = B_matr.slice(s![i + 1..error_set_len, i]).to_shared();
+                    B_matr.slice_mut(s![i, i + 1..error_set_len]).assign(&slice);
                 }
 
-                // let mut B_matr_inv = B_matr.clone();
-                // B_matr_inv.inv().unwrap();
+                // * Add langrange multiplier to B_matr_extended
+                let new_axis_extension_1 = Array2::from_elem((error_set_len, 1), -1.0_f64);
+                let mut new_axis_extension_2 = Array2::from_elem((1, error_set_len+1), -1.0_f64);
+                new_axis_extension_2[[0, error_set_len]] = 0.0_f64;
+                let mut B_matr_extended = concatenate![Axis(1), B_matr, new_axis_extension_1];
+                B_matr_extended = concatenate![Axis(0), B_matr_extended, new_axis_extension_2];
 
-                // let mut C_matr = Array2::<f64>::zeros((self.error_matr_set.len(), 1));
-                // C_matr[(self.error_matr_set.len() - 1, 0)] = 1.0;
+                // * Calculate the coefficients c_vec
+                let c_vec = &B_matr_extended.solve(&sol_vec).unwrap();
+                // println!("c_vec:\n{:>11.6}\n", &c_vec);
+                // let c_sum = c_vec.sum();
+                // println!("c_sum:\n{:>11.6}\n", &c_sum);
 
-                // let mut alpha_matr = B_matr_inv.dot(&C_matr);
-                // let mut F_matr = Array2::<f64>::zeros((no_cgtos, no_cgtos));
-                // for i in 0..self.error_matr_set.len() {
-                //     F_matr += alpha_matr[(i, 0)] * &self.F_matr_set[i];
+                // * Calculate the new Fock matrix
+                for fock_matr_idx in 0..error_set_len {
+                    F_matr_pr = F_matr_pr + c_vec[fock_matr_idx] * &self.F_matr_set[fock_matr_idx];
+                }
+                // for i in 0..error_set_len {
+                    // F_matr_pr += c_vec[i] * &self.F_matr_set[i];
                 // }
-                // F_matr = F_matr.dot(&self.mol.wfn_total.HF_Matrices.S_matr);
+            } else {
+                //* Step 7: Form the Fock matrix F in the MO basis
+                F_matr_pr = S_matr_sqrt_inv
+                    .clone()
+                    .reversed_axes()
+                    .dot(&F_matr)
+                    .dot(&S_matr_sqrt_inv.clone());
             }
 
-
-            //* Step 7: Form the Fock matrix F in the MO basis
-            let F_matr_pr: Array2<f64> = S_matr_sqrt_inv
-                .clone()
-                .reversed_axes()
-                .dot(&F_matr)
-                .dot(&S_matr_sqrt_inv.clone());
 
             //* Step 8: Get the coefficients of the Fock matrix F in the MO basis
             (orb_energy_arr, C_matr_MO_basis) = F_matr_pr.eigh(UPLO::Lower).unwrap();
@@ -298,7 +315,6 @@ impl SCF {
                 .sum::<f64>()
                 .sqrt();
 
-
             // * Printing the SCF results
             let line = format!(
                 "{:>3} {: >16.8}{: >16.8}{: >12.8}",
@@ -309,11 +325,13 @@ impl SCF {
             );
             println!("{line}");
 
-            if rms_d_val < 1e-8 {
+            if rms_d_val < 1e-10 {
                 break;
             }
-        }
 
+            self.E_scf_final = E_scf;
+            self.E_tot_final = E_tot;
+        }
 
         // *************************************************************************
         //*                               NO DIIS                                 */
@@ -510,47 +528,9 @@ impl SCF {
         //     // rms_d_val = rms_d_val.sqrt();
         //     rms_d_vec.push(rms_d_val);
 
-        //     // * Printing the SCF results
-        //     let line = format!(
-        //         "{:>3} {: >16.8}{: >16.8}{: >12.8}",
-        //         &scf_iter + 1,
-        //         &E_scf,
-        //         &E_tot,
-        //         &rms_d_val
-        //     );
-        //     println!("{line}");
-
-        //     if rms_d_val < 1e-6 {
-        //         break;
-        //     }
-        // }
-
         self.C_matr_final = C_matr_AO_basis;
         self.D_matr_final = D_matr;
         self.orb_energies_final = orb_energy_arr;
-
-        // * First line extra
-        // let line = format!(
-        //     "{:>3} {: >16.8}{: >16.8}{: >12.8}",
-        //     "0", &E_scf_vec[0], &E_tot_vec[0], " "
-        // );
-        // println!("{line}");
-
-        // for idx in 1..E_scf_vec.len() {
-        //     let line = format!(
-        //         "{:>3} {: >16.8}{: >16.8}{: >12.8}",
-        //         &idx,
-        //         &E_scf_vec[idx],
-        //         &E_tot_vec[idx],
-        //         &rms_d_vec[idx - 1]
-        //     );
-        //     println!("{line}");
-        // }
-
-        // * Safe final values in SCF object
-        //TODO: Fix this
-        // self.E_scf_final = E_scf_vec[E_scf_vec.len() - 1];
-        // self.E_tot_final = E_tot_vec[E_tot_vec.len() - 1];
     }
 
     pub fn RHF_ser(&mut self, is_debug: bool, basis_set_name: &str) {
@@ -953,7 +933,7 @@ impl SCF {
 
         // * copy lower triangle to upper triangle
         // * assign version
-        for i in (0..n - 1) {
+        for i in 0..n - 1 {
             let slice = self
                 .mol
                 .wfn_total
@@ -1203,6 +1183,8 @@ impl SCF {
                 }
             },
         );
+
+        //TODO: Assign the values to the other 7 permutations with ndarray assign method
 
         // * Serial to copy ERI_val to all 8 permutations
         for i in 0..n {
