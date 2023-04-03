@@ -14,7 +14,8 @@ impl Geometry {
     pub fn new(no_atoms: usize, geom_matr: Array2<f64>, Z_vals: Vec<i32>) -> Self {
         //* Static array with indexing instead of HashMap for masses -> no file reading necessary
         // ! SOURCE: https://iupac.qmul.ac.uk/AtWt/ -> cleaned with OpenRefine
-        let mass_array = [
+        // let mass_array = [
+        const MASS_ARRAY: [f64;119] = [
             0.0,
             1.008,
             4.002602,
@@ -140,7 +141,7 @@ impl Geometry {
             no_atoms,
             geom_matr,
             Z_vals,
-            mass_array,
+            mass_array: MASS_ARRAY,
         }
     }
     pub fn print_geom_input(&self) {

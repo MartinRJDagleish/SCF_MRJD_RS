@@ -123,8 +123,8 @@ impl Molecule {
                 geom_matr[(atom_idx, cart_coord)] = line_split.next().unwrap().parse().unwrap();
             });
         }
-        let bohr_to_AA: f64 = 0.529177210903_f64.recip();
-        geom_matr.mapv_inplace(|x| x * bohr_to_AA);
+        let BOHR_TO_AA: f64 = 0.529177210903_f64.recip();
+        geom_matr.mapv_inplace(|x| x * BOHR_TO_AA);
 
         println!("\n...End of geometry input.\n");
 
