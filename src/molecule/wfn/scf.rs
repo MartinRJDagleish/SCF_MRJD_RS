@@ -1,5 +1,7 @@
-use ndarray::{concatenate, prelude::*, stack, Zip};
-use ndarray_linalg::{Eigh, Inverse, SymmetricSqrt, UPLO, Solve};
+use std::collections::VecDeque;
+
+use ndarray::{concatenate, prelude::*, Zip};
+use ndarray_linalg::{Eigh, Inverse, SolveH, SymmetricSqrt, UPLO};
 
 use ndarray::parallel::prelude::*;
 
@@ -22,8 +24,8 @@ pub struct SCF {
     pub C_matr_final: Array2<f64>,
     pub D_matr_final: Array2<f64>,
     pub orb_energies_final: Array1<f64>,
-    pub F_matr_set: Vec<Array2<f64>>, // TODO: Impl ADIIS for Fock matrix
-    pub error_matr_set: Vec<Array2<f64>>, //TODO: Impl ADIIS for error matrix
+    pub F_matr_set: VecDeque<Array2<f64>>, // TODO: Impl ADIIS for Fock matrix
+    pub error_matr_set: VecDeque<Array2<f64>>, //TODO: Impl ADIIS for error matrix
 }
 
 impl SCF {
@@ -31,8 +33,8 @@ impl SCF {
         let C_matr_final = Array::default((0, 0));
         let D_matr_final = Array::default((0, 0));
         let orb_energies_final = Array::default(0);
-        let F_matr_set = Vec::new();
-        let error_matr_set = Vec::new();
+        let F_matr_set = VecDeque::new();
+        let error_matr_set = VecDeque::new();
         SCF {
             mol,
             E_scf_final: 0.0,
@@ -79,14 +81,8 @@ impl SCF {
         let no_cgtos = self.mol.wfn_total.basis_set_total.no_cgtos;
 
         //* Step 4: Build the orthogonalization matrix S^(-1/2)
-        let S_matr_sqrt: Array2<f64> = self
-            .mol
-            .wfn_total
-            .HF_Matrices
-            .S_matr
-            .ssqrt(ndarray_linalg::UPLO::Upper)
-            .unwrap();
-        let S_matr_sqrt_inv: Array2<f64> = S_matr_sqrt.inv().unwrap();
+        let S_matr_sqrt_inv: self.calc_S_mart_sqrt();
+        //TODO: add S_matr_sqrt_inv to HF_matrices struct
 
         if is_debug {
             println!("S^(-1/2):\n{:>11.6}\n", &S_matr_sqrt_inv);
@@ -99,6 +95,9 @@ impl SCF {
             .reversed_axes()
             .dot(&self.mol.wfn_total.HF_Matrices.H_core_matr)
             .dot(&S_matr_sqrt_inv.clone());
+
+        // ? Add H_core to "guesses" in F_matr_set?
+        // self.F_matr_set.push(self.mol.wfn_total.HF_Matrices.H_core_matr.clone());
 
         if is_debug {
             println!("F_matr_0_pr:\n{:>11.6}\n", &F_matr_0_pr);
@@ -180,29 +179,27 @@ impl SCF {
         let max_fock_no: usize = 6;
 
         for scf_iter in 0..scf_maxiter {
+            // if scf_iter <= 1 { //* First two iterations */
+            //     if scf_iter == 0 {  //* H_core guess for F_matr */
+            //        }
+
+            // }
+
             //* Step 6: Form the Fock matrix F in the AO basis
             let mut F_matr = Array2::<f64>::zeros((no_cgtos, no_cgtos));
-            F_matr.assign(&self.mol.wfn_total.HF_Matrices.H_core_matr);
 
-            Zip::indexed(&mut F_matr).par_for_each(|(mu, nu), f_val| {
-                for lambda in 0..no_cgtos {
-                    for sigma in 0..no_cgtos {
-                        *f_val += D_matr[(lambda, sigma)]
-                            * (2.0
-                                * self.mol.wfn_total.HF_Matrices.ERI_tensor
-                                    [(mu, nu, lambda, sigma)]
-                                - self.mol.wfn_total.HF_Matrices.ERI_tensor
-                                    [(mu, lambda, nu, sigma)]);
-                    }
-                }
-            });
+            self.calc_F_matr_AO_par(&mut F_matr, &D_matr);
 
-            if self.F_matr_set.len() == max_fock_no {
-                self.F_matr_set.remove(0); //* remove oldest */
+            if is_debug {
+                println!("F_matr:\n{:>11.6}\n", &F_matr);
             }
-            self.F_matr_set.push(F_matr.clone()); //* copy the new F_matr to fock_set */
-                                                  // TODO: think about the position of the code (which F_i, D_i to use)
-            let mut error_matr = F_matr
+
+            //* New VecDeque code */
+            if self.F_matr_set.len() == max_fock_no {
+                self.F_matr_set.pop_front(); //* remove oldest */
+            }
+            self.F_matr_set.push_back(F_matr.clone()); //* copy the new F_matr to fock_set */
+            let error_matr = F_matr
                 .dot(&D_matr)
                 .dot(&self.mol.wfn_total.HF_Matrices.S_matr)
                 - self
@@ -212,22 +209,38 @@ impl SCF {
                     .S_matr
                     .dot(&D_matr)
                     .dot(&F_matr);
-            // if self.error_matr_set.len() == max_fock_no {
-            //     self.error_matr_set.remove(0); //* remove oldest */
+
+            // if is_debug {
+            // println!("F_matr:\n{:>11.6}\n", &F_matr);
+            // println!("error_matr:\n{:>11.6}\n", &error_matr);
             // }
-            self.error_matr_set.push(error_matr.clone()); //* copy the new error_matr to error_set */
+
+            //TODO: remove clone
+            // let error_matr_flat = error_matr.clone().into_shape(no_cgtos * no_cgtos).unwrap();
+
+            //* New VecDeque code */
+            if self.error_matr_set.len() == max_fock_no {
+                self.error_matr_set.pop_front(); //* remove oldest */
+            }
+            self.error_matr_set.push_back(error_matr.clone()); //* copy the new F_matr to fock_set */
+                                                               // ! OLD vec code
+                                                               // if self.error_matr_set.len() == max_fock_no {
+                                                               //     self.error_matr_set.remove(0); //* remove oldest */
+                                                               // }
+                                                               // self.error_matr_set.push(error_matr.clone()); //* copy the new error_matr to error_set */
             let error_set_len = self.error_matr_set.len();
 
             let mut F_matr_pr = Array2::<f64>::zeros((no_cgtos, no_cgtos));
 
-            if error_set_len >= 2 {
+            if error_set_len >= 50 {
                 // let mut B_matr = Array2::<f64>::zeros((error_set_len+1, error_set_len+1));
                 // let mut c_vec = Array2::<f64>::zeros((error_set_len+1, 1));
                 let mut B_matr = Array2::<f64>::zeros((error_set_len, error_set_len));
-                let mut sol_vec = Array1::<f64>::zeros(error_set_len+1);
+                let mut sol_vec = Array1::<f64>::zeros(error_set_len + 1);
                 sol_vec[error_set_len] = -1.0;
-                
+
                 // * ACTUALLY: Frobenius inner product of matrices (B_ij = error_matr_i * error_matr_j)
+                // * OR: flatten error_matr and do dot product
                 Zip::indexed(&mut B_matr).par_for_each(|(idx1, idx2), b_val| {
                     if idx1 >= idx2 {
                         *b_val = Zip::from(&self.error_matr_set[idx1])
@@ -247,13 +260,13 @@ impl SCF {
 
                 // * Add langrange multiplier to B_matr_extended
                 let new_axis_extension_1 = Array2::from_elem((error_set_len, 1), -1.0_f64);
-                let mut new_axis_extension_2 = Array2::from_elem((1, error_set_len+1), -1.0_f64);
+                let mut new_axis_extension_2 = Array2::from_elem((1, error_set_len + 1), -1.0_f64);
                 new_axis_extension_2[[0, error_set_len]] = 0.0_f64;
                 let mut B_matr_extended = concatenate![Axis(1), B_matr, new_axis_extension_1];
                 B_matr_extended = concatenate![Axis(0), B_matr_extended, new_axis_extension_2];
 
                 // * Calculate the coefficients c_vec
-                let c_vec = &B_matr_extended.solve(&sol_vec).unwrap();
+                let c_vec = B_matr_extended.solveh(&sol_vec).unwrap();
                 // println!("c_vec:\n{:>11.6}\n", &c_vec);
                 // let c_sum = c_vec.sum();
                 // println!("c_sum:\n{:>11.6}\n", &c_sum);
@@ -263,7 +276,7 @@ impl SCF {
                     F_matr_pr = F_matr_pr + c_vec[fock_matr_idx] * &self.F_matr_set[fock_matr_idx];
                 }
                 // for i in 0..error_set_len {
-                    // F_matr_pr += c_vec[i] * &self.F_matr_set[i];
+                // F_matr_pr += c_vec[i] * &self.F_matr_set[i];
                 // }
             } else {
                 //* Step 7: Form the Fock matrix F in the MO basis
@@ -273,7 +286,6 @@ impl SCF {
                     .dot(&F_matr)
                     .dot(&S_matr_sqrt_inv.clone());
             }
-
 
             //* Step 8: Get the coefficients of the Fock matrix F in the MO basis
             (orb_energy_arr, C_matr_MO_basis) = F_matr_pr.eigh(UPLO::Lower).unwrap();
@@ -1318,6 +1330,35 @@ impl SCF {
             println!("V_ee tensor (ERI vals):");
             println!("{:>8.5}\n", &self.mol.wfn_total.HF_Matrices.ERI_arr1);
         }
+    }
+
+    #[inline]
+    fn calc_F_matr_AO_par(&mut self, F_matr: &mut Array2<f64>, D_matr: &Array2<f64>) {
+        let no_cgtos = self.mol.wfn_total.basis_set_total.no_cgtos;
+        F_matr.assign(&self.mol.wfn_total.HF_Matrices.H_core_matr);
+
+        Zip::indexed(F_matr).par_for_each(|(mu, nu), f_val| {
+            for lambda in 0..no_cgtos {
+                for sigma in 0..no_cgtos {
+                    *f_val += D_matr[(lambda, sigma)]
+                        * (2.0
+                            * self.mol.wfn_total.HF_Matrices.ERI_tensor[(mu, nu, lambda, sigma)]
+                            - self.mol.wfn_total.HF_Matrices.ERI_tensor[(mu, lambda, nu, sigma)]);
+                }
+            }
+        });
+    }
+
+    #[inline]
+    fn calc_S_mart_sqrt(&mut self) -> Array2<f64> {
+        let S_matr_sqrt = self
+            .mol
+            .wfn_total
+            .HF_Matrices
+            .S_matr
+            .ssqrt(ndarray_linalg::UPLO::Upper)
+            .unwrap();
+        S_matr_sqrt.inv().unwrap()
     }
 
     pub fn MP2(&mut self, is_debug: bool, basis_set_name: &str) {
