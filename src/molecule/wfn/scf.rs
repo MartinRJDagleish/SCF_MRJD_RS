@@ -109,9 +109,7 @@ impl SCF {
         let mut E_tot = 0.0_f64;
 
         //* Give initial F_matr the H_core  */
-        // ? REWRITE
         F_matr.assign(&self.mol.wfn_total.HF_Matrices.H_core_matr);
-        //? Add to fock set?
 
         for scf_iter in 0..SCF_MAXITER {
             if scf_iter == 0 {
@@ -170,7 +168,8 @@ impl SCF {
                 let error_matr = self.calc_DIIS_error_matr(&D_matr, &F_matr, &S_matr_sqrt_inv);
                 self.error_matr_set.push_back(error_matr);
 
-                let mut error_set_len = self.F_matr_set.len();
+                let mut error_set_len = self.error_matr_set.len();
+                assert_eq!(error_set_len, self.F_matr_set.len());
                 if error_set_len > DIIS_MAX_FOCK_NO {
                     self.F_matr_set.pop_front(); //* remove oldest */
                     self.error_matr_set.pop_front();
