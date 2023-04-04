@@ -276,22 +276,30 @@ pub fn calc_kin_energy_int_cgto(cgto1: &CGTO, cgto2: &CGTO) -> f64 {
     //
 
     //* Parallel code */
-    cgto1.pgto_vec.par_iter().map(|pgto1| {
-        cgto2.pgto_vec.par_iter().map(|pgto2| {
-            pgto1.norm_const
-                * pgto2.norm_const
-                * pgto1.cgto_coeff
-                * pgto2.cgto_coeff
-                * calc_kin_energy_int_prim(
-                    &pgto1.alpha,
-                    &pgto2.alpha,
-                    &pgto1.ang_mom_vec,
-                    &pgto2.ang_mom_vec,
-                    &pgto1.gauss_center_pos,
-                    &pgto2.gauss_center_pos,
-                )
-        }).sum::<f64>()
-    }).sum::<f64>()
+    cgto1
+        .pgto_vec
+        .par_iter()
+        .map(|pgto1| {
+            cgto2
+                .pgto_vec
+                .par_iter()
+                .map(|pgto2| {
+                    pgto1.norm_const
+                        * pgto2.norm_const
+                        * pgto1.cgto_coeff
+                        * pgto2.cgto_coeff
+                        * calc_kin_energy_int_prim(
+                            &pgto1.alpha,
+                            &pgto2.alpha,
+                            &pgto1.ang_mom_vec,
+                            &pgto2.ang_mom_vec,
+                            &pgto1.gauss_center_pos,
+                            &pgto2.gauss_center_pos,
+                        )
+                })
+                .sum::<f64>()
+        })
+        .sum::<f64>()
 
     //* Serial code */
     // let mut kinetic_energy_int_val: f64 = 0.0;
@@ -601,25 +609,32 @@ pub fn calc_nuc_attr_int_prim(
 }
 
 pub fn calc_nuc_attr_int_cgto(cgto1: &CGTO, cgto2: &CGTO, nuc_center: &Array1<f64>) -> f64 {
-
     //* Parallel code */
-    cgto1.pgto_vec.par_iter().map(|pgto1| 
-        cgto2.pgto_vec.par_iter().map(|pgto2| 
-            pgto1.norm_const
-                * pgto2.norm_const
-                * pgto1.cgto_coeff
-                * pgto2.cgto_coeff
-                * calc_nuc_attr_int_prim(
-                    &pgto1.alpha,
-                    &pgto2.alpha,
-                    &pgto1.ang_mom_vec,
-                    &pgto2.ang_mom_vec,
-                    &pgto1.gauss_center_pos,
-                    &pgto2.gauss_center_pos,
-                    nuc_center,
-                )
-        ).sum::<f64>()
-    ).sum::<f64>()
+    cgto1
+        .pgto_vec
+        .par_iter()
+        .map(|pgto1| {
+            cgto2
+                .pgto_vec
+                .par_iter()
+                .map(|pgto2| {
+                    pgto1.norm_const
+                        * pgto2.norm_const
+                        * pgto1.cgto_coeff
+                        * pgto2.cgto_coeff
+                        * calc_nuc_attr_int_prim(
+                            &pgto1.alpha,
+                            &pgto2.alpha,
+                            &pgto1.ang_mom_vec,
+                            &pgto2.ang_mom_vec,
+                            &pgto1.gauss_center_pos,
+                            &pgto2.gauss_center_pos,
+                            nuc_center,
+                        )
+                })
+                .sum::<f64>()
+        })
+        .sum::<f64>()
 
     //* Serial code */
     // let mut nuc_attr_int_val: f64 = 0.0;
@@ -786,42 +801,53 @@ pub fn calc_elec_elec_repul_prim(
 }
 
 pub fn calc_elec_elec_repul_cgto(cgto1: &CGTO, cgto2: &CGTO, cgto3: &CGTO, cgto4: &CGTO) -> f64 {
-
     // * Parallel code
-    cgto1.pgto_vec.par_iter().map(|pgto1| {
-        cgto2.pgto_vec.par_iter().map(|pgto2| {
-            cgto3.pgto_vec.par_iter().map(|pgto3| {
-                cgto4.pgto_vec.par_iter().map(|pgto4| {
-                    pgto1.norm_const
-                        * pgto2.norm_const
-                        * pgto3.norm_const
-                        * pgto4.norm_const
-                        * pgto1.cgto_coeff
-                        * pgto2.cgto_coeff
-                        * pgto3.cgto_coeff
-                        * pgto4.cgto_coeff
-                        * calc_elec_elec_repul_prim(
-                            &pgto1.alpha,
-                            &pgto2.alpha,
-                            &pgto3.alpha,
-                            &pgto4.alpha,
-                            &pgto1.ang_mom_vec,
-                            &pgto2.ang_mom_vec,
-                            &pgto3.ang_mom_vec,
-                            &pgto4.ang_mom_vec,
-                            &pgto1.gauss_center_pos,
-                            &pgto2.gauss_center_pos,
-                            &pgto3.gauss_center_pos,
-                            &pgto4.gauss_center_pos,
-                        )
+    cgto1
+        .pgto_vec
+        .par_iter()
+        .map(|pgto1| {
+            cgto2
+                .pgto_vec
+                .par_iter()
+                .map(|pgto2| {
+                    cgto3
+                        .pgto_vec
+                        .par_iter()
+                        .map(|pgto3| {
+                            cgto4
+                                .pgto_vec
+                                .par_iter()
+                                .map(|pgto4| {
+                                    pgto1.norm_const
+                                        * pgto2.norm_const
+                                        * pgto3.norm_const
+                                        * pgto4.norm_const
+                                        * pgto1.cgto_coeff
+                                        * pgto2.cgto_coeff
+                                        * pgto3.cgto_coeff
+                                        * pgto4.cgto_coeff
+                                        * calc_elec_elec_repul_prim(
+                                            &pgto1.alpha,
+                                            &pgto2.alpha,
+                                            &pgto3.alpha,
+                                            &pgto4.alpha,
+                                            &pgto1.ang_mom_vec,
+                                            &pgto2.ang_mom_vec,
+                                            &pgto3.ang_mom_vec,
+                                            &pgto4.ang_mom_vec,
+                                            &pgto1.gauss_center_pos,
+                                            &pgto2.gauss_center_pos,
+                                            &pgto3.gauss_center_pos,
+                                            &pgto4.gauss_center_pos,
+                                        )
+                                })
+                                .sum::<f64>()
+                        })
+                        .sum::<f64>()
                 })
                 .sum::<f64>()
-            })
-            .sum::<f64>()
         })
         .sum::<f64>()
-    })
-    .sum::<f64>()
 
     // * Serial code
     // let mut ERI_val: f64 = 0.0;
@@ -870,7 +896,7 @@ pub fn calc_V_nn_val(geom_matr: &Array2<f64>, Z_vals: &[i32]) -> f64 {
                 let Z_val1 = *Z_vals.get(i).unwrap_or(&0);
                 let Z_val2 = *Z_vals.get(j).unwrap_or(&0);
                 V_nn_val += ((Z_val1 * Z_val2) as f64)
-                    / (atom2_pos.to_owned() - atom1_pos.to_owned()).norm();
+                    / (atom2_pos.to_shared() - atom1_pos.to_shared()).norm();
             }
         }
     }
