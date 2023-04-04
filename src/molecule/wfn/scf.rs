@@ -169,7 +169,8 @@ impl SCF {
                 self.error_matr_set.push_back(error_matr);
 
                 let mut error_set_len = self.error_matr_set.len();
-                assert_eq!(error_set_len, self.F_matr_set.len());
+                debug_assert_eq!(error_set_len, self.F_matr_set.len());
+                
                 if error_set_len > DIIS_MAX_FOCK_NO {
                     self.F_matr_set.pop_front(); //* remove oldest */
                     self.error_matr_set.pop_front();
