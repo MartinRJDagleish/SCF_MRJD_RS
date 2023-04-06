@@ -96,7 +96,7 @@ fn main() {
     // }
     // *****************************************************************
 
-    let is_run_dev: bool = true; //* Development of the code
+    let is_run_dev = true; //* Development of the code
     if is_run_dev {
         use crate::molecule::wfn::scf::*;
         let mut scf: SCF = SCF::new(mol);
