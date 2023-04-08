@@ -2,12 +2,15 @@ use std::time::Instant;
 
 use humantime::format_duration;
 
-
 #[inline]
 pub(crate) fn print_header() {
     let programme_name = "M   R   J   D      S   C   F";
-    println!("\n{}{}"," ".repeat(25),  "*".repeat(32));
-    println!("{}* {programme_name} *", " ".repeat(25), programme_name = programme_name);
+    println!("\n{}{}", " ".repeat(25), "*".repeat(32));
+    println!(
+        "{}* {programme_name} *",
+        " ".repeat(25),
+        programme_name = programme_name
+    );
     println!("{}{}", " ".repeat(25), "*".repeat(32));
     let ASCII_art_logo = String::from(
         r#"
@@ -41,7 +44,6 @@ pub(crate) fn print_header() {
         "#,
     );
     println!("{ASCII_art_logo}\n");
-
 }
 
 pub(crate) fn print_general_information() {
@@ -75,12 +77,27 @@ may not conform to the definition of the def2-group basis-sets defined by Ahlric
 ********************************************************************************
 "#;
 
-println!("{msg}");
+    println!("{msg}");
 }
 
-
 pub fn print_input_information() {
-    // let msg = 
+    // let msg =
+}
+
+pub fn print_header_with_long_barrier(header_title: &str) {
+    let barrier = format!("{}", "=".repeat(79));
+    let header_title = format!("{:^79}", header_title);
+
+    println!(
+        "{}\n{}\n{}",
+        barrier,
+        header_title,
+        barrier
+    );
+}
+
+pub fn print_input_file_line(line_no: usize, line: &String) {
+    println!("{}: {}", line_no+1, line);
 }
 
 pub(crate) fn print_footer(start_exec_time: Instant) {
