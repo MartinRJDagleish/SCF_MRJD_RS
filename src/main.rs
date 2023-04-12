@@ -70,6 +70,7 @@ fn main() {
     if is_run_dev {
         use crate::molecule::wfn::scf::*;
         let mut scf: SCF = SCF::new(mol);
+        scf.geom_analysis_pre_calc();
         scf.RHF_par(false, "sto-3g");
         // scf.MP2(false, "def2-SVP");
     }

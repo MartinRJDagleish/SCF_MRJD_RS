@@ -46,6 +46,7 @@ pub(crate) fn print_header() {
     println!("{ASCII_art_logo}\n");
 }
 
+#[inline]
 pub(crate) fn print_general_information() {
     let msg = r#"
 ================================================================================
@@ -56,7 +57,7 @@ at University of Regensburg and before starting his Master's at the LMU Munich.
 (Dec 2022 - Mar 2023) It was only written in his spare time and is not intended 
 to be used for any serious calculations.
 It was merely written to learn the Rust programming language and to get a better
-understanding of the SCF / RHF / quantum chemical methods.
+understanding of the SCF / RHF / quantum chemical methodes.
 
 The programme is written in Rust and is a "simple" (yet highly parallelized) 
 implementation of the SCF method for the calculation of the ground state energy 
@@ -80,24 +81,15 @@ may not conform to the definition of the def2-group basis-sets defined by Ahlric
     println!("{msg}");
 }
 
-pub fn print_input_information() {
-    // let msg =
-}
-
 pub fn print_header_with_long_barrier(header_title: &str) {
     let barrier = format!("{}", "=".repeat(79));
     let header_title = format!("{:^79}", header_title);
 
-    println!(
-        "{}\n{}\n{}",
-        barrier,
-        header_title,
-        barrier
-    );
+    println!("{}\n{}\n{}", barrier, header_title, barrier);
 }
 
 pub fn print_input_file_line(line_no: usize, line: &String) {
-    println!("{}: {}", line_no+1, line);
+    println!("{}: {}", line_no + 1, line);
 }
 
 pub(crate) fn print_footer(start_exec_time: Instant) {

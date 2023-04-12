@@ -167,6 +167,7 @@ impl Geometry {
         }
     }
 
+    #[inline]
     pub fn calc_r_ij(&self, i: usize, j: usize) -> f64 {
         let mut r_ij: f64 = 0.0;
         for cart_coord in 0..3 {
