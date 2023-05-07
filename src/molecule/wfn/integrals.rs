@@ -447,15 +447,7 @@ pub fn calc_R_coulomb_aux_herm(
         (0, 0, _) => {
             if v > 1 {
                 result += (v - 1) as f64
-                    * calc_R_coulomb_aux_herm(
-                        t,
-                        u,
-                        v - 2,
-                        order_boys + 1,
-                        p,
-                        P_C_vec,
-                        dist_P_C,
-                    );
+                    * calc_R_coulomb_aux_herm(t, u, v - 2, order_boys + 1, p, P_C_vec, dist_P_C);
             }
             result += P_C_vec[2]
                 * calc_R_coulomb_aux_herm(t, u, v - 1, order_boys + 1, p, P_C_vec, dist_P_C);
@@ -463,15 +455,7 @@ pub fn calc_R_coulomb_aux_herm(
         (0, _, _) => {
             if u > 1 {
                 result += (u - 1) as f64
-                    * calc_R_coulomb_aux_herm(
-                        t,
-                        u - 2,
-                        v,
-                        order_boys + 1,
-                        p,
-                        P_C_vec,
-                        dist_P_C,
-                    );
+                    * calc_R_coulomb_aux_herm(t, u - 2, v, order_boys + 1, p, P_C_vec, dist_P_C);
             }
             result += P_C_vec[1]
                 * calc_R_coulomb_aux_herm(t, u - 1, v, order_boys + 1, p, P_C_vec, dist_P_C);
@@ -479,15 +463,7 @@ pub fn calc_R_coulomb_aux_herm(
         (_, _, _) => {
             if t > 1 {
                 result += (t - 1) as f64
-                    * calc_R_coulomb_aux_herm(
-                        t - 2,
-                        u,
-                        v,
-                        order_boys + 1,
-                        p,
-                        P_C_vec,
-                        dist_P_C,
-                    );
+                    * calc_R_coulomb_aux_herm(t - 2, u, v, order_boys + 1, p, P_C_vec, dist_P_C);
             }
             result += P_C_vec[0]
                 * calc_R_coulomb_aux_herm(t - 1, u, v, order_boys + 1, p, P_C_vec, dist_P_C);
@@ -885,14 +861,72 @@ pub fn calc_elec_elec_repul_cgto(cgto1: &CGTO, cgto2: &CGTO, cgto3: &CGTO, cgto4
     // ERI_val
 }
 
-pub fn calc_cart_mu_val_pgto() {
+pub fn calc_cart_mu_val_pgto(
+    alpha1: &f64,
+    alpha2: &f64,
+    ang_mom_vec1: &Array1<i32>,
+    ang_mom_vec2: &Array1<i32>,
+    gauss1_center_pos: &Array1<f64>,
+    gauss2_center_pos: &Array1<f64>,
+    charge_center: &Array1<f64>,
+    cart_coord: usize,
+) -> f64 {
+    let gauss_prod_cent =
+        calc_gaussian_prod_center(*alpha1, *alpha2, gauss1_center_pos, gauss2_center_pos);
+    let PC_vec = &gauss_prod_cent - charge_center;
 
+    // match cart_dir {
+    //     'x' => {
+
+    //     },
+    //     'y' => {},
+    //     'z' => {},
+    //     _ => panic!("Invalid cartesian direction"),
+    // }
+
+    // let mu_tensor_cart_dir = match cart_dir {
+    //     'x' => 0,
+    //     'y' => 1,
+    //     'z' => 2,
+    //     _ => panic!("Invalid cartesian direction"),
+    // };
+
+    0.0_f64
 }
 
-pub fn calc_cart_mu_val_cgto() {
-
+pub fn calc_cart_mu_val_cgto(
+    cgto1: &CGTO,
+    cgto2: &CGTO,
+    charge_center: &Array1<f64>,
+    cart_coord: usize,
+) -> f64 {
+    cgto1
+        .pgto_vec
+        .par_iter()
+        .map(|pgto1| {
+            cgto2
+                .pgto_vec
+                .par_iter()
+                .map(|pgto2| {
+                    pgto1.norm_const
+                        * pgto2.norm_const
+                        * pgto1.cgto_coeff
+                        * pgto2.cgto_coeff
+                        * calc_cart_mu_val_pgto(
+                            &pgto1.alpha,
+                            &pgto2.alpha,
+                            &pgto1.ang_mom_vec,
+                            &pgto2.ang_mom_vec,
+                            &pgto1.gauss_center_pos,
+                            &pgto2.gauss_center_pos,
+                            charge_center,
+                            cart_coord,
+                        )
+                })
+                .sum::<f64>()
+        })
+        .sum::<f64>()
 }
-
 
 pub fn calc_V_nn_val(geom_matr: &Array2<f64>, Z_vals: &[i32]) -> f64 {
     let mut V_nn_val: f64 = 0.0;

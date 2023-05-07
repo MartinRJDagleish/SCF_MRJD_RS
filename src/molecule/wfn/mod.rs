@@ -27,6 +27,7 @@ pub struct BasisSetTotal {
     pub basis_set_cgtos: Vec<CGTO>,
     pub no_cgtos: usize,
     pub no_occ_orb: usize,
+    pub center_charge: Array1<f64>,
 }
 
 #[derive(Debug, Default)]
@@ -126,12 +127,14 @@ impl BasisSetTotal {
     fn new() -> Self {
         let basis_set_cgtos: Vec<CGTO> = Vec::new();
         let no_cgtos: usize = 0;
-        let no_occ: usize = 0;
+        let no_occ_orb: usize = 0;
+        let center_charge: Array1<f64> = Array1::zeros(3);
 
         BasisSetTotal {
             basis_set_cgtos,
             no_cgtos,
-            no_occ_orb: no_occ,
+            no_occ_orb,
+            center_charge,
         }
     }
 

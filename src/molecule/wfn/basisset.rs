@@ -206,8 +206,10 @@ impl Default for PseElementSym {
 //     }
 // }
 
-pub fn match_pse_symb(pse_hash_map: &HashMap<&str,PseElementSym>, match_string: &str) -> PseElementSym {
-
+pub fn match_pse_symb(
+    pse_hash_map: &HashMap<&str, PseElementSym>,
+    match_string: &str,
+) -> PseElementSym {
     let pse_symb = match pse_hash_map.get(match_string) {
         Some(value) => *value,
         None => panic!("Element symbol not found! Error in basis set file!"),
@@ -529,8 +531,8 @@ pub fn create_basis_set_total(
                         let mut pgto_vec: Vec<PGTO> = Vec::new();
                         for prim_idx in 0..*no_prim {
                             let alpha = atom_basis_set.alphas[prim_idx + alphas_offset];
-                            let cgto_coeff =
-                                atom_basis_set.cgto_coeffs[(2 * prim_idx) + alphas_offset + coeff_type];
+                            let cgto_coeff = atom_basis_set.cgto_coeffs
+                                [(2 * prim_idx) + alphas_offset + coeff_type];
                             //* S
                             let ang_mom_vec: Array1<i32> = array![0, 0, 0];
                             let pgto: PGTO =
@@ -562,11 +564,12 @@ pub fn create_basis_set_total(
             }
         }
     }
+
     basis_set_total.no_cgtos = basis_set_total.basis_set_cgtos.len();
     basis_set_total
 }
 
-pub fn translate_Z_val_to_sym(Z_to_sym: &HashMap<i32,PseElementSym>, Z_val: i32) -> PseElementSym {
+pub fn translate_Z_val_to_sym(Z_to_sym: &HashMap<i32, PseElementSym>, Z_val: i32) -> PseElementSym {
     let pse_symb = match Z_to_sym.get(&Z_val) {
         Some(value) => *value,
         None => panic!("Element symbol not found!"),
@@ -575,7 +578,7 @@ pub fn translate_Z_val_to_sym(Z_to_sym: &HashMap<i32,PseElementSym>, Z_val: i32)
     pse_symb
 }
 
-pub fn translate_sym_to_Z_val(sym_to_Z: &HashMap<PseElementSym,i32>, sym: PseElementSym) -> i32 {
+pub fn translate_sym_to_Z_val(sym_to_Z: &HashMap<PseElementSym, i32>, sym: PseElementSym) -> i32 {
     let Z_val = match sym_to_Z.get(&sym) {
         Some(value) => *value,
         None => panic!("Element symbol not found!"),
@@ -601,4 +604,14 @@ pub fn translate_L_char_to_val(L_char: L_char) -> i32 {
         L_char::N => 11,
         L_char::O => todo!(),
     }
+}
+
+pub fn calc_center_charge(Z_vals: &[i32], geom_matr: &Array2<f64>) -> Array1<f64> {
+    let mut center_charge: Array1<f64> = Array1::zeros(3);
+
+    for (atom_idx, atom_pos) in geom_matr.axis_iter(ndarray::Axis(0)).enumerate() {
+        center_charge = center_charge + (Z_vals[atom_idx] as f64) * atom_pos.to_owned();
+    }
+
+    center_charge
 }

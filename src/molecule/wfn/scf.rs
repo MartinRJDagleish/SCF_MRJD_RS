@@ -7,7 +7,7 @@ use ndarray::parallel::prelude::*;
 
 use crate::molecule::{
     wfn::{
-        basisset::{create_basis_set_total, parse_basis_set_file_gaussian},
+        basisset::{calc_center_charge, create_basis_set_total, parse_basis_set_file_gaussian},
         integrals::{
             calc_V_nn_val, calc_elec_elec_repul_cgto, calc_kin_energy_int_cgto,
             calc_nuc_attr_int_cgto, calc_overlap_int_cgto,
@@ -15,6 +15,8 @@ use crate::molecule::{
     },
     Molecule,
 };
+
+use super::integrals::calc_cart_mu_val_cgto;
 
 #[derive(Debug)]
 pub struct SCF {
@@ -24,8 +26,8 @@ pub struct SCF {
     pub C_matr_final: Array2<f64>,
     pub D_matr_final: Array2<f64>,
     pub orb_energies_final: Array1<f64>,
-    pub F_matr_set: VecDeque<Array2<f64>>, 
-    pub error_matr_set: VecDeque<Array2<f64>>, 
+    pub F_matr_set: VecDeque<Array2<f64>>,
+    pub error_matr_set: VecDeque<Array2<f64>>,
 }
 
 impl SCF {
@@ -238,6 +240,10 @@ impl SCF {
             self.mol.geom_obj.geom_matr.clone(),
             &self.mol.geom_obj.Z_vals,
         );
+
+        //* Create center of charge for dipole moment */
+        self.mol.wfn_total.basis_set_total.center_charge =
+            calc_center_charge(&self.mol.geom_obj.Z_vals, &self.mol.geom_obj.geom_matr);
 
         self.mol.update_no_occ_orb_rhf();
 
@@ -1109,20 +1115,40 @@ impl SCF {
         self.mol.wfn_total.HF_Matrices.H_core_matr =
             &self.mol.wfn_total.HF_Matrices.T_matr + &self.mol.wfn_total.HF_Matrices.V_ne_matr;
 
-
         //* EXTRA Step: calculate the Dipole-moment integrals (just fyi atm) */
         self.mol.wfn_total.HF_Matrices.Mu_tensor = Array3::<f64>::zeros((3, n, n));
 
         Zip::indexed(&mut self.mol.wfn_total.HF_Matrices.Mu_tensor).par_for_each(
-            |(cart_coord, idx1, idx2) , mu_val| {
-                *mu_val = calc_dipole_moment_int_cgto(
-                    &self.mol.wfn_total.basis_set_total.basis_set_cgtos[idx1],
-                    &self.mol.wfn_total.basis_set_total.basis_set_cgtos[idx2],
-                    cart_coord,
-                );
-            }
+            |(cart_coord, idx1, idx2), mu_val| {
+                if idx1 >= idx2 {
+                    // let mut v_ne_val = 0.0_f64;
+                    for (atom_idx, atom_pos) in self
+                        .mol
+                        .geom_obj
+                        .geom_matr
+                        .axis_iter(ndarray::Axis(0))
+                        .enumerate()
+                    {
+                        *mu_val += (-self.mol.geom_obj.Z_vals[atom_idx] as f64)
+                            * calc_cart_mu_val_cgto(
+                                &self.mol.wfn_total.basis_set_total.basis_set_cgtos[idx1],
+                                &self.mol.wfn_total.basis_set_total.basis_set_cgtos[idx2],
+                                &atom_pos.to_owned(),
+                                cart_coord,
+                            );
+                    }
+                } else {
+                    *mu_val = 0.0;
+                }
+            },
         );
 
+        // self.M[0,i,j] = self.M[0,j,i] \
+        //             = Mu(self.bfs[i],self.bfs[j],self.center_of_charge,'x')
+        //         self.M[1,i,j] = self.M[1,j,i] \
+        //             = Mu(self.bfs[i],self.bfs[j],self.center_of_charge,'y')
+        //         self.M[2,i,j] = self.M[2,j,i] \
+        //             = Mu(self.bfs[i],self.bfs[j],self.center_of_charge,'z')
 
         if is_debug {
             println!(
@@ -1743,7 +1769,6 @@ impl SCF {
         println!("New total energy: {:>10.5}", self.E_tot_final + MP2_E);
     }
 }
-
 
 #[inline]
 pub fn calc_ijkl_idx(i: usize, j: usize, k: usize, l: usize) -> usize {
