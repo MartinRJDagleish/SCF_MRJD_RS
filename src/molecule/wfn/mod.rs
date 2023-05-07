@@ -38,6 +38,7 @@ pub struct HF_Matrices {
     pub ERI_arr1: Array1<f64>,
     pub ERI_tensor: Array4<f64>,
     pub V_nn_val: f64,
+    pub Mu_tensor: Array3<f64>,
 }
 
 #[derive(Debug, Default)]
