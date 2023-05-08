@@ -625,6 +625,8 @@ impl SCF {
         self.C_matr_final = C_matr_AO_basis;
         self.D_matr_final = D_matr;
         self.orb_energies_final = orb_energy_arr;
+
+        self.calc_dipole_moment_vec();
     }
 
     pub fn RHF_ser(&mut self, is_debug: bool, basis_set_name: &str) {
@@ -1118,30 +1120,54 @@ impl SCF {
         //* EXTRA Step: calculate the Dipole-moment integrals (just fyi atm) */
         self.mol.wfn_total.HF_Matrices.Mu_tensor = Array3::<f64>::zeros((3, n, n));
 
+        // for cart_coord in 0..3 {
+        //     for i in 0..n {
+        //         for j in 0..n {
+        //             if i >= j {
+        //                 self.mol.wfn_total.HF_Matrices.Mu_tensor[(cart_coord, i, j)] =
+        //                     calc_cart_mu_val_cgto(
+        //                         &self.mol.wfn_total.basis_set_total.basis_set_cgtos[i],
+        //                         &self.mol.wfn_total.basis_set_total.basis_set_cgtos[j],
+        //                         &self.mol.wfn_total.basis_set_total.center_charge,
+        //                         cart_coord,
+        //                     );
+        //             }
+        //         }
+        //     }
+        // }
+
         Zip::indexed(&mut self.mol.wfn_total.HF_Matrices.Mu_tensor).par_for_each(
             |(cart_coord, idx1, idx2), mu_val| {
                 if idx1 >= idx2 {
-                    // let mut v_ne_val = 0.0_f64;
-                    for (atom_idx, atom_pos) in self
-                        .mol
-                        .geom_obj
-                        .geom_matr
-                        .axis_iter(ndarray::Axis(0))
-                        .enumerate()
-                    {
-                        *mu_val += (-self.mol.geom_obj.Z_vals[atom_idx] as f64)
-                            * calc_cart_mu_val_cgto(
-                                &self.mol.wfn_total.basis_set_total.basis_set_cgtos[idx1],
-                                &self.mol.wfn_total.basis_set_total.basis_set_cgtos[idx2],
-                                &atom_pos.to_owned(),
-                                cart_coord,
-                            );
-                    }
-                } else {
-                    *mu_val = 0.0;
+                    *mu_val = calc_cart_mu_val_cgto(
+                        &self.mol.wfn_total.basis_set_total.basis_set_cgtos[idx1],
+                        &self.mol.wfn_total.basis_set_total.basis_set_cgtos[idx2],
+                        &self.mol.wfn_total.basis_set_total.center_charge,
+                        cart_coord,
+                    );
                 }
             },
         );
+
+        // * copy lower triangle to upper triangle
+        // * assign version
+        for cart_coord in 0..3 {
+            for i in 0..n - 1 {
+                let slice = self
+                    .mol
+                    .wfn_total
+                    .HF_Matrices
+                    .Mu_tensor
+                    .slice(s![cart_coord, i + 1..n, i])
+                    .to_shared();
+                self.mol
+                    .wfn_total
+                    .HF_Matrices
+                    .Mu_tensor
+                    .slice_mut(s![cart_coord, i, i + 1..n])
+                    .assign(&slice);
+            }
+        }
 
         // self.M[0,i,j] = self.M[0,j,i] \
         //             = Mu(self.bfs[i],self.bfs[j],self.center_of_charge,'x')
@@ -1166,6 +1192,10 @@ impl SCF {
             println!(
                 "Core Hamiltonian matrix H_core:\n{:>8.5}\n",
                 &self.mol.wfn_total.HF_Matrices.H_core_matr
+            );
+            println!(
+                "Electric dipole tensor Mu:\n{:>8.5}\n",
+                &self.mol.wfn_total.HF_Matrices.Mu_tensor
             );
         }
     }
@@ -1767,6 +1797,48 @@ impl SCF {
 
         println!("MP2 energy: {:>10.5}", MP2_E);
         println!("New total energy: {:>10.5}", self.E_tot_final + MP2_E);
+    }
+
+    pub fn calc_dipole_moment_vec(&mut self) {
+        let mut elec_dip_mom_vec = Array1::<f64>::zeros(3);
+        let mut nuc_dip_mom_vec = Array1::<f64>::zeros(3);
+
+        for cart_coord in 0..3 {
+            elec_dip_mom_vec[cart_coord] =
+                -2.0_f64
+                    * Zip::from(&self.D_matr_final)
+                        .and(&self.mol.wfn_total.HF_Matrices.Mu_tensor.slice(s![
+                            cart_coord,
+                            ..,
+                            ..
+                        ]))
+                        .into_par_iter()
+                        .map(|(D_matr_val, Mu_tensor_val)| D_matr_val * Mu_tensor_val)
+                        .sum::<f64>();
+        }
+
+        for cart_coord in 0..3 {
+            for (atom_idx, Z_val) in self.mol.geom_obj.Z_vals.iter().enumerate() {
+                nuc_dip_mom_vec[cart_coord] += (*Z_val as f64)
+                    * (self.mol.geom_obj.geom_matr[(atom_idx, cart_coord)]
+                        - self.mol.wfn_total.basis_set_total.center_charge[cart_coord]);
+            }
+        }
+        // for (atom_idx, Z_val) in self.mol.geom_obj.Z_vals.iter().enumerate() {
+        //     nuc_dip_mom_vec = nuc_dip_mom_vec
+        //         + (*Z_val as f64)
+        //             * (self.mol.geom_obj.geom_matr.slice(s![(atom_idx, ..)])
+        //                 - self.mol.wfn_total.basis_set_total.center_charge);
+        // }
+
+        // * Convert to Debye
+        self.mol.wfn_total.basis_set_total.dipole_moment_total =
+            2.541765_f64 * (elec_dip_mom_vec + nuc_dip_mom_vec);
+
+        println!(
+            "\nDipole moment (in Debye): {:>8.5}",
+            self.mol.wfn_total.basis_set_total.dipole_moment_total
+        );
     }
 }
 

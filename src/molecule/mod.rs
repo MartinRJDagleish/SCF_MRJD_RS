@@ -13,7 +13,7 @@ pub struct Molecule {
     pub geom_obj: geometry::Geometry,
     pub Z_vals: Vec<i32>,
     pub hessian: Array2<f64>,
-    pub no_atoms: usize,
+    pub no_atoms: usize, // * DEPRECATED -> moved to geom_obj
     pub wfn_total: wfn::WfnTotal,
 }
 

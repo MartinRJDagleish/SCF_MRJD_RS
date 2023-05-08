@@ -871,27 +871,44 @@ pub fn calc_cart_mu_val_pgto(
     charge_center: &Array1<f64>,
     cart_coord: usize,
 ) -> f64 {
+    assert!(cart_coord < 3); //* Checks for valid input */
     let gauss_prod_cent =
         calc_gaussian_prod_center(*alpha1, *alpha2, gauss1_center_pos, gauss2_center_pos);
     let PC_vec = &gauss_prod_cent - charge_center;
 
-    // match cart_dir {
-    //     'x' => {
+    // * Calculate the overlap integral over the other cart_coord directions */
+    let mut overlap_other_two: f64 = 1.0_f64;
+    for cart_coord_other in 0..3 {
+        if cart_coord_other != cart_coord {
+            overlap_other_two *= calc_E_herm_gauss_coeff(
+                ang_mom_vec1[cart_coord_other],
+                ang_mom_vec2[cart_coord_other],
+                0,
+                gauss1_center_pos[cart_coord_other] - gauss2_center_pos[cart_coord_other],
+                alpha1,
+                alpha2,
+            );
+        }
+    }
+    //* Calculate the dipole part */
+    let mu_int: f64 = calc_E_herm_gauss_coeff(
+        ang_mom_vec1[cart_coord],
+        ang_mom_vec2[cart_coord],
+        1,
+        gauss1_center_pos[cart_coord] - gauss2_center_pos[cart_coord],
+        alpha1,
+        alpha2,
+    ) + PC_vec[cart_coord]
+        * calc_E_herm_gauss_coeff(
+            ang_mom_vec1[cart_coord],
+            ang_mom_vec2[cart_coord],
+            0,
+            gauss1_center_pos[cart_coord] - gauss2_center_pos[cart_coord],
+            alpha1,
+            alpha2,
+        );
 
-    //     },
-    //     'y' => {},
-    //     'z' => {},
-    //     _ => panic!("Invalid cartesian direction"),
-    // }
-
-    // let mu_tensor_cart_dir = match cart_dir {
-    //     'x' => 0,
-    //     'y' => 1,
-    //     'z' => 2,
-    //     _ => panic!("Invalid cartesian direction"),
-    // };
-
-    0.0_f64
+    mu_int * overlap_other_two * PI.powf(1.5) * (alpha1 + alpha2).powf(-1.5)
 }
 
 pub fn calc_cart_mu_val_cgto(
@@ -946,3 +963,18 @@ pub fn calc_V_nn_val(geom_matr: &Array2<f64>, Z_vals: &[i32]) -> f64 {
 
     V_nn_val
 }
+
+// #[inline(always)]
+// fn other_two_idxs(n: usize) -> [usize; 2] {
+//     assert!(n < 3);
+//     let arr: [usize; 3] = [0, 1, 2];
+//     let mut result: [usize; 2] = [0; 2];
+//     let mut j = 0;
+//     for i in 0..3 {
+//         if i != n {
+//             result[j] = arr[i];
+//             j += 1;
+//         }
+//     }
+//     result
+// }

@@ -28,6 +28,7 @@ pub struct BasisSetTotal {
     pub no_cgtos: usize,
     pub no_occ_orb: usize,
     pub center_charge: Array1<f64>,
+    pub dipole_moment_total: Array1<f64>,
 }
 
 #[derive(Debug, Default)]
@@ -128,13 +129,15 @@ impl BasisSetTotal {
         let basis_set_cgtos: Vec<CGTO> = Vec::new();
         let no_cgtos: usize = 0;
         let no_occ_orb: usize = 0;
-        let center_charge: Array1<f64> = Array1::zeros(3);
+        let center_charge = Array1::zeros(3);
+        let dipole_moment_total = Array1::zeros(3);
 
         BasisSetTotal {
             basis_set_cgtos,
             no_cgtos,
             no_occ_orb,
             center_charge,
+            dipole_moment_total
         }
     }
 

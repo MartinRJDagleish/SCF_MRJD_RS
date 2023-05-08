@@ -608,10 +608,11 @@ pub fn translate_L_char_to_val(L_char: L_char) -> i32 {
 
 pub fn calc_center_charge(Z_vals: &[i32], geom_matr: &Array2<f64>) -> Array1<f64> {
     let mut center_charge: Array1<f64> = Array1::zeros(3);
+    let sum_Z_vals = Z_vals.iter().sum::<i32>() as f64;
 
     for (atom_idx, atom_pos) in geom_matr.axis_iter(ndarray::Axis(0)).enumerate() {
         center_charge = center_charge + (Z_vals[atom_idx] as f64) * atom_pos.to_owned();
     }
 
-    center_charge
+    center_charge / sum_Z_vals
 }
