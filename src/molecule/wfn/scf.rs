@@ -1833,7 +1833,7 @@ impl SCF {
 
         // * Convert to Debye
         self.mol.wfn_total.basis_set_total.dipole_moment_total =
-            2.541765_f64 * (elec_dip_mom_vec + nuc_dip_mom_vec);
+           2.5417464519_f64 * (elec_dip_mom_vec + nuc_dip_mom_vec);
 
         println!(
             "\nDipole moment (in Debye): {:>8.5}",
