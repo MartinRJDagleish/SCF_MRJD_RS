@@ -13,7 +13,7 @@ pub struct Molecule {
     pub geom_obj: geometry::Geometry,
     pub Z_vals: Vec<i32>,
     pub hessian: Array2<f64>,
-    pub no_atoms: usize,
+    pub no_atoms: usize, // * DEPRECATED -> moved to geom_obj
     pub wfn_total: wfn::WfnTotal,
 }
 
@@ -30,7 +30,7 @@ impl Molecule {
             geometry::Geometry::new(no_atoms, geom_matr, Z_vals.clone());
 
         //* Define a 0-matrix which can be edited later on ?
-        let hessian: Array2<f64> = Array::default((3 *no_atoms, 3 * no_atoms));
+        let hessian: Array2<f64> = Array::default((3 * no_atoms, 3 * no_atoms));
 
         let wfn_total: wfn::WfnTotal = wfn::WfnTotal::new();
 
@@ -56,12 +56,12 @@ impl Molecule {
             // no_occ_orb = 0;
             println!("Warning: Charge is too high for the number of electrons! Charge set to 0!");
         }
-
     }
 
     fn read_crawford_inputfile(geom_filename: &str) -> (Vec<i32>, Array2<f64>, usize) {
         //* Step 1: Read the coord data from input
-        println!("Inputfile: {geom_filename}");
+        // println!("Inputfile: {geom_filename}");
+        crate::print_utils::print_header_with_long_barrier("INPUT FILE");
         println!("Reading geometry from input file...\n");
 
         let geom_file = fs::File::open(geom_filename).expect("Geometry file not found!");
@@ -78,7 +78,8 @@ impl Molecule {
 
         for (atom_idx, line) in geom_file_lines.enumerate() {
             //* Print out the read geometry to stdout */
-            println!("{line}");
+            // println!("{line}");
+            crate::print_utils::print_input_file_line(atom_idx, &line);
             let mut line_split = line.split_whitespace();
 
             Z_vals.push(line_split.next().unwrap().parse().unwrap());

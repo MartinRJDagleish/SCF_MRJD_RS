@@ -250,5 +250,3 @@ class ArrayBaseSynthProvider:
 def __lldb_init_module(debugger: lldb.SBDebugger, internal_dict):
     log.info("Initializing")
     initialize_category(debugger)
-
-# This line there? 

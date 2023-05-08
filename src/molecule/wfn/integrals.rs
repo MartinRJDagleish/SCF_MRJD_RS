@@ -71,7 +71,7 @@ pub fn calc_E_herm_gauss_coeff(
 }
 
 #[inline]
-pub fn calc_overlap_int_prim(
+pub fn calc_overlap_int_pgto(
     alpha1: &f64,
     alpha2: &f64,
     ang_mom_vec1: &Array1<i32>,
@@ -146,7 +146,7 @@ pub fn calc_overlap_int_cgto(cgto1: &CGTO, cgto2: &CGTO) -> f64 {
                         * pgto2.norm_const
                         * pgto1.cgto_coeff
                         * pgto2.cgto_coeff
-                        * calc_overlap_int_prim(
+                        * calc_overlap_int_pgto(
                             &pgto1.alpha,
                             &pgto2.alpha,
                             &pgto1.ang_mom_vec,
@@ -180,7 +180,7 @@ pub fn calc_overlap_int_cgto(cgto1: &CGTO, cgto2: &CGTO) -> f64 {
     // overlap_int_val
 }
 
-pub fn calc_kin_energy_int_prim(
+pub fn calc_kin_energy_int_pgto(
     alpha1: &f64,
     alpha2: &f64,
     ang_mom_vec1: &Array1<i32>,
@@ -215,7 +215,7 @@ pub fn calc_kin_energy_int_prim(
     let mut ang_mom_vec2_tmp = ang_mom_vec2.clone();
     let part1: f64 = alpha2
         * (2.0 * ang_mom_vec2_tmp.sum() as f64 + 3.0)
-        * calc_overlap_int_prim(
+        * calc_overlap_int_pgto(
             alpha1,
             alpha2,
             ang_mom_vec1,
@@ -227,7 +227,7 @@ pub fn calc_kin_energy_int_prim(
     let mut part2: f64 = 0.0;
     (0..3).for_each(|i| {
         ang_mom_vec2_tmp[i] += 2;
-        part2 += calc_overlap_int_prim(
+        part2 += calc_overlap_int_pgto(
             alpha1,
             alpha2,
             ang_mom_vec1,
@@ -244,7 +244,7 @@ pub fn calc_kin_energy_int_prim(
         ang_mom_vec2_tmp[i] -= 2;
         part3 += ((ang_mom_vec2_tmp[i] + 1) as f64) //* this is l * (l-1) effectively 
             * ((ang_mom_vec2_tmp[i] + 2) as f64)
-            * calc_overlap_int_prim(
+            * calc_overlap_int_pgto(
                 alpha1,
                 alpha2,
                 ang_mom_vec1,
@@ -288,7 +288,7 @@ pub fn calc_kin_energy_int_cgto(cgto1: &CGTO, cgto2: &CGTO) -> f64 {
                         * pgto2.norm_const
                         * pgto1.cgto_coeff
                         * pgto2.cgto_coeff
-                        * calc_kin_energy_int_prim(
+                        * calc_kin_energy_int_pgto(
                             &pgto1.alpha,
                             &pgto2.alpha,
                             &pgto1.ang_mom_vec,
@@ -324,7 +324,7 @@ pub fn calc_kin_energy_int_cgto(cgto1: &CGTO, cgto2: &CGTO) -> f64 {
 }
 
 #[inline]
-pub fn calc_R_coulomb_aux_herm_int(
+pub fn calc_R_coulomb_aux_herm(
     t: i32,
     u: i32,
     v: i32,
@@ -447,50 +447,26 @@ pub fn calc_R_coulomb_aux_herm_int(
         (0, 0, _) => {
             if v > 1 {
                 result += (v - 1) as f64
-                    * calc_R_coulomb_aux_herm_int(
-                        t,
-                        u,
-                        v - 2,
-                        order_boys + 1,
-                        p,
-                        P_C_vec,
-                        dist_P_C,
-                    );
+                    * calc_R_coulomb_aux_herm(t, u, v - 2, order_boys + 1, p, P_C_vec, dist_P_C);
             }
             result += P_C_vec[2]
-                * calc_R_coulomb_aux_herm_int(t, u, v - 1, order_boys + 1, p, P_C_vec, dist_P_C);
+                * calc_R_coulomb_aux_herm(t, u, v - 1, order_boys + 1, p, P_C_vec, dist_P_C);
         }
         (0, _, _) => {
             if u > 1 {
                 result += (u - 1) as f64
-                    * calc_R_coulomb_aux_herm_int(
-                        t,
-                        u - 2,
-                        v,
-                        order_boys + 1,
-                        p,
-                        P_C_vec,
-                        dist_P_C,
-                    );
+                    * calc_R_coulomb_aux_herm(t, u - 2, v, order_boys + 1, p, P_C_vec, dist_P_C);
             }
             result += P_C_vec[1]
-                * calc_R_coulomb_aux_herm_int(t, u - 1, v, order_boys + 1, p, P_C_vec, dist_P_C);
+                * calc_R_coulomb_aux_herm(t, u - 1, v, order_boys + 1, p, P_C_vec, dist_P_C);
         }
         (_, _, _) => {
             if t > 1 {
                 result += (t - 1) as f64
-                    * calc_R_coulomb_aux_herm_int(
-                        t - 2,
-                        u,
-                        v,
-                        order_boys + 1,
-                        p,
-                        P_C_vec,
-                        dist_P_C,
-                    );
+                    * calc_R_coulomb_aux_herm(t - 2, u, v, order_boys + 1, p, P_C_vec, dist_P_C);
             }
             result += P_C_vec[0]
-                * calc_R_coulomb_aux_herm_int(t - 1, u, v, order_boys + 1, p, P_C_vec, dist_P_C);
+                * calc_R_coulomb_aux_herm(t - 1, u, v, order_boys + 1, p, P_C_vec, dist_P_C);
         }
     }
 
@@ -527,7 +503,7 @@ pub fn calc_gaussian_prod_center(
     p_recip * (alpha1 * gauss1_center_pos + alpha2 * gauss2_center_pos)
 }
 
-pub fn calc_nuc_attr_int_prim(
+pub fn calc_nuc_attr_int_pgto(
     alpha1: &f64,
     alpha2: &f64,
     ang_mom_vec1: &Array1<i32>,
@@ -596,7 +572,7 @@ pub fn calc_nuc_attr_int_prim(
                 }
 
                 result_V_ne_prim += result_tmp
-                    * calc_R_coulomb_aux_herm_int(
+                    * calc_R_coulomb_aux_herm(
                         t, u, v, 0, &p,
                         &P_C_vec, // wrong: &gaussian_prod_center, here should be P-C vec
                         dist_P_C,
@@ -622,7 +598,7 @@ pub fn calc_nuc_attr_int_cgto(cgto1: &CGTO, cgto2: &CGTO, nuc_center: &Array1<f6
                         * pgto2.norm_const
                         * pgto1.cgto_coeff
                         * pgto2.cgto_coeff
-                        * calc_nuc_attr_int_prim(
+                        * calc_nuc_attr_int_pgto(
                             &pgto1.alpha,
                             &pgto2.alpha,
                             &pgto1.ang_mom_vec,
@@ -660,7 +636,7 @@ pub fn calc_nuc_attr_int_cgto(cgto1: &CGTO, cgto2: &CGTO, nuc_center: &Array1<f6
 }
 
 #[allow(clippy::too_many_arguments)]
-pub fn calc_elec_elec_repul_prim(
+pub fn calc_elec_elec_repul_pgto(
     alpha1: &f64,
     alpha2: &f64,
     alpha3: &f64,
@@ -721,7 +697,7 @@ pub fn calc_elec_elec_repul_prim(
                             ERI_result += result_tmp1
                                 * result_tmp2
                                 * (-1.0_f64).powi(tau + nu + phi)
-                                * calc_R_coulomb_aux_herm_int(
+                                * calc_R_coulomb_aux_herm(
                                     t + tau,
                                     u + nu,
                                     v + phi,
@@ -826,7 +802,7 @@ pub fn calc_elec_elec_repul_cgto(cgto1: &CGTO, cgto2: &CGTO, cgto3: &CGTO, cgto4
                                         * pgto2.cgto_coeff
                                         * pgto3.cgto_coeff
                                         * pgto4.cgto_coeff
-                                        * calc_elec_elec_repul_prim(
+                                        * calc_elec_elec_repul_pgto(
                                             &pgto1.alpha,
                                             &pgto2.alpha,
                                             &pgto3.alpha,
@@ -885,6 +861,90 @@ pub fn calc_elec_elec_repul_cgto(cgto1: &CGTO, cgto2: &CGTO, cgto3: &CGTO, cgto4
     // ERI_val
 }
 
+pub fn calc_cart_mu_val_pgto(
+    alpha1: &f64,
+    alpha2: &f64,
+    ang_mom_vec1: &Array1<i32>,
+    ang_mom_vec2: &Array1<i32>,
+    gauss1_center_pos: &Array1<f64>,
+    gauss2_center_pos: &Array1<f64>,
+    charge_center: &Array1<f64>,
+    cart_coord: usize,
+) -> f64 {
+    assert!(cart_coord < 3); //* Checks for valid input */
+    let gauss_prod_cent =
+        calc_gaussian_prod_center(*alpha1, *alpha2, gauss1_center_pos, gauss2_center_pos);
+    let PC_vec = &gauss_prod_cent - charge_center;
+
+    // * Calculate the overlap integral over the other cart_coord directions */
+    let mut overlap_other_two: f64 = 1.0_f64;
+    for cart_coord_other in 0..3 {
+        if cart_coord_other != cart_coord {
+            overlap_other_two *= calc_E_herm_gauss_coeff(
+                ang_mom_vec1[cart_coord_other],
+                ang_mom_vec2[cart_coord_other],
+                0,
+                gauss1_center_pos[cart_coord_other] - gauss2_center_pos[cart_coord_other],
+                alpha1,
+                alpha2,
+            );
+        }
+    }
+    //* Calculate the dipole part */
+    let mu_int: f64 = calc_E_herm_gauss_coeff(
+        ang_mom_vec1[cart_coord],
+        ang_mom_vec2[cart_coord],
+        1,
+        gauss1_center_pos[cart_coord] - gauss2_center_pos[cart_coord],
+        alpha1,
+        alpha2,
+    ) + PC_vec[cart_coord]
+        * calc_E_herm_gauss_coeff(
+            ang_mom_vec1[cart_coord],
+            ang_mom_vec2[cart_coord],
+            0,
+            gauss1_center_pos[cart_coord] - gauss2_center_pos[cart_coord],
+            alpha1,
+            alpha2,
+        );
+
+    mu_int * overlap_other_two * PI.powf(1.5) * (alpha1 + alpha2).powf(-1.5)
+}
+
+pub fn calc_cart_mu_val_cgto(
+    cgto1: &CGTO,
+    cgto2: &CGTO,
+    charge_center: &Array1<f64>,
+    cart_coord: usize,
+) -> f64 {
+    cgto1
+        .pgto_vec
+        .par_iter()
+        .map(|pgto1| {
+            cgto2
+                .pgto_vec
+                .par_iter()
+                .map(|pgto2| {
+                    pgto1.norm_const
+                        * pgto2.norm_const
+                        * pgto1.cgto_coeff
+                        * pgto2.cgto_coeff
+                        * calc_cart_mu_val_pgto(
+                            &pgto1.alpha,
+                            &pgto2.alpha,
+                            &pgto1.ang_mom_vec,
+                            &pgto2.ang_mom_vec,
+                            &pgto1.gauss_center_pos,
+                            &pgto2.gauss_center_pos,
+                            charge_center,
+                            cart_coord,
+                        )
+                })
+                .sum::<f64>()
+        })
+        .sum::<f64>()
+}
+
 pub fn calc_V_nn_val(geom_matr: &Array2<f64>, Z_vals: &[i32]) -> f64 {
     let mut V_nn_val: f64 = 0.0;
     for (i, atom1_pos) in geom_matr.axis_iter(ndarray::Axis(0)).enumerate() {
@@ -903,3 +963,18 @@ pub fn calc_V_nn_val(geom_matr: &Array2<f64>, Z_vals: &[i32]) -> f64 {
 
     V_nn_val
 }
+
+// #[inline(always)]
+// fn other_two_idxs(n: usize) -> [usize; 2] {
+//     assert!(n < 3);
+//     let arr: [usize; 3] = [0, 1, 2];
+//     let mut result: [usize; 2] = [0; 2];
+//     let mut j = 0;
+//     for i in 0..3 {
+//         if i != n {
+//             result[j] = arr[i];
+//             j += 1;
+//         }
+//     }
+//     result
+// }

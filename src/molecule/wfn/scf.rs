@@ -1,13 +1,13 @@
-use std::collections::VecDeque;
+use std::{collections::VecDeque, f64::consts::PI};
 
 use ndarray::{concatenate, prelude::*, Zip};
-use ndarray_linalg::{Eigh, Inverse, SolveH, SymmetricSqrt, UPLO};
+use ndarray_linalg::{EigValsh, Eigh, Inverse, SolveH, SymmetricSqrt, UPLO};
 
 use ndarray::parallel::prelude::*;
 
 use crate::molecule::{
     wfn::{
-        basisset::{create_basis_set_total, parse_basis_set_file_gaussian},
+        basisset::{calc_center_charge, create_basis_set_total, parse_basis_set_file_gaussian},
         integrals::{
             calc_V_nn_val, calc_elec_elec_repul_cgto, calc_kin_energy_int_cgto,
             calc_nuc_attr_int_cgto, calc_overlap_int_cgto,
@@ -15,6 +15,8 @@ use crate::molecule::{
     },
     Molecule,
 };
+
+use super::integrals::calc_cart_mu_val_cgto;
 
 #[derive(Debug)]
 pub struct SCF {
@@ -24,8 +26,8 @@ pub struct SCF {
     pub C_matr_final: Array2<f64>,
     pub D_matr_final: Array2<f64>,
     pub orb_energies_final: Array1<f64>,
-    pub F_matr_set: VecDeque<Array2<f64>>, // TODO: Impl ADIIS for Fock matrix
-    pub error_matr_set: VecDeque<Array2<f64>>, //TODO: Impl ADIIS for error matrix
+    pub F_matr_set: VecDeque<Array2<f64>>,
+    pub error_matr_set: VecDeque<Array2<f64>>,
 }
 
 impl SCF {
@@ -47,15 +49,201 @@ impl SCF {
         }
     }
 
-    pub fn RHF_par(&mut self, is_debug: bool, basis_set_name: &str) {
-        // * Step 1: Create basis set for molecule -> mol object gets passed to SCF object
+    pub fn geom_analysis_pre_calc(&mut self) {
+        let no_atoms = self.mol.no_atoms;
+        crate::print_utils::print_header_with_long_barrier("GEOMETRY ANALYSIS (PRE Calc)");
 
+        //TODO: Create bond map where the vdW radii are used to determine all
+        //TODO: possible neighbors (and bonds) to other atoms
+
+        //* Step 2: Bond lengths
+        println!("\nInteratomic distances (in bohr):");
+        for i in 0..no_atoms {
+            for j in 0..i {
+                let bond_length: f64 = self.mol.geom_obj.calc_r_ij(j, i);
+
+                println!("Distance between {}-{} is: {:3.5}", j, i, bond_length);
+            }
+        }
+
+        //* Step 3: Bond angles
+        println!("\nBond angles (in degrees):");
+        for i in 0..no_atoms {
+            for j in 0..i {
+                for k in 0..j {
+                    //TODO: use bond-map here
+                    if self.mol.geom_obj.calc_r_ij(i, j) < 4.0
+                        && self.mol.geom_obj.calc_r_ij(j, k) < 4.0
+                    {
+                        let bond_angle: f64 = self.mol.geom_obj.calc_bond_angle(i, j, k);
+                        println!("Angle for {}-{}-{} is: {:.5}", i, j, k, bond_angle);
+                    }
+                }
+            }
+        }
+
+        // //* Step 4: OOP angles
+        if self.mol.geom_obj.geom_matr.shape()[0] > 3 {
+            println!("\nOut-of-plane angles (in degrees):\n");
+
+            for i in 0..no_atoms {
+                for j in 0..no_atoms {
+                    for k in 0..no_atoms {
+                        for l in 0..no_atoms {
+                            let bond_dist_jk: f64 = self.mol.geom_obj.calc_r_ij(j, k);
+                            let bond_dist_kl: f64 = self.mol.geom_obj.calc_r_ij(k, l);
+                            let bond_dist_ik: f64 = self.mol.geom_obj.calc_r_ij(i, k);
+                            if i != j
+                                && i != k
+                                && i != l
+                                && j != k
+                                && k != l
+                                && j != l
+                                && bond_dist_jk < 4.0
+                                && bond_dist_kl < 4.0
+                                && bond_dist_ik < 4.0
+                            {
+                                let oop_angle: f64 = self.mol.geom_obj.calc_oop_angle(i, j, k, l);
+
+                                println!(
+                                    "OOP angle for {}-{}-{}-{} is: {:.2}",
+                                    i, j, k, l, oop_angle
+                                );
+                            }
+                        }
+                    }
+                }
+            }
+
+            // * Step 5: Torsion / dihedral angles
+            println!("\nTorsion angles (in degrees):\n");
+            for i in 0..no_atoms {
+                for j in 0..i {
+                    for k in 0..j {
+                        for l in 0..k {
+                            let bond_dist_ij: f64 = self.mol.geom_obj.calc_r_ij(i, j);
+                            let bond_dist_jk: f64 = self.mol.geom_obj.calc_r_ij(j, k);
+                            let bond_dist_kl: f64 = self.mol.geom_obj.calc_r_ij(k, l);
+                            if bond_dist_ij < 4.0 && bond_dist_jk < 4.0 && bond_dist_kl < 4.0 {
+                                let dihedral_angle: f64 =
+                                    self.mol.geom_obj.calc_dihedral_angle(i, j, k, l);
+                                println!(
+                                    "Dihedral angle for {}-{}-{}-{} is: {:.5}",
+                                    i, j, k, l, dihedral_angle
+                                );
+                            }
+                        }
+                    }
+                }
+            }
+        } else {
+            println!("\nOut-of-plane angles: NOT ENOUGH ATOMS FOR OOP ANGLES!\n");
+            println!("\nTorsion angles: NOT ENOUGH ATOMS FOR TORSION ANGLES!\n");
+        }
+
+        // //* Step 6: Center of mass
+        println!(
+            "Center of mass:\n {:^.6}\n",
+            self.mol.geom_obj.calc_center_mass()
+        );
+
+        // //* Step 6.5: Translate molecule such that center of mass is in middle of coordinate system
+        // println!("\nTranslate molecule such that the center of mass is in middle of coordinate system");
+        // println!("Before translation:");
+        // self.mol.geom_obj.print_geom_input();
+
+        // println!("\nAfter translation:");
+        // self.mol.geom_obj.translate_mol_to_center_mass();
+        // self.mol.geom_obj.print_geom_input();
+        // println!("\n");
+
+        // //* Step 7: Inertia tensor
+        println!("\nPrinting the moment of inertia tensor:");
+        let inertia_tensor: Array2<f64> = self.mol.geom_obj.calc_inertia_tensor();
+        println!("Inertia tensor: \n{:^.5}\n", inertia_tensor);
+
+        // //* Step 7.1 : Get eigenvalues and eigenvectors of inertia tensor
+        let eigenvals: Array1<f64> = inertia_tensor
+            .eigvalsh(ndarray_linalg::UPLO::Upper)
+            .unwrap();
+
+        println!(
+            "Principal moments of inertia (amu * bohr^2): \n{:^.5}\n",
+            &eigenvals
+        );
+        println!(
+            "Principal moments of inertia (amu * Angstrom^2): \n{:^.5}\n",
+            &eigenvals * (1.0e10 * physical_constants::BOHR_RADIUS).powi(2) //* prefactor but not exponent for conversion
+        );
+        println!(
+            "Principal moments of inertia (g * cm^2): \n{:^.5e}\n",
+            &eigenvals
+                * physical_constants::ATOMIC_MASS_CONSTANT
+                * (100. * physical_constants::BOHR_RADIUS).powi(2)
+        );
+
+        // //* Step 8: Rotational constants
+        let conv_factor_recip_cm: f64 = (100.0
+            * physical_constants::ATOMIC_MASS_CONSTANT
+            * physical_constants::BOHR_RADIUS.powi(2))
+        .recip();
+        // println!("\nConversion factor: {}\n", conv_factor_recip_cm);
+        let rot_const_A_per_cm: f64 = conv_factor_recip_cm
+            * physical_constants::PLANCK_CONSTANT
+            * (8.0 * PI.powi(2) * physical_constants::SPEED_OF_LIGHT_IN_VACUUM * &eigenvals[0])
+                .recip();
+        let rot_const_B_per_cm: f64 = conv_factor_recip_cm
+            * physical_constants::PLANCK_CONSTANT
+            * (8.0 * PI.powi(2) * physical_constants::SPEED_OF_LIGHT_IN_VACUUM * &eigenvals[1])
+                .recip();
+        let rot_const_C_per_cm: f64 = conv_factor_recip_cm
+            * physical_constants::PLANCK_CONSTANT
+            * (8.0 * PI.powi(2) * physical_constants::SPEED_OF_LIGHT_IN_VACUUM * &eigenvals[2])
+                .recip();
+        println!(
+            "Rotational constants (cm^-1): \nA: {:.4}\nB: {:.4}\nC: {:.4}\n",
+            &rot_const_A_per_cm, &rot_const_B_per_cm, &rot_const_C_per_cm
+        );
+
+        //* Step 8.1: Classify the type of rotor for molecule
+        println!("Classifying the type of rotor for molecule...");
+        if no_atoms == 2 {
+            println!("Molecule is linear and diatomic!");
+        } else if &eigenvals[0] < &1.0e-4 {
+            println!("Molecule is linear!");
+        } else if (&eigenvals[0] - &eigenvals[1]).abs() < 1.0e-4
+            && (&eigenvals[1] - &eigenvals[2]).abs() < 1.0e-4
+        {
+            println!("Molecule is symmetric top!");
+        } else if (&eigenvals[0] - &eigenvals[1]).abs() < 1.0e-4
+            && (&eigenvals[1] - &eigenvals[2]).abs() > 1.0e-4
+        {
+            println!("Molecule is oblate symmetric top!")
+        } else if (&eigenvals[0] - &eigenvals[1]).abs() > 1.0e-4
+            && (&eigenvals[1] - &eigenvals[2]).abs() < 1.0e-4
+        {
+            println!("Molecule is a prolate symmetric top!")
+        } else {
+            println!("Molecule is an asymmetric top!");
+        }
+
+        println!("");
+    }
+
+    pub fn RHF_par(&mut self, is_debug: bool, basis_set_name: &str) {
+        crate::print_utils::print_header_with_long_barrier("SCF");
+
+        // * Step 1: Create basis set for molecule -> mol object gets passed to SCF object
         //* Create basis for mol object */
         self.mol.wfn_total.basis_set_total = create_basis_set_total(
             parse_basis_set_file_gaussian(basis_set_name),
             self.mol.geom_obj.geom_matr.clone(),
             &self.mol.geom_obj.Z_vals,
         );
+
+        //* Create center of charge for dipole moment */
+        self.mol.wfn_total.basis_set_total.center_charge =
+            calc_center_charge(&self.mol.geom_obj.Z_vals, &self.mol.geom_obj.geom_matr);
 
         self.mol.update_no_occ_orb_rhf();
 
@@ -92,8 +280,8 @@ impl SCF {
         //*                               DIIS                                    */
         // *************************************************************************
         const SCF_MAXITER: usize = 100;
-        const DIIS_MAX_FOCK_NO: usize = 6;
         const MIN_FOCK_NO_DIIS: usize = 2;
+        const MAX_FOCK_NO_DIIS: usize = 6;
 
         // * Matrices for SCF iterations
         let mut F_matr = Array2::<f64>::zeros((no_cgtos, no_cgtos));
@@ -109,9 +297,7 @@ impl SCF {
         let mut E_tot = 0.0_f64;
 
         //* Give initial F_matr the H_core  */
-        // ? REWRITE
         F_matr.assign(&self.mol.wfn_total.HF_Matrices.H_core_matr);
-        //? Add to fock set?
 
         for scf_iter in 0..SCF_MAXITER {
             if scf_iter == 0 {
@@ -170,8 +356,10 @@ impl SCF {
                 let error_matr = self.calc_DIIS_error_matr(&D_matr, &F_matr, &S_matr_sqrt_inv);
                 self.error_matr_set.push_back(error_matr);
 
-                let mut error_set_len = self.F_matr_set.len();
-                if error_set_len > DIIS_MAX_FOCK_NO {
+                let mut error_set_len = self.error_matr_set.len();
+                debug_assert_eq!(error_set_len, self.F_matr_set.len());
+
+                if error_set_len > MAX_FOCK_NO_DIIS {
                     self.F_matr_set.pop_front(); //* remove oldest */
                     self.error_matr_set.pop_front();
                     error_set_len -= 1;
@@ -437,6 +625,8 @@ impl SCF {
         self.C_matr_final = C_matr_AO_basis;
         self.D_matr_final = D_matr;
         self.orb_energies_final = orb_energy_arr;
+
+        self.calc_dipole_moment_vec();
     }
 
     pub fn RHF_ser(&mut self, is_debug: bool, basis_set_name: &str) {
@@ -927,6 +1117,65 @@ impl SCF {
         self.mol.wfn_total.HF_Matrices.H_core_matr =
             &self.mol.wfn_total.HF_Matrices.T_matr + &self.mol.wfn_total.HF_Matrices.V_ne_matr;
 
+        //* EXTRA Step: calculate the Dipole-moment integrals (just fyi atm) */
+        self.mol.wfn_total.HF_Matrices.Mu_tensor = Array3::<f64>::zeros((3, n, n));
+
+        // for cart_coord in 0..3 {
+        //     for i in 0..n {
+        //         for j in 0..n {
+        //             if i >= j {
+        //                 self.mol.wfn_total.HF_Matrices.Mu_tensor[(cart_coord, i, j)] =
+        //                     calc_cart_mu_val_cgto(
+        //                         &self.mol.wfn_total.basis_set_total.basis_set_cgtos[i],
+        //                         &self.mol.wfn_total.basis_set_total.basis_set_cgtos[j],
+        //                         &self.mol.wfn_total.basis_set_total.center_charge,
+        //                         cart_coord,
+        //                     );
+        //             }
+        //         }
+        //     }
+        // }
+
+        Zip::indexed(&mut self.mol.wfn_total.HF_Matrices.Mu_tensor).par_for_each(
+            |(cart_coord, idx1, idx2), mu_val| {
+                if idx1 >= idx2 {
+                    *mu_val = calc_cart_mu_val_cgto(
+                        &self.mol.wfn_total.basis_set_total.basis_set_cgtos[idx1],
+                        &self.mol.wfn_total.basis_set_total.basis_set_cgtos[idx2],
+                        &self.mol.wfn_total.basis_set_total.center_charge,
+                        cart_coord,
+                    );
+                }
+            },
+        );
+
+        // * copy lower triangle to upper triangle
+        // * assign version
+        for cart_coord in 0..3 {
+            for i in 0..n - 1 {
+                let slice = self
+                    .mol
+                    .wfn_total
+                    .HF_Matrices
+                    .Mu_tensor
+                    .slice(s![cart_coord, i + 1..n, i])
+                    .to_shared();
+                self.mol
+                    .wfn_total
+                    .HF_Matrices
+                    .Mu_tensor
+                    .slice_mut(s![cart_coord, i, i + 1..n])
+                    .assign(&slice);
+            }
+        }
+
+        // self.M[0,i,j] = self.M[0,j,i] \
+        //             = Mu(self.bfs[i],self.bfs[j],self.center_of_charge,'x')
+        //         self.M[1,i,j] = self.M[1,j,i] \
+        //             = Mu(self.bfs[i],self.bfs[j],self.center_of_charge,'y')
+        //         self.M[2,i,j] = self.M[2,j,i] \
+        //             = Mu(self.bfs[i],self.bfs[j],self.center_of_charge,'z')
+
         if is_debug {
             println!(
                 "Overlap matrix S:\n{:>8.5}\n",
@@ -943,6 +1192,10 @@ impl SCF {
             println!(
                 "Core Hamiltonian matrix H_core:\n{:>8.5}\n",
                 &self.mol.wfn_total.HF_Matrices.H_core_matr
+            );
+            println!(
+                "Electric dipole tensor Mu:\n{:>8.5}\n",
+                &self.mol.wfn_total.HF_Matrices.Mu_tensor
             );
         }
     }
@@ -1307,8 +1560,6 @@ impl SCF {
                 let slice1 = C_matr_AO_basis.slice(s![mu, ..no_occ_orb]);
                 let slice2 = C_matr_AO_basis.slice(s![nu, ..no_occ_orb]);
                 *D_matr_val = slice1.dot(&slice2);
-            } else {
-                *D_matr_val = 0.0;
             }
         });
     }
@@ -1546,6 +1797,48 @@ impl SCF {
 
         println!("MP2 energy: {:>10.5}", MP2_E);
         println!("New total energy: {:>10.5}", self.E_tot_final + MP2_E);
+    }
+
+    pub fn calc_dipole_moment_vec(&mut self) {
+        let mut elec_dip_mom_vec = Array1::<f64>::zeros(3);
+        let mut nuc_dip_mom_vec = Array1::<f64>::zeros(3);
+
+        for cart_coord in 0..3 {
+            elec_dip_mom_vec[cart_coord] =
+                -2.0_f64
+                    * Zip::from(&self.D_matr_final)
+                        .and(&self.mol.wfn_total.HF_Matrices.Mu_tensor.slice(s![
+                            cart_coord,
+                            ..,
+                            ..
+                        ]))
+                        .into_par_iter()
+                        .map(|(D_matr_val, Mu_tensor_val)| D_matr_val * Mu_tensor_val)
+                        .sum::<f64>();
+        }
+
+        for cart_coord in 0..3 {
+            for (atom_idx, Z_val) in self.mol.geom_obj.Z_vals.iter().enumerate() {
+                nuc_dip_mom_vec[cart_coord] += (*Z_val as f64)
+                    * (self.mol.geom_obj.geom_matr[(atom_idx, cart_coord)]
+                        - self.mol.wfn_total.basis_set_total.center_charge[cart_coord]);
+            }
+        }
+        // for (atom_idx, Z_val) in self.mol.geom_obj.Z_vals.iter().enumerate() {
+        //     nuc_dip_mom_vec = nuc_dip_mom_vec
+        //         + (*Z_val as f64)
+        //             * (self.mol.geom_obj.geom_matr.slice(s![(atom_idx, ..)])
+        //                 - self.mol.wfn_total.basis_set_total.center_charge);
+        // }
+
+        // * Convert to Debye
+        self.mol.wfn_total.basis_set_total.dipole_moment_total =
+            2.541765_f64 * (elec_dip_mom_vec + nuc_dip_mom_vec);
+
+        println!(
+            "\nDipole moment (in Debye): {:>8.5}",
+            self.mol.wfn_total.basis_set_total.dipole_moment_total
+        );
     }
 }
 
