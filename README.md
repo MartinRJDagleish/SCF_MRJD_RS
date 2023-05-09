@@ -28,11 +28,23 @@ The code for the Crawford's group tutorials can be found in `src/Crawford_projec
 
 <details>
 <summary> Parts that are implemented </summary>
-- Molecular integrals ($T_\text{el}, V_\text{eN}, V_\text{NN}, V_\text{ee}$) which are needed for RHF SCF
+
+- Molecular integrals ($T_\text{el}, V_\text{eN}, V_\text{NN}, V_\text{ee}$) which are needed for RHF SCF using McMurchie-Davidson algorithm
 
 - Dipole integrals (Mu-Tensor ($3\times N \times N$))
 
 - Bad $N^8$ scaling MP2 (better: $N^5$ soon)
+
+- Basic geometry analysis (Angles, OOP, Dihedrals, Inertia tensor, Analysis of geometry, Rotor classification)
+</details>
+
+<details>
+<summary> PLANNED:</summary>
+
+- Better geometry analysis (using vdW radii for better classification of which bond distances are necessary + which angles are necessary)
+
+- Transform integrals from cartesian (Hermite) basis functions to pure regular solid harmonics 
+
 </details>
 
 # Dependencies
