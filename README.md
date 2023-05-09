@@ -29,7 +29,9 @@ The code for the Crawford's group tutorials can be found in `src/Crawford_projec
 <details>
 <summary> Parts that are implemented </summary>
 - Molecular integrals ($T_\text{el}, V_\text{eN}, V_\text{NN}, V_\text{ee}$) which are needed for RHF SCF
+
 - Dipole integrals (Mu-Tensor ($3\times N \times N$))
+
 - Bad $N^8$ scaling MP2 (better: $N^5$ soon)
 </details>
 
