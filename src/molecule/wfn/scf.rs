@@ -626,7 +626,7 @@ impl SCF {
         self.D_matr_final = D_matr;
         self.orb_energies_final = orb_energy_arr;
 
-        self.calc_dipole_moment_vec();
+        self.calc_dipole_moment_vec(is_debug);
     }
 
     pub fn RHF_ser(&mut self, is_debug: bool, basis_set_name: &str) {
@@ -1799,7 +1799,7 @@ impl SCF {
         println!("New total energy: {:>10.5}", self.E_tot_final + MP2_E);
     }
 
-    pub fn calc_dipole_moment_vec(&mut self) {
+    pub fn calc_dipole_moment_vec(&mut self, is_debug: bool) {
         let mut elec_dip_mom_vec = Array1::<f64>::zeros(3);
         let mut nuc_dip_mom_vec = Array1::<f64>::zeros(3);
 
@@ -1831,14 +1831,60 @@ impl SCF {
         //                 - self.mol.wfn_total.basis_set_total.center_charge);
         // }
 
+        const DIPOLE_AU_TO_DEBYE: f64 = physical_constants::ELEMENTARY_CHARGE
+            * physical_constants::BOHR_RADIUS
+            * physical_constants::SPEED_OF_LIGHT_IN_VACUUM // just value due to def. of Debye
+            * 1.0e21_f64;
         // * Convert to Debye
         self.mol.wfn_total.basis_set_total.dipole_moment_total =
-           2.5417464519_f64 * (elec_dip_mom_vec + nuc_dip_mom_vec);
+            DIPOLE_AU_TO_DEBYE * (&elec_dip_mom_vec + &nuc_dip_mom_vec);
+
+        // * For debugging
+        if is_debug {
+            println!(
+                "\nDipole moment (in Debye): {:>8.5}",
+                self.mol.wfn_total.basis_set_total.dipole_moment_total
+            );
+        }
+
+        //* General purpose print out  */
+        let dipole_header_barrier = format!("{}", "-".repeat(79));
+        let dipole_header_au = format!(
+            "{:^20}{:^20}{:^20}{:^20}",
+            "Dipole (a.u.)", "Electronic (a.u.)", "Nuclear (a.u.)", "Total (a.u.)"
+        );
+        let dipole_header_debye = format!(
+            "{:^20}{:^20}{:^20}{:^20}",
+            "Dipole (D)", "Electronic (D)", "Nuclear (D)", "Total (D)"
+        );
 
         println!(
-            "\nDipole moment (in Debye): {:>8.5}",
-            self.mol.wfn_total.basis_set_total.dipole_moment_total
+            "\n{}\n{}\n{}",
+            dipole_header_barrier, dipole_header_au, dipole_header_barrier
         );
+
+        for cart_coord in 0..3 {
+            println!(
+                "{:^20} {:>18.8} {:>18.8} {:>18.8}",
+                format!("Dipole in {}", ["X", "Y", "Z"][cart_coord]),
+                &elec_dip_mom_vec[cart_coord],
+                &nuc_dip_mom_vec[cart_coord],
+                &elec_dip_mom_vec[cart_coord] + &nuc_dip_mom_vec[cart_coord],
+            );
+        }
+
+        println!("\n{}\n{}\n{}", dipole_header_barrier, dipole_header_debye, dipole_header_barrier);
+
+        for cart_coord in 0..3 {
+            println!(
+                "{:^20} {:>18.8} {:>18.8} {:>18.8}",
+                format!("Dipole in {}", ["X", "Y", "Z"][cart_coord]),
+                &elec_dip_mom_vec[cart_coord] * DIPOLE_AU_TO_DEBYE,
+                &nuc_dip_mom_vec[cart_coord] * DIPOLE_AU_TO_DEBYE,
+                (&elec_dip_mom_vec[cart_coord] + &nuc_dip_mom_vec[cart_coord]) * DIPOLE_AU_TO_DEBYE,
+            );
+        }
+        println!("{}", dipole_header_barrier);
     }
 }
 
