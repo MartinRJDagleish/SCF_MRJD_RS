@@ -5,6 +5,9 @@
 [![](https://www.aschey.tech/tokei/github/MartinRJDagleish/SCF_MRJD_RS?category=files)](https://github.com/MartinRJDagleish/SCF_MRJD_RS) 
 
 # SCF_MRJD_RS
+<details>
+<summary> Background info about the project </summary>
+This is the test text 
 This project started out of curiosity to understand the 
 fundamentals of Hartree-Fock (HF) calculations. As I only had an "overview" lecture in my 
 Bachelor's degree which did not include the necessary details for a broader understanding of the subject, I decided
@@ -20,6 +23,15 @@ Although the tutorials are written in C++, I decided to implement the code in Ru
 My Rust implementation is not a direct translation of the C++ code, but I tried to keep the same structure and the same naming conventions. 
 
 The code for the Crawford's group tutorials can be found in `src/Crawford_projects`. I am going to use part of the code from the tutorials to implement the Hartree-Fock SCF algorithm.
+</details>
+
+
+<details>
+<summary> Parts that are implemented </summary>
+- Molecular integrals ($T_\text{el}, V_\text{eN}, V_\text{NN}, V_\text{ee}$) which are needed for RHF SCF
+- Dipole integrals (Mu-Tensor ($3\times N \times N$))
+- Bad $N^8$ scaling MP2 (better: $N^5$ soon)
+</details>
 
 # Dependencies
 - `Rust`
