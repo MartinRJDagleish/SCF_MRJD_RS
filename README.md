@@ -7,7 +7,6 @@
 # SCF_MRJD_RS
 <details>
 <summary> Background info about the project </summary>
-This is the test text 
 This project started out of curiosity to understand the 
 fundamentals of Hartree-Fock (HF) calculations. As I only had an "overview" lecture in my 
 Bachelor's degree which did not include the necessary details for a broader understanding of the subject, I decided
