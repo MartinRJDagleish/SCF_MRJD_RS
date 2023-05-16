@@ -32,7 +32,10 @@ fn main() {
     // *****************************************************************
     // * Development of the code
     // *****************************************************************
-    let mol: Molecule = Molecule::new("inp/Project3_1/STO-3G/h2o_v2.xyz", 0);
+    // ! With Crawford type input
+    // let mol: Molecule = Molecule::new("inp/Project3_1/STO-3G/h2o_v2.xyz", 0);
+    // ! Normal (XMOL) xyz input (in AA)
+    let mol: Molecule = Molecule::new("test_inputs/water.xyz", 0);
 
     // let _is_run_project1: bool = false; //* General molecule geometry stuff
     // let _is_run_project2: bool = false; //* Hessian -> eigenfreqs from file

@@ -24,7 +24,8 @@ pub mod wfn;
 impl Molecule {
     pub fn new(geom_file: &str, charge: i32) -> Molecule {
         let (Z_vals, geom_matr, no_atoms): (Vec<i32>, Array2<f64>, usize) =
-            Self::read_crawford_inputfile(geom_file);
+            // Self::read_crawford_inputfile(geom_file);
+            Self::read_xyz_xmol_inputfile(geom_file);
 
         let geom_obj: geometry::Geometry =
             geometry::Geometry::new(no_atoms, geom_matr, Z_vals.clone());
@@ -96,6 +97,7 @@ impl Molecule {
 
     fn read_xyz_xmol_inputfile(geom_filename: &str) -> (Vec<i32>, Array2<f64>, usize) {
         //* Step 1: Read the coord data from input
+        crate::print_utils::print_header_with_long_barrier("INPUT FILE");
         println!("Inputfile: {geom_filename}");
         println!("Reading geometry from input file...\n");
 
@@ -111,21 +113,40 @@ impl Molecule {
         let mut Z_vals: Vec<i32> = Vec::new();
         let mut geom_matr: Array2<f64> = Array2::zeros((no_atoms, 3));
 
+        const PSE_elem_symbs: [&str; 119] = [
+            "Du", "H", "He", "Li", "Be", "B", "C", "N", "O", "F", "Ne", "Na", "Mg", "Al", "Si",
+            "P", "S", "Cl", "Ar", "K", "Ca", "Sc", "Ti", "V", "Cr", "Mn", "Fe", "Co", "Ni", "Cu",
+            "Zn", "Ga", "Ge", "As", "Se", "Br", "Kr", "Rb", "Sr", "Y", "Zr", "Nb", "Mo", "Tc",
+            "Ru", "Rh", "Pd", "Ag", "Cd", "In", "Sn", "Sb", "Te", "I", "Xe", "Cs", "Ba", "La",
+            "Ce", "Pr", "Nd", "Pm", "Sm", "Eu", "Gd", "Tb", "Dy", "Ho", "Er", "Tm", "Yb", "Lu",
+            "Hf", "Ta", "W", "Re", "Os", "Ir", "Pt", "Au", "Hg", "Tl", "Pb", "Bi", "Po", "At",
+            "Rn", "Fr", "Ra", "Ac", "Th", "Pa", "U", "Np", "Pu", "Am", "Cm", "Bk", "Cf", "Es",
+            "Fm", "Md", "No", "Lr", "Rf", "Db", "Sg", "Bh", "Hs", "Mt", "Ds", "Rg", "Cn", "Nh",
+            "Fl", "Mc", "Lv", "Ts", "Og",
+        ];
+
         geom_file_lines.next(); //* Skip the comment line of xyz file
 
         for (atom_idx, line) in geom_file_lines.enumerate() {
             //* Print out the read geometry to stdout */
-            println!("{line}");
+            crate::print_utils::print_input_file_line(atom_idx, &line);
             let mut line_split = line.split_whitespace();
 
-            Z_vals.push(line_split.next().unwrap().parse().unwrap());
+            let PSE_symb = line_split.next().unwrap();
+            match PSE_elem_symbs.iter().position(|&s| s == PSE_symb) {
+                Some(index) => Z_vals.push(index as i32),
+                None => {
+                    println!("UNKNOWN ELEMENT {}", PSE_symb);
+                    panic!("Unknown element in xyz file! PLEASE FOR VALID INPUT! Exiting...");
+                }
+            }
 
-            (0..3).for_each(|cart_coord| {
+            for cart_coord in 0..3 {
                 geom_matr[(atom_idx, cart_coord)] = line_split.next().unwrap().parse().unwrap();
-            });
+            }
         }
-        let BOHR_TO_AA: f64 = 0.529177210903_f64.recip();
-        geom_matr.mapv_inplace(|x| x * BOHR_TO_AA);
+        const AA_TO_BOHR: f64 = 1.0e-10 * 1.0 / physical_constants::BOHR_RADIUS;
+        geom_matr.par_mapv_inplace(|x| x * AA_TO_BOHR);
 
         println!("\n...End of geometry input.\n");
 

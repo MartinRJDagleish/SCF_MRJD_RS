@@ -1,4 +1,4 @@
-use std::{collections::VecDeque, f64::consts::PI};
+use std::{collections::VecDeque, f64::consts::PI, print};
 
 use ndarray::{concatenate, prelude::*, Zip};
 use ndarray_linalg::{EigValsh, Eigh, Inverse, SolveH, SymmetricSqrt, UPLO};
@@ -9,14 +9,12 @@ use crate::molecule::{
     wfn::{
         basisset::{calc_center_charge, create_basis_set_total, parse_basis_set_file_gaussian},
         integrals::{
-            calc_V_nn_val, calc_elec_elec_repul_cgto, calc_kin_energy_int_cgto,
-            calc_nuc_attr_int_cgto, calc_overlap_int_cgto,
+            calc_V_nn_val, calc_cart_mu_val_cgto, calc_elec_elec_repul_cgto,
+            calc_kin_energy_int_cgto, calc_nuc_attr_int_cgto, calc_overlap_int_cgto,
         },
     },
     Molecule,
 };
-
-use super::integrals::calc_cart_mu_val_cgto;
 
 #[derive(Debug)]
 pub struct SCF {
@@ -1858,6 +1856,8 @@ impl SCF {
             "Dipole (D)", "Electronic (D)", "Nuclear (D)", "Total (D)"
         );
 
+        println!("\n");
+        crate::print_utils::print_header_with_long_barrier("DIPOLE MOMENT");
         println!(
             "\n{}\n{}\n{}",
             dipole_header_barrier, dipole_header_au, dipole_header_barrier
@@ -1873,7 +1873,10 @@ impl SCF {
             );
         }
 
-        println!("\n{}\n{}\n{}", dipole_header_barrier, dipole_header_debye, dipole_header_barrier);
+        println!(
+            "\n{}\n{}\n{}",
+            dipole_header_barrier, dipole_header_debye, dipole_header_barrier
+        );
 
         for cart_coord in 0..3 {
             println!(
