@@ -59,7 +59,7 @@ impl Molecule {
         }
     }
 
-    fn read_crawford_inputfile(geom_filename: &str) -> (Vec<i32>, Array2<f64>, usize) {
+    fn _read_crawford_inputfile(geom_filename: &str) -> (Vec<i32>, Array2<f64>, usize) {
         //* Step 1: Read the coord data from input
         // println!("Inputfile: {geom_filename}");
         crate::print_utils::print_header_with_long_barrier("INPUT FILE");
@@ -113,7 +113,7 @@ impl Molecule {
         let mut Z_vals: Vec<i32> = Vec::new();
         let mut geom_matr: Array2<f64> = Array2::zeros((no_atoms, 3));
 
-        const PSE_elem_symbs: [&str; 119] = [
+        const PSE_ELEM_SYMBS: [&str; 119] = [
             "Du", "H", "He", "Li", "Be", "B", "C", "N", "O", "F", "Ne", "Na", "Mg", "Al", "Si",
             "P", "S", "Cl", "Ar", "K", "Ca", "Sc", "Ti", "V", "Cr", "Mn", "Fe", "Co", "Ni", "Cu",
             "Zn", "Ga", "Ge", "As", "Se", "Br", "Kr", "Rb", "Sr", "Y", "Zr", "Nb", "Mo", "Tc",
@@ -133,7 +133,7 @@ impl Molecule {
             let mut line_split = line.split_whitespace();
 
             let PSE_symb = line_split.next().unwrap();
-            match PSE_elem_symbs.iter().position(|&s| s == PSE_symb) {
+            match PSE_ELEM_SYMBS.iter().position(|&s| s == PSE_symb) {
                 Some(index) => Z_vals.push(index as i32),
                 None => {
                     println!("UNKNOWN ELEMENT {}", PSE_symb);

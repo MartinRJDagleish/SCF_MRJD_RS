@@ -1,4 +1,4 @@
-use std::{collections::VecDeque, f64::consts::PI, print};
+use std::{collections::VecDeque, f64::consts::PI};
 
 use ndarray::{concatenate, prelude::*, Zip};
 use ndarray_linalg::{EigValsh, Eigh, Inverse, SolveH, SymmetricSqrt, UPLO};
@@ -15,6 +15,8 @@ use crate::molecule::{
     },
     Molecule,
 };
+
+// use rayon::prelude::*;
 
 #[derive(Debug)]
 pub struct SCF {
@@ -1626,15 +1628,15 @@ impl SCF {
             Self::calc_2e_ints_par(self, false);
         }
 
-        let is_naive_mp2 = true;
-        let is_smarter_mp2 = false;
+        const IS_NAIVE_MP2: bool = true;
+        const IS_SMARTER_MP2: bool = false;
 
         let mut n = self.mol.wfn_total.basis_set_total.no_cgtos;
         n = calc_cmp_idx(n, n);
         let ERI_arr1_max_idx = calc_cmp_idx(n, n);
         let mut ERI_MO_MP2 = Array1::<f64>::zeros(ERI_arr1_max_idx + 1);
 
-        if is_naive_mp2 {
+        if IS_NAIVE_MP2 {
             // * Naive implementation with nested for loops
             for i in 0..no_cgtos {
                 for j in 0..=i {
@@ -1658,8 +1660,11 @@ impl SCF {
                                                     * C_matr[[nu, j]]
                                                     * C_matr[[lambda, k]]
                                                     * C_matr[[sigma, l]]
-                                                    * self.mol.wfn_total.HF_Matrices.ERI_arr1
-                                                        [mu_nu_lambda_sigma];
+                                                    * self.mol.wfn_total.HF_Matrices.ERI_tensor[(
+                                                        mu, nu, lambda, sigma,
+                                                    )];
+                                                    // * self.mol.wfn_total.HF_Matrices.ERI_arr1
+                                                    //     [mu_nu_lambda_sigma];
                                             }
                                         }
                                     }
@@ -1672,7 +1677,7 @@ impl SCF {
         }
 
         // TODO: FIX smarter MP2 -> not yet working
-        if is_smarter_mp2 {
+        if IS_SMARTER_MP2 {
             // * 4 for-loops
 
             let mut tmp_matr = Array2::<f64>::zeros((no_cgtos, no_cgtos));
@@ -1889,6 +1894,13 @@ impl SCF {
         }
         println!("{}", dipole_header_barrier);
     }
+
+    pub fn CCSD(&mut self) {
+        // TODO: 1. Transform from AO TO MO
+        // TODO  2. Transform MO spatial orbitals to spin orbitals
+
+        // let ERI_MO
+    }
 }
 
 #[inline]
@@ -1914,4 +1926,25 @@ pub fn calc_ijkl_idx(i: usize, j: usize, k: usize, l: usize) -> usize {
 #[inline(always)]
 pub fn calc_cmp_idx(idx1: usize, idx2: usize) -> usize {
     (idx1 * (idx1 + 1)) / 2 + idx2
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_calc_ijkl_idx() {
+        assert_eq!(calc_ijkl_idx(0, 1, 2, 3), 0);
+        assert_eq!(calc_ijkl_idx(1, 0, 3, 2), 0);
+        assert_eq!(calc_ijkl_idx(2, 3, 0, 1), 0);
+        assert_eq!(calc_ijkl_idx(3, 2, 1, 0), 0);
+        assert_eq!(calc_ijkl_idx(0, 2, 1, 3), 1);
+        assert_eq!(calc_ijkl_idx(1, 3, 0, 2), 1);
+        assert_eq!(calc_ijkl_idx(2, 0, 3, 1), 1);
+        assert_eq!(calc_ijkl_idx(3, 1, 2, 0), 1);
+        assert_eq!(calc_ijkl_idx(0, 3, 2, 1), 2);
+        assert_eq!(calc_ijkl_idx(1, 2, 3, 0), 2);
+        assert_eq!(calc_ijkl_idx(2, 1, 0, 3), 2);
+        assert_eq!(calc_ijkl_idx(3, 0, 1, 2), 2);
+    }
 }

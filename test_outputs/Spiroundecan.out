@@ -1,0 +1,1907 @@
+
+                         ********************************
+                         * M   R   J   D      S   C   F *
+                         ********************************
+
+        _____/\\\\\\\\\\\___________/\\\\\\\\\___/\\\\\\\\\\\\\\\_                                
+        ___/\\\/////////\\\______/\\\////////___\/\\\///////////__                               
+        __\//\\\______\///_____/\\\/____________\/\\\_____________                              
+        ___\////\\\___________/\\\______________\/\\\\\\\\\\\_____                             
+        ______\////\\\_______\/\\\______________\/\\\///////______                            
+        _________\////\\\____\//\\\_____________\/\\\_____________                           
+        __/\\\______\//\\\____\///\\\___________\/\\\_____________                          
+           _\///\\\\\\\\\\\/_______\////\\\\\\\\\__\/\\\_____________                         
+            ___\///////////____________\/////////___\///______________                        
+    __/\\\\____________/\\\\_____/\\\\\\\\\___________/\\\\\\\\\\\___/\\\\\\\\\\\\____        
+     _\/\\\\\\________/\\\\\\___/\\\///////\\\________\/////\\\///___\/\\\////////\\\__       
+      _\/\\\//\\\____/\\\//\\\__\/\\\_____\/\\\____________\/\\\______\/\\\______\//\\\_      
+       _\/\\\\///\\\/\\\/_\/\\\__\/\\\\\\\\\\\/_____________\/\\\______\/\\\_______\/\\\_     
+        _\/\\\__\///\\\/___\/\\\__\/\\\//////\\\_____________\/\\\______\/\\\_______\/\\\_    
+         _\/\\\____\///_____\/\\\__\/\\\____\//\\\____________\/\\\______\/\\\_______\/\\\_   
+          _\/\\\_____________\/\\\__\/\\\_____\//\\\____/\\\___\/\\\______\/\\\_______/\\\__  
+           _\/\\\_____________\/\\\__\/\\\______\//\\\__\//\\\\\\\\\_______\/\\\\\\\\\\\\/___ 
+            _\///______________\///___\///________\///____\/////////________\////////////_____
+     _______________/\\\\\\\\\__________/\\\\\\\\\\\___                                       
+      _____________/\\\///////\\\______/\\\/////////\\\_                                      
+       ____________\/\\\_____\/\\\_____\//\\\______\///__                                     
+        ____________\/\\\\\\\\\\\/_______\////\\\_________                                    
+         ____________\/\\\//////\\\__________\////\\\______                                   
+          ____________\/\\\____\//\\\____________\////\\\___                                  
+           ____________\/\\\_____\//\\\____/\\\______\//\\\__                                 
+            ____________\/\\\______\//\\\__\///\\\\\\\\\\\/___                                
+             ____________\///________\///_____\///////////_____  
+        
+
+
+================================================================================
+                             GENERAL INFORMATION
+================================================================================
+This programme was written by MRJD after finishing his Bachelor's in Chemistry 
+at University of Regensburg and before starting his Master's at the LMU Munich. 
+(Dec 2022 - Mar 2023) It was only written in his spare time and is not intended 
+to be used for any serious calculations.
+It was merely written to learn the Rust programming language and to get a better
+understanding of the SCF / RHF / quantum chemical methodes.
+
+The programme is written in Rust and is a "simple" (yet highly parallelized) 
+implementation of the SCF method for the calculation of the ground state energy 
+of a molecule for a given geometry. As of now, the programme can only calculate 
+the energy of a molecule for "paired" electrons, which is called "RHF" for 
+Restricted Hartree-Fock. No DFT-methods are implemented yet. 
+
+A number of common basis sets are added to code. Because the author has written 
+a parser for the Gaussian basis set format, it is possible to add any basis set 
+to the code. As of now the following basis sets are implemented:
+
+STO-3G, STO-6G, 6-311G*+, 6-311G*, 
+def2-SVP, def2-TZVP and def2-QZVP. 
+
+(Although this programme uses the McMurchie-Davidson algorithm to calculate the 
+integrals, which utilizies the evaluation of Cartesian Gaussians, which 
+may not conform to the definition of the def2-group basis-sets defined by Ahlrichs.)
+********************************************************************************
+
+===============================================================================
+                                  INPUT FILE                                   
+===============================================================================
+Inputfile: test_inputs/Spiroundecan.xyz
+Reading geometry from input file...
+
+1: C     -0.818105    2.564415   -1.098081
+2: C     -0.982512    1.014994   -1.106466
+3: C      0.419764    0.254329   -1.010771
+4: C      1.511175    0.902824    0.007871
+5: C      1.542846    2.444534   -0.146991
+6: C      0.175227    3.110488   -0.092514
+7: O     -0.077892    4.044196    0.658522
+8: C      1.108387    0.405283   -2.391019
+9: C      0.236116   -1.212629   -0.578422
+10: O     -0.444287   -1.564209    0.352124
+11: O      1.163085    1.453577   -3.001272
+12: O      1.793414   -0.664574   -2.887626
+13: O      1.032616   -2.150749   -1.203044
+14: C      1.383198   -2.014034   -2.583438
+15: C      2.596565   -2.899305   -2.823215
+16: C      0.176741   -2.372031   -3.456014
+17: C      1.463566    0.455294    1.472677
+18: C      0.969740    1.278027    2.508519
+19: C      1.020057    0.857519    3.848966
+20: C      1.575078   -0.386722    4.184748
+21: C      2.093729   -1.205375    3.167688
+22: C      2.042940   -0.783541    1.831550
+23: C     -2.107737    0.571079   -0.169712
+24: C     -3.078537   -0.333656   -0.650562
+25: C     -4.166488   -0.727910    0.143160
+26: C     -4.310936   -0.211606    1.441025
+27: C     -3.365662    0.707325    1.925689
+28: C     -2.280002    1.099029    1.126519
+29: H     -0.422774    2.866100   -2.090984
+30: H     -1.798209    3.053809   -0.943887
+31: H     -1.348651    0.755884   -2.122575
+32: H      2.482504    0.518427   -0.371826
+33: H      2.200736    2.893062    0.621423
+34: H      1.963596    2.690638   -1.144519
+35: H      2.916462   -2.825572   -3.879749
+36: H      2.346045   -3.951104   -2.589155
+37: H      3.429923   -2.574354   -2.171940
+38: H     -0.676700   -1.696996   -3.240374
+39: H      0.435825   -2.274894   -4.527722
+40: H     -0.145249   -3.410930   -3.250464
+41: H     -2.981919   -0.738216   -1.672157
+42: H     -4.907711   -1.437217   -0.257115
+43: H     -5.162832   -0.515859    2.068782
+44: H     -3.474390    1.130363    2.936432
+45: H     -1.567744    1.834452    1.524085
+46: H      1.615820   -0.712472    5.235698
+47: H      0.628401    1.519606    4.636825
+48: H      0.563589    2.275386    2.287282
+49: H      2.548318   -2.177108    3.415438
+50: H      2.467253   -1.432296    1.048750
+
+...End of geometry input.
+
+===============================================================================
+                         GEOMETRY ANALYSIS (PRE Calc)                          
+===============================================================================
+
+Interatomic distances (in bohr):
+Distance between 0-1 is: 2.94446
+Distance between 0-2 is: 4.95542
+Distance between 1-2 is: 3.02010
+Distance between 0-3 is: 5.79674
+Distance between 1-3 is: 5.16584
+Distance between 2-3 is: 3.07588
+Distance between 0-4 is: 4.81529
+Distance between 1-4 is: 5.77577
+Distance between 2-4 is: 4.92941
+Distance between 3-4 is: 2.92868
+Distance between 0-5 is: 2.86346
+Distance between 1-5 is: 4.91313
+Distance between 2-5 is: 5.68824
+Distance between 3-5 is: 4.87996
+Distance between 4-5 is: 2.87639
+Distance between 0-6 is: 4.56020
+Distance between 1-6 is: 6.84216
+Distance between 2-6 is: 7.88206
+Distance between 3-6 is: 6.76530
+Distance between 4-6 is: 4.56460
+Distance between 5-6 is: 2.31438
+Distance between 0-7 is: 5.98924
+Distance between 1-7 is: 4.77831
+Distance between 2-7 is: 2.92882
+Distance between 3-7 is: 4.69187
+Distance between 4-7 is: 5.78854
+Distance between 5-7 is: 6.93611
+Distance between 6-7 is: 9.24782
+Distance between 0-8 is: 7.47517
+Distance between 1-8 is: 4.90099
+Distance between 2-8 is: 2.91080
+Distance between 3-8 is: 4.79732
+Distance between 4-8 is: 7.38410
+Distance between 5-8 is: 8.22175
+Distance between 6-8 is: 10.22250
+Distance between 7-8 is: 4.87828
+Distance between 0-9 is: 8.29940
+Distance between 1-9 is: 5.69101
+Distance between 2-9 is: 4.59446
+Distance between 3-9 is: 5.98438
+Distance between 4-9 is: 8.50751
+Distance between 5-9 is: 8.95066
+Distance between 6-9 is: 10.63671
+Distance between 7-9 is: 7.02372
+Distance between 8-9 is: 2.27747
+Distance between 0-10 is: 5.59985
+Distance between 1-10 is: 5.47246
+Distance between 2-10 is: 4.61063
+Distance between 3-10 is: 5.81822
+Distance between 4-10 is: 5.75456
+Distance between 5-10 is: 6.59568
+Distance between 6-10 is: 8.79188
+Distance between 7-10 is: 2.29454
+Distance between 8-10 is: 7.02971
+Distance between 9-10 is: 9.05018
+Distance between 0-11 is: 8.54542
+Distance between 1-11 is: 6.99435
+Distance between 2-11 is: 4.72578
+Distance between 3-11 is: 6.24477
+Distance between 4-11 is: 7.84644
+Distance between 5-11 is: 9.38840
+Distance between 6-11 is: 11.68723
+Distance between 7-11 is: 2.57757
+Distance between 8-11 is: 5.36428
+Distance between 9-11 is: 7.63240
+Distance between 10-11 is: 4.18172
+Distance between 0-12 is: 9.57421
+Distance between 1-12 is: 7.09390
+Distance between 2-12 is: 4.70423
+Distance between 3-12 is: 6.27311
+Distance between 4-12 is: 8.96221
+Distance between 5-12 is: 10.28973
+Distance between 6-12 is: 12.40271
+Distance between 7-12 is: 5.32833
+Distance between 8-12 is: 2.60798
+Distance between 9-12 is: 4.20175
+Distance between 10-12 is: 7.61581
+Distance between 11-12 is: 4.48202
+Distance between 0-13 is: 10.00203
+Distance between 1-13 is: 7.78077
+Distance between 2-13 is: 5.52465
+Distance between 3-13 is: 7.37703
+Distance between 4-13 is: 9.60617
+Distance between 5-13 is: 11.00668
+Distance between 6-13 is: 13.27487
+Distance between 7-13 is: 4.61559
+Distance between 8-13 is: 4.62042
+Distance between 9-13 is: 6.58958
+Distance between 10-13 is: 6.61333
+Distance between 11-13 is: 2.72661
+Distance between 12-13 is: 2.70375
+Distance between 0-14 is: 12.60439
+Distance between 1-14 is: 10.53491
+Distance between 2-14 is: 8.01048
+Distance between 3-14 is: 9.18984
+Distance between 4-14 is: 11.46818
+Distance between 5-14 is: 13.28697
+Distance between 6-14 is: 15.52424
+Distance between 7-14 is: 6.89731
+Distance between 8-14 is: 6.93189
+Distance between 9-14 is: 8.68288
+Distance between 10-14 is: 8.66685
+Distance between 11-14 is: 4.48913
+Distance between 12-14 is: 4.48436
+Distance between 13-14 is: 2.87428
+Distance between 0-15 is: 10.50764
+Distance between 1-15 is: 8.09195
+Distance between 2-15 is: 6.79672
+Distance between 3-15 is: 9.35441
+Distance between 4-15 is: 11.34075
+Distance between 5-15 is: 12.15480
+Distance between 6-15 is: 14.41184
+Distance between 7-15 is: 5.89027
+Distance between 8-15 is: 5.86372
+Distance between 9-15 is: 7.44949
+Distance between 10-15 is: 7.51506
+Distance between 11-15 is: 4.57146
+Distance between 12-15 is: 4.57351
+Distance between 13-15 is: 2.89387
+Distance between 14-15 is: 4.83046
+Distance between 0-16 is: 7.62083
+Distance between 1-16 is: 6.80001
+Distance between 2-16 is: 5.10486
+Distance between 3-16 is: 2.89579
+Distance between 4-16 is: 4.84989
+Distance between 5-16 is: 6.31284
+Distance between 6-16 is: 7.53978
+Distance between 7-16 is: 7.33272
+Distance between 8-16 is: 5.50803
+Distance between 9-16 is: 5.66096
+Distance between 10-16 is: 8.68104
+Distance between 11-16 is: 8.53000
+Distance between 12-16 is: 7.10513
+Distance between 13-16 is: 8.97493
+Distance between 14-16 is: 10.52014
+Distance between 15-16 is: 11.00945
+Distance between 0-17 is: 7.98591
+Distance between 1-17 is: 7.77975
+Distance between 2-17 is: 7.00368
+Distance between 3-17 is: 4.88675
+Distance between 4-17 is: 5.58698
+Distance between 5-17 is: 6.19719
+Distance between 6-17 is: 6.59287
+Distance between 7-17 is: 9.40818
+Distance between 8-17 is: 7.62260
+Distance between 9-17 is: 7.25217
+Distance between 10-17 is: 10.42368
+Distance between 11-17 is: 10.94909
+Distance between 12-17 is: 9.54941
+Distance between 13-17 is: 11.48491
+Distance between 14-17 is: 13.16368
+Distance between 15-17 is: 13.29908
+Distance between 16-17 is: 2.66828
+Distance between 0-18 is: 10.48170
+Distance between 1-18 is: 10.10454
+Distance between 2-18 is: 9.32331
+Distance between 3-18 is: 7.31821
+Distance between 4-18 is: 8.18485
+Distance between 5-18 is: 8.72654
+Distance between 6-18 is: 8.77031
+Distance between 7-18 is: 11.82397
+Distance between 8-18 is: 9.35402
+Distance between 9-18 is: 8.50103
+Distance between 10-18 is: 12.99680
+Distance between 11-18 is: 13.13278
+Distance between 12-18 is: 11.11131
+Distance between 13-18 is: 13.32940
+Distance between 14-18 is: 14.77339
+Distance between 15-18 is: 15.17721
+Distance between 16-18 is: 4.63088
+Distance between 17-18 is: 2.65650
+Distance between 0-19 is: 12.29699
+Distance between 1-19 is: 11.41730
+Distance between 2-19 is: 10.13061
+Distance between 3-19 is: 8.26165
+Distance between 4-19 is: 9.77940
+Distance between 5-19 is: 10.77062
+Distance between 6-19 is: 11.14772
+Distance between 7-19 is: 12.54724
+Distance between 8-19 is: 9.47933
+Distance between 9-19 is: 8.48344
+Distance between 10-19 is: 14.03945
+Distance between 11-19 is: 13.38152
+Distance between 12-19 is: 10.76221
+Distance between 13-19 is: 13.15951
+Distance between 14-19 is: 14.20039
+Distance between 15-19 is: 15.15061
+Distance between 16-19 is: 5.37053
+Distance between 17-19 is: 4.60859
+Distance between 18-19 is: 2.65164
+Distance between 0-20 is: 12.08345
+Distance between 1-20 is: 10.79986
+Distance between 2-20 is: 8.94230
+Distance between 3-20 is: 7.26214
+Distance between 4-20 is: 9.37510
+Distance between 5-20 is: 10.84516
+Distance between 6-20 is: 11.73607
+Distance between 7-20 is: 11.09389
+Distance between 8-20 is: 7.90170
+Distance between 9-20 is: 7.19529
+Distance between 10-20 is: 12.81566
+Distance between 11-20 is: 11.50244
+Distance between 12-20 is: 8.68514
+Distance between 13-20 is: 11.05679
+Distance between 14-20 is: 11.80333
+Distance between 15-20 is: 13.21584
+Distance between 16-20 is: 4.63965
+Distance between 17-20 is: 5.29971
+Distance between 18-20 is: 4.57940
+Distance between 19-20 is: 2.65478
+Distance between 0-21 is: 9.99541
+Distance between 1-21 is: 8.66394
+Distance between 2-21 is: 6.48885
+Distance between 3-21 is: 4.80020
+Distance between 4-21 is: 7.21697
+Distance between 5-21 is: 8.93460
+Distance between 6-21 is: 10.20819
+Distance between 7-21 is: 8.47575
+Distance between 8-21 is: 5.74946
+Distance between 9-21 is: 5.66428
+Distance between 10-21 is: 10.20015
+Distance between 11-21 is: 8.93324
+Distance between 12-21 is: 6.57309
+Distance between 13-21 is: 8.75037
+Distance between 14-21 is: 9.71874
+Distance between 15-21 is: 11.01312
+Distance between 16-21 is: 2.67193
+Distance between 17-21 is: 4.57458
+Distance between 18-21 is: 5.28088
+Distance between 19-21 is: 4.59553
+Distance between 20-21 is: 2.64952
+Distance between 0-22 is: 4.81729
+Distance between 1-22 is: 2.89116
+Distance between 2-22 is: 5.06925
+Distance between 3-22 is: 6.87562
+Distance between 4-22 is: 7.75412
+Distance between 5-22 is: 6.45459
+Distance between 6-22 is: 7.76141
+Distance between 7-22 is: 7.39295
+Distance between 8-22 is: 5.61929
+Distance between 9-22 is: 5.20922
+Distance between 10-22 is: 8.34369
+Distance between 11-22 is: 9.28332
+Distance between 12-22 is: 8.09234
+Distance between 13-22 is: 9.39091
+Distance between 14-22 is: 12.13185
+Distance between 15-22 is: 9.38806
+Distance between 16-22 is: 7.43147
+Distance between 17-22 is: 7.82437
+Distance between 18-22 is: 9.63851
+Distance between 19-22 is: 10.92808
+Distance between 20-22 is: 10.68094
+Distance between 21-22 is: 9.07623
+Distance between 0-23 is: 6.99675
+Distance between 1-23 is: 4.78814
+Distance between 2-23 is: 6.73803
+Distance between 3-23 is: 9.06830
+Distance between 4-23 is: 10.23407
+Distance between 5-23 is: 9.01550
+Distance between 6-23 is: 10.33028
+Distance between 7-23 is: 8.68155
+Distance between 8-23 is: 6.48171
+Distance between 9-23 is: 5.81192
+Distance between 10-23 is: 9.76668
+Distance between 11-23 is: 10.15011
+Distance between 12-23 is: 8.55790
+Distance between 13-23 is: 9.72186
+Distance between 14-23 is: 12.46500
+Distance between 15-23 is: 8.98810
+Distance between 16-23 is: 9.59141
+Distance between 17-23 is: 10.17050
+Distance between 18-23 is: 11.71983
+Distance between 19-23 is: 12.68218
+Distance between 20-23 is: 12.26012
+Distance between 21-23 is: 10.78847
+Distance between 22-23 is: 2.66727
+Distance between 0-24 is: 9.17865
+Distance between 1-24 is: 7.25443
+Distance between 2-24 is: 9.12760
+Distance between 3-24 is: 11.16594
+Distance between 4-24 is: 12.35498
+Distance between 5-24 is: 10.96030
+Distance between 6-24 is: 11.91505
+Distance between 7-24 is: 11.26418
+Distance between 8-24 is: 8.48034
+Distance between 9-24 is: 7.22010
+Distance between 10-24 is: 12.39906
+Distance between 11-24 is: 12.63577
+Distance between 12-24 is: 10.49903
+Distance between 13-24 is: 11.93485
+Distance between 14-24 is: 14.54638
+Distance between 15-24 is: 11.10298
+Distance between 16-24 is: 11.15820
+Distance between 17-24 is: 11.33829
+Distance between 18-24 is: 12.41290
+Distance between 19-24 is: 13.28417
+Distance between 20-24 is: 13.16938
+Distance between 21-24 is: 12.16061
+Distance between 22-24 is: 4.63800
+Distance between 23-24 is: 2.65173
+Distance between 0-25 is: 9.70098
+Distance between 1-25 is: 8.25286
+Distance between 2-25 is: 10.10746
+Distance between 3-25 is: 11.52467
+Distance between 4-25 is: 12.51273
+Distance between 5-25 is: 10.93982
+Distance between 6-25 is: 11.43914
+Distance between 7-25 is: 12.59672
+Distance between 8-25 is: 9.59041
+Distance between 9-25 is: 8.00990
+Distance between 10-25 is: 13.68868
+Distance between 11-25 is: 14.16734
+Distance between 12-25 is: 11.84738
+Distance between 13-25 is: 13.60973
+Distance between 14-25 is: 16.15921
+Distance between 15-25 is: 13.19939
+Distance between 16-25 is: 10.98492
+Distance between 17-25 is: 10.56289
+Distance between 18-25 is: 11.23723
+Distance between 19-25 is: 12.27651
+Distance between 20-25 is: 12.67507
+Distance between 21-25 is: 12.07820
+Distance between 22-25 is: 5.36534
+Distance between 23-25 is: 4.59341
+Distance between 24-25 is: 2.65363
+Distance between 0-26 is: 8.25488
+Distance between 1-26 is: 7.31107
+Distance between 2-26 is: 9.09378
+Distance between 3-26 is: 9.90977
+Distance between 4-26 is: 10.59045
+Distance between 5-26 is: 8.94107
+Distance between 6-26 is: 9.17050
+Distance between 7-26 is: 11.76228
+Distance between 8-26 is: 9.04893
+Distance between 9-26 is: 7.59905
+Distance between 10-26 is: 12.72466
+Distance between 11-26 is: 13.58320
+Distance between 12-26 is: 11.54163
+Distance between 13-26 is: 13.40104
+Distance between 14-26 is: 15.93522
+Distance between 15-26 is: 13.49452
+Distance between 16-26 is: 9.17835
+Distance between 17-26 is: 8.33648
+Distance between 18-26 is: 9.05415
+Distance between 19-26 is: 10.47242
+Distance between 20-26 is: 11.18072
+Distance between 21-26 is: 10.60346
+Distance between 22-26 is: 4.62564
+Distance between 23-26 is: 5.27878
+Distance between 24-26 is: 4.58181
+Distance between 25-26 is: 2.65429
+Distance between 0-27 is: 5.74220
+Distance between 1-27 is: 4.88295
+Distance between 2-27 is: 6.69994
+Distance between 3-27 is: 7.47885
+Distance between 4-27 is: 8.02775
+Distance between 5-27 is: 6.42511
+Distance between 6-27 is: 7.00533
+Distance between 7-27 is: 9.32222
+Distance between 8-27 is: 7.21604
+Distance between 9-27 is: 6.28526
+Distance between 10-27 is: 10.17986
+Distance between 11-27 is: 11.30940
+Distance between 12-27 is: 9.81228
+Distance between 13-27 is: 11.47516
+Distance between 14-27 is: 14.06139
+Distance between 15-27 is: 11.81396
+Distance between 16-27 is: 7.20789
+Distance between 17-27 is: 6.68194
+Distance between 18-27 is: 8.09730
+Distance between 19-27 is: 9.71361
+Distance between 20-27 is: 10.10715
+Distance between 21-27 is: 9.00925
+Distance between 22-27 is: 2.66486
+Distance between 23-27 is: 4.56996
+Distance between 24-27 is: 5.29917
+Distance between 25-27 is: 4.60619
+Distance between 26-27 is: 2.65287
+Distance between 0-28 is: 2.09850
+Distance between 1-28 is: 4.10083
+Distance between 2-28 is: 5.57328
+Distance between 3-28 is: 6.54615
+Distance between 4-28 is: 5.28464
+Distance between 5-28 is: 3.96897
+Distance between 6-28 is: 5.69013
+Distance between 7-28 is: 5.50624
+Distance between 8-28 is: 8.31437
+Distance between 9-28 is: 9.56076
+Distance between 10-28 is: 4.36637
+Distance between 11-28 is: 8.02005
+Distance between 12-28 is: 10.01294
+Distance between 13-28 is: 9.87728
+Distance between 14-28 is: 12.37626
+Distance between 15-28 is: 10.29177
+Distance between 16-28 is: 8.87768
+Distance between 17-28 is: 9.56442
+Distance between 18-28 is: 12.15891
+Distance between 19-28 is: 13.88107
+Distance between 20-28 is: 13.43744
+Distance between 21-28 is: 11.14552
+Distance between 22-28 is: 6.49074
+Distance between 23-28 is: 8.31615
+Distance between 24-28 is: 10.67715
+Distance between 25-28 is: 11.50487
+Distance between 26-28 is: 10.25593
+Distance between 27-28 is: 7.77414
+Distance between 0-29 is: 2.09059
+Distance between 1-29 is: 4.16107
+Distance between 2-29 is: 6.75057
+Distance between 3-29 is: 7.67252
+Distance between 4-29 is: 6.59211
+Distance between 5-29 is: 4.06291
+Distance between 6-29 is: 4.82087
+Distance between 7-29 is: 7.91820
+Distance between 8-29 is: 8.95868
+Distance between 9-29 is: 9.41813
+Distance between 10-29 is: 7.45492
+Distance between 11-29 is: 10.43708
+Distance between 12-29 is: 11.20659
+Distance between 13-29 is: 11.72430
+Distance between 14-29 is: 14.42710
+Distance between 15-29 is: 11.89942
+Distance between 16-29 is: 9.10825
+Distance between 17-29 is: 9.01026
+Distance between 18-29 is: 11.29698
+Distance between 19-29 is: 13.29798
+Distance between 20-29 is: 13.38813
+Distance between 21-29 is: 11.52310
+Distance between 22-29 is: 4.94917
+Distance between 23-29 is: 6.86577
+Distance between 24-29 is: 8.67872
+Distance between 25-29 is: 8.99647
+Distance between 26-29 is: 7.60538
+Distance between 27-29 is: 5.45731
+Distance between 28-29 is: 3.40302
+Distance between 0-30 is: 4.05383
+Distance between 1-30 is: 2.09893
+Distance between 2-30 is: 4.05959
+Distance between 3-30 is: 6.74476
+Distance between 4-30 is: 7.34693
+Distance between 5-30 is: 6.54280
+Distance between 6-30 is: 8.48534
+Distance between 7-30 is: 4.71751
+Distance between 8-30 is: 5.59657
+Distance between 9-30 is: 6.63421
+Distance between 10-30 is: 5.19853
+Distance between 11-30 is: 6.67466
+Distance between 12-30 is: 7.31021
+Distance between 13-30 is: 7.40325
+Distance between 14-30 is: 10.24922
+Distance between 15-30 is: 7.04255
+Distance between 16-30 is: 8.64428
+Distance between 17-30 is: 9.83649
+Distance between 18-30 is: 12.14146
+Distance between 19-30 is: 13.31366
+Distance between 20-30 is: 12.48985
+Distance between 21-30 is: 10.26520
+Distance between 22-30 is: 3.97474
+Distance between 23-30 is: 4.76062
+Distance between 24-30 is: 7.38576
+Distance between 25-30 is: 8.94590
+Distance between 26-30 is: 8.54757
+Distance between 27-30 is: 6.42000
+Distance between 28-30 is: 4.35509
+Distance between 29-30 is: 4.95377
+Distance between 0-31 is: 7.46562
+Distance between 1-31 is: 6.75894
+Distance between 2-31 is: 4.11114
+Distance between 3-31 is: 2.10041
+Distance between 4-31 is: 4.07208
+Distance between 5-31 is: 6.57894
+Distance between 6-31 is: 8.46131
+Distance between 7-31 is: 4.62042
+Distance between 8-31 is: 5.37344
+Distance between 9-31 is: 6.92465
+Distance between 10-31 is: 5.83352
+Distance between 11-31 is: 5.41254
+Distance between 12-31 is: 5.95117
+Distance between 13-31 is: 6.68468
+Distance between 14-31 is: 7.95106
+Distance between 15-31 is: 9.09889
+Distance between 16-31 is: 3.98388
+Distance between 17-31 is: 6.31345
+Distance between 18-31 is: 8.46564
+Distance between 19-31 is: 8.94483
+Distance between 20-31 is: 7.47596
+Distance between 21-31 is: 4.90718
+Distance between 22-31 is: 8.68327
+Distance between 23-31 is: 10.64453
+Distance between 24-31 is: 12.82060
+Distance between 25-31 is: 13.35840
+Distance between 26-31 is: 11.87904
+Distance between 27-31 is: 9.49831
+Distance between 28-31 is: 7.77036
+Distance between 29-31 is: 9.46372
+Distance between 30-31 is: 7.97260
+Distance between 0-32 is: 6.59460
+Distance between 1-32 is: 7.70995
+Distance between 2-32 is: 6.76058
+Distance between 3-32 is: 4.14578
+Distance between 4-32 is: 2.09108
+Distance between 5-32 is: 4.07921
+Distance between 6-32 is: 4.82478
+Distance between 7-32 is: 7.66611
+Distance between 8-32 is: 8.89498
+Distance between 9-32 is: 9.80765
+Distance between 10-32 is: 7.62306
+Distance between 11-32 is: 9.47432
+Distance between 12-32 is: 10.37341
+Distance between 13-32 is: 11.18282
+Distance between 14-32 is: 12.75722
+Distance between 15-32 is: 13.15272
+Distance between 16-32 is: 5.07446
+Distance between 17-32 is: 5.23861
+Distance between 18-32 is: 7.54814
+Distance between 19-32 is: 9.22792
+Distance between 20-32 is: 9.12018
+Distance between 21-32 is: 7.32052
+Distance between 22-32 is: 9.36901
+Distance between 23-32 is: 11.93679
+Distance between 24-32 is: 13.87138
+Distance between 25-32 is: 13.72006
+Distance between 26-32 is: 11.56650
+Distance between 27-32 is: 9.17066
+Distance between 28-32 is: 7.13123
+Distance between 29-32 is: 8.12090
+Distance between 30-32 is: 9.39086
+Distance between 31-32 is: 4.89320
+Distance between 0-33 is: 5.26279
+Distance between 1-33 is: 6.40525
+Distance between 2-33 is: 5.45634
+Distance between 3-33 is: 4.10943
+Distance between 4-33 is: 2.09807
+Distance between 5-33 is: 4.00036
+Distance between 6-33 is: 5.74761
+Distance between 7-33 is: 5.17798
+Distance between 8-33 is: 8.13683
+Distance between 9-33 is: 9.66195
+Distance between 10-33 is: 4.47936
+Distance between 11-33 is: 7.15227
+Distance between 12-33 is: 9.31717
+Distance between 13-33 is: 9.36155
+Distance between 14-33 is: 11.09418
+Distance between 15-33 is: 11.04585
+Distance between 16-33 is: 6.57247
+Distance between 17-33 is: 7.63597
+Distance between 18-33 is: 10.20898
+Distance between 19-33 is: 11.65245
+Distance between 20-33 is: 10.98498
+Distance between 21-33 is: 8.64603
+Distance between 22-33 is: 8.86733
+Distance between 23-33 is: 11.14994
+Distance between 24-33 is: 13.48509
+Distance between 25-33 is: 13.94790
+Distance between 26-33 is: 12.21189
+Distance between 27-33 is: 9.57980
+Distance between 28-33 is: 4.86264
+Distance between 29-33 is: 7.15189
+Distance between 30-33 is: 7.48075
+Distance between 31-33 is: 4.46584
+Distance between 32-33 is: 3.38876
+Distance between 0-34 is: 13.46045
+Distance between 1-34 is: 11.59421
+Distance between 2-34 is: 9.24814
+Distance between 3-34 is: 10.51974
+Distance between 4-34 is: 12.47710
+Distance between 5-34 is: 14.27892
+Distance between 6-34 is: 16.55596
+Distance between 7-34 is: 7.54090
+Distance between 8-34 is: 8.59454
+Distance between 9-34 is: 10.48660
+Distance between 10-34 is: 8.89521
+Distance between 11-34 is: 4.96946
+Distance between 12-34 is: 6.31548
+Distance between 13-34 is: 4.09243
+Distance between 14-34 is: 2.09072
+Distance between 15-34 is: 5.30852
+Distance between 16-34 is: 12.17715
+Distance between 17-34 is: 14.81227
+Distance between 18-34 is: 16.57092
+Distance between 19-34 is: 16.12186
+Distance between 20-34 is: 13.75330
+Distance between 21-34 is: 11.58016
+Distance between 22-34 is: 13.43490
+Distance between 23-34 is: 13.70244
+Distance between 24-34 is: 15.89530
+Distance between 25-34 is: 17.66452
+Distance between 26-34 is: 17.48886
+Distance between 27-34 is: 15.52206
+Distance between 28-34 is: 12.92016
+Distance between 29-34 is: 15.28396
+Distance between 30-34 is: 11.03601
+Distance between 31-34 is: 9.19506
+Distance between 32-34 is: 13.81900
+Distance between 33-34 is: 11.77377
+Distance between 0-35 is: 13.97467
+Distance between 1-35 is: 11.63982
+Distance between 2-35 is: 9.23601
+Distance between 3-35 is: 10.52192
+Distance between 4-35 is: 13.02589
+Distance between 5-35 is: 14.73644
+Distance between 6-35 is: 16.93891
+Distance between 7-35 is: 8.56635
+Distance between 8-35 is: 7.55751
+Distance between 9-35 is: 8.89062
+Distance between 10-35 is: 10.48412
+Distance between 11-35 is: 6.32304
+Distance between 12-35 is: 4.95947
+Distance between 13-35 is: 4.08782
+Distance between 14-35 is: 2.09054
+Distance between 15-35 is: 5.32849
+Distance between 16-35 is: 11.44706
+Distance between 17-35 is: 14.04313
+Distance between 18-35 is: 15.39060
+Distance between 19-35 is: 14.53800
+Distance between 20-35 is: 12.06231
+Distance between 21-35 is: 10.29302
+Distance between 22-35 is: 12.83624
+Distance between 23-35 is: 12.85433
+Distance between 24-35 is: 14.67036
+Distance between 25-35 is: 16.31542
+Distance between 26-35 is: 16.33366
+Distance between 27-35 is: 14.72415
+Distance between 28-35 is: 13.93650
+Distance between 29-35 is: 15.69162
+Distance between 30-35 is: 11.34217
+Distance between 31-35 is: 9.43196
+Distance between 32-35 is: 14.28857
+Distance between 33-35 is: 12.86485
+Distance between 34-35 is: 3.41085
+Distance between 0-36 is: 12.76172
+Distance between 1-36 is: 10.93566
+Distance between 2-36 is: 8.10840
+Distance between 3-36 is: 8.56109
+Distance between 4-36 is: 10.83107
+Distance between 5-36 is: 12.98759
+Distance between 6-36 is: 15.13215
+Distance between 7-36 is: 7.15000
+Distance between 8-36 is: 7.21915
+Distance between 9-36 is: 8.94398
+Distance between 10-36 is: 8.87378
+Distance between 11-36 is: 4.94142
+Distance between 12-36 is: 4.95140
+Distance between 13-36 is: 4.08477
+Distance between 14-36 is: 2.09089
+Distance between 15-36 is: 6.62024
+Distance between 16-36 is: 9.69644
+Distance between 17-36 is: 12.36292
+Distance between 18-36 is: 13.86556
+Distance between 19-36 is: 13.17854
+Distance between 20-36 is: 10.71845
+Distance between 21-36 is: 8.69247
+Distance between 22-36 is: 12.61572
+Distance between 23-36 is: 13.32161
+Distance between 24-36 is: 15.40730
+Distance between 25-36 is: 16.74909
+Distance between 26-36 is: 16.22745
+Distance between 27-36 is: 14.26422
+Distance between 28-36 is: 12.59873
+Distance between 29-36 is: 14.70077
+Distance between 30-36 is: 11.00718
+Distance between 31-36 is: 6.99538
+Distance between 32-36 is: 11.83253
+Distance between 33-36 is: 10.50896
+Distance between 34-36 is: 3.40327
+Distance between 35-36 is: 3.40376
+Distance between 0-37 is: 9.01719
+Distance between 1-37 is: 6.54674
+Distance between 2-37 is: 5.97017
+Distance between 3-37 is: 8.88311
+Distance between 4-37 is: 10.63089
+Distance between 5-37 is: 10.97778
+Distance between 6-37 is: 13.16330
+Distance between 7-37 is: 5.45327
+Distance between 8-37 is: 5.39610
+Distance between 9-37 is: 6.80766
+Distance between 10-37 is: 6.90929
+Distance between 11-37 is: 5.10289
+Distance between 12-37 is: 5.09819
+Distance between 13-37 is: 4.12950
+Distance between 14-37 is: 6.63663
+Distance between 15-37 is: 2.09626
+Distance between 16-37 is: 10.59359
+Distance between 17-37 is: 12.62180
+Distance between 18-37 is: 14.59662
+Distance between 19-37 is: 14.87009
+Distance between 20-37 is: 13.22541
+Distance between 21-37 is: 11.01165
+Distance between 22-37 is: 7.70420
+Distance between 23-37 is: 7.15471
+Distance between 24-37 is: 9.36627
+Distance between 25-37 is: 11.54583
+Distance between 26-37 is: 11.90670
+Distance between 27-37 is: 10.25655
+Distance between 28-37 is: 8.90529
+Distance between 29-37 is: 10.19433
+Distance between 30-37 is: 5.24977
+Distance between 31-37 is: 9.08588
+Distance between 32-37 is: 12.57225
+Distance between 33-37 is: 10.45603
+Distance between 34-37 is: 7.21898
+Distance between 35-37 is: 7.23103
+Distance between 36-37 is: 8.18835
+Distance between 0-38 is: 11.45643
+Distance between 1-38 is: 9.36131
+Distance between 2-38 is: 8.18628
+Distance between 3-38 is: 10.66078
+Distance between 4-38 is: 12.34691
+Distance between 5-38 is: 13.19312
+Distance between 6-38 is: 15.47868
+Distance between 7-38 is: 6.60085
+Distance between 8-38 is: 7.73756
+Distance between 9-38 is: 9.46611
+Distance between 10-38 is: 7.73645
+Distance between 11-38 is: 5.04458
+Distance between 12-38 is: 6.38746
+Distance between 13-38 is: 4.11674
+Distance between 14-38 is: 5.33292
+Distance between 15-38 is: 2.09164
+Distance between 16-38 is: 12.60817
+Distance between 17-38 is: 14.92967
+Distance between 18-38 is: 16.93623
+Distance between 19-38 is: 16.98340
+Distance between 20-38 is: 15.01255
+Distance between 21-38 is: 12.71145
+Distance between 22-38 is: 10.94762
+Distance between 23-38 is: 10.54723
+Distance between 24-38 is: 12.73170
+Distance between 25-38 is: 14.92942
+Distance between 26-38 is: 15.23446
+Distance between 27-38 is: 13.45951
+Distance between 28-38 is: 10.87286
+Distance between 29-38 is: 12.84873
+Distance between 30-38 is: 8.05181
+Distance between 31-38 is: 10.22253
+Distance between 32-38 is: 14.18382
+Distance between 33-38 is: 11.71579
+Distance between 34-38 is: 4.95551
+Distance between 35-38 is: 6.04023
+Distance between 36-38 is: 7.22162
+Distance between 37-38 is: 3.39570
+Distance between 0-39 is: 12.06916
+Distance between 1-39 is: 9.42717
+Distance between 2-39 is: 8.18703
+Distance between 3-39 is: 10.68472
+Distance between 4-39 is: 12.92325
+Distance between 5-39 is: 13.70595
+Distance between 6-39 is: 15.90781
+Distance between 7-39 is: 7.76255
+Distance between 8-39 is: 6.57825
+Distance between 9-39 is: 7.67109
+Distance between 10-39 is: 9.53090
+Distance between 11-39 is: 6.38955
+Distance between 12-39 is: 5.05916
+Distance between 13-39 is: 4.11092
+Distance between 14-39 is: 5.33219
+Distance between 15-39 is: 2.09175
+Distance between 16-39 is: 11.92835
+Distance between 17-39 is: 14.19125
+Distance between 18-39 is: 15.80827
+Distance between 19-39 is: 15.51277
+Distance between 20-39 is: 13.50462
+Distance between 21-39 is: 11.57497
+Distance between 22-39 is: 10.21131
+Distance between 23-39 is: 9.41707
+Distance between 24-39 is: 11.16149
+Distance between 25-39 is: 13.30865
+Distance between 26-39 is: 13.90248
+Distance between 27-39 is: 12.54284
+Distance between 28-39 is: 12.07393
+Distance between 29-39 is: 13.34171
+Distance between 30-39 is: 8.46856
+Distance between 31-39 is: 10.45883
+Distance between 32-39 is: 14.66645
+Distance between 33-39 is: 12.83225
+Distance between 34-39 is: 6.00942
+Distance between 35-39 is: 4.97672
+Distance between 36-39 is: 7.23173
+Distance between 37-39 is: 3.39105
+Distance between 38-39 is: 3.41179
+Distance between 0-40 is: 7.53975
+Distance between 1-40 is: 5.13762
+Distance between 2-40 is: 6.81194
+Distance between 3-40 is: 9.58063
+Distance between 4-40 is: 10.84405
+Distance between 5-40 is: 9.86925
+Distance between 6-40 is: 11.45381
+Distance between 7-40 is: 8.14008
+Distance between 8-40 is: 6.48511
+Distance between 9-40 is: 6.32975
+Distance between 10-40 is: 9.20969
+Distance between 11-40 is: 9.31284
+Distance between 12-40 is: 8.09099
+Distance between 13-40 is: 8.76482
+Distance between 14-40 is: 11.51256
+Distance between 15-40 is: 7.51832
+Distance between 16-40 is: 10.53457
+Distance between 17-40 is: 11.51941
+Distance between 18-40 is: 13.23415
+Distance between 19-40 is: 14.03917
+Distance between 20-40 is: 13.28258
+Distance between 21-40 is: 11.57636
+Distance between 22-40 is: 4.11240
+Distance between 23-40 is: 2.08441
+Distance between 24-40 is: 4.09626
+Distance between 25-40 is: 6.47366
+Distance between 26-40 is: 7.36299
+Distance between 27-40 is: 6.46406
+Distance between 28-40 is: 8.39084
+Distance between 29-40 is: 7.63201
+Distance between 30-40 is: 4.26876
+Distance between 31-40 is: 10.87700
+Distance between 32-40 is: 12.71978
+Distance between 33-40 is: 11.41582
+Distance between 34-40 is: 12.53808
+Distance between 35-40 is: 11.88437
+Distance between 36-40 is: 12.63899
+Distance between 37-40 is: 5.57152
+Distance between 38-40 is: 8.90312
+Distance between 39-40 is: 7.94610
+Distance between 0-41 is: 10.92862
+Distance between 1-41 is: 8.89215
+Distance between 2-41 is: 10.65834
+Distance between 3-41 is: 12.92055
+Distance between 4-41 is: 14.22825
+Distance between 5-41 is: 12.89244
+Distance between 6-41 is: 13.91375
+Distance between 7-41 is: 12.55521
+Distance between 8-41 is: 9.74861
+Distance between 9-41 is: 8.51624
+Distance between 10-41 is: 13.72384
+Distance between 11-41 is: 13.68214
+Distance between 12-41 is: 11.44672
+Distance between 13-41 is: 12.72167
+Distance between 14-41 is: 15.23976
+Distance between 15-41 is: 11.48830
+Distance between 16-41 is: 12.97830
+Distance between 17-41 is: 13.30422
+Distance between 18-41 is: 14.30014
+Distance between 19-41 is: 14.98259
+Distance between 20-41 is: 14.73540
+Distance between 21-41 is: 13.77056
+Distance between 22-41 is: 6.51359
+Distance between 23-41 is: 4.10489
+Distance between 24-41 is: 2.08106
+Distance between 25-41 is: 4.11507
+Distance between 26-41 is: 6.47534
+Distance between 27-41 is: 7.38006
+Distance between 28-41 is: 12.24628
+Distance between 29-41 is: 10.40379
+Distance between 30-41 is: 8.65085
+Distance between 31-41 is: 14.44782
+Distance between 32-41 is: 15.81659
+Distance between 33-41 is: 15.24033
+Distance between 34-41 is: 16.50335
+Distance between 35-41 is: 15.16204
+Distance between 36-41 is: 16.30821
+Distance between 37-41 is: 9.79541
+Distance between 38-41 is: 13.02310
+Distance between 39-41 is: 11.26517
+Distance between 40-41 is: 4.70524
+Distance between 0-42 is: 11.70925
+Distance between 1-42 is: 10.33333
+Distance between 2-42 is: 12.13584
+Distance between 3-42 is: 13.46917
+Distance between 4-42 is: 14.47087
+Distance between 5-42 is: 12.86076
+Distance between 6-42 is: 13.17934
+Distance between 7-42 is: 14.64587
+Distance between 8-42 is: 11.43898
+Distance between 9-42 is: 9.69314
+Distance between 10-42 is: 15.76550
+Distance between 11-42 is: 16.14333
+Distance between 12-42 is: 13.59569
+Distance between 13-42 is: 15.43782
+Distance between 14-42 is: 17.90965
+Distance between 15-42 is: 14.93718
+Distance between 16-42 is: 12.70588
+Distance between 17-42 is: 12.10308
+Distance between 18-42 is: 12.43252
+Distance between 19-42 is: 13.34813
+Distance between 20-42 is: 13.93033
+Distance between 21-42 is: 13.63370
+Distance between 22-42 is: 7.44607
+Distance between 23-42 is: 6.48380
+Distance between 24-42 is: 4.11669
+Distance between 25-42 is: 2.08074
+Distance between 26-42 is: 4.11703
+Distance between 27-42 is: 6.49319
+Distance between 28-42 is: 13.52303
+Distance between 29-42 is: 10.87855
+Distance between 30-42 is: 10.97552
+Distance between 31-42 is: 15.29132
+Distance between 32-42 is: 15.57594
+Distance between 33-42 is: 15.96711
+Distance between 34-42 is: 19.45544
+Distance between 35-42 is: 17.91561
+Distance between 36-42 is: 18.52091
+Distance between 37-42 is: 13.32325
+Distance between 38-42 is: 16.68458
+Distance between 39-42 is: 14.86194
+Distance between 40-42 is: 8.19376
+Distance between 41-42 is: 4.75212
+Distance between 0-43 is: 9.52198
+Distance between 1-43 is: 8.97725
+Distance between 2-43 is: 10.60813
+Distance between 3-43 is: 10.93499
+Distance between 4-43 is: 11.40230
+Distance between 5-43 is: 9.71237
+Distance between 6-43 is: 9.48927
+Distance between 7-43 is: 13.35026
+Distance between 8-43 is: 10.62484
+Distance between 9-43 is: 9.08659
+Distance between 10-43 is: 14.25046
+Distance between 11-43 is: 15.22270
+Distance between 12-43 is: 13.12157
+Distance between 13-43 is: 15.11218
+Distance between 14-43 is: 17.55191
+Distance between 15-43 is: 15.40572
+Distance between 16-43 is: 9.81598
+Distance between 17-43 is: 8.44164
+Distance between 18-43 is: 8.68189
+Distance between 19-43 is: 10.23893
+Distance between 20-43 is: 11.41887
+Distance between 21-43 is: 11.23151
+Distance between 22-43 is: 6.49930
+Distance between 23-43 is: 7.35940
+Distance between 24-43 is: 6.47339
+Distance between 25-43 is: 4.11289
+Distance between 26-43 is: 2.08075
+Distance between 27-43 is: 4.09828
+Distance between 28-43 is: 11.58759
+Distance between 29-43 is: 8.77576
+Distance between 30-43 is: 10.39393
+Distance between 31-43 is: 12.92822
+Distance between 32-43 is: 12.05187
+Distance between 33-43 is: 13.18215
+Distance between 34-43 is: 19.17422
+Distance between 35-43 is: 17.95050
+Distance between 36-43 is: 17.67575
+Distance between 37-43 is: 13.88325
+Distance between 38-43 is: 17.17460
+Distance between 39-43 is: 15.80880
+Distance between 40-43 is: 9.44357
+Distance between 41-43 is: 8.20359
+Distance between 42-43 is: 4.74833
+Distance between 0-44 is: 5.33511
+Distance between 1-44 is: 5.32279
+Distance between 2-44 is: 6.78000
+Distance between 3-44 is: 6.72025
+Distance between 4-44 is: 6.77157
+Distance between 5-44 is: 5.09862
+Distance between 6-44 is: 5.29522
+Distance between 7-44 is: 9.35982
+Distance between 8-44 is: 7.78217
+Distance between 9-44 is: 7.11766
+Distance between 10-44 is: 10.01401
+Distance between 11-44 is: 11.49564
+Distance between 12-44 is: 10.36441
+Distance between 13-44 is: 12.00990
+Distance between 14-44 is: 14.47201
+Distance between 15-44 is: 12.75238
+Distance between 16-44 is: 6.29411
+Distance between 17-44 is: 5.24975
+Distance between 18-44 is: 6.82821
+Distance between 19-44 is: 8.84143
+Distance between 20-44 is: 9.51423
+Distance between 21-44 is: 8.44804
+Distance between 22-44 is: 4.12145
+Distance between 23-44 is: 6.46725
+Distance between 24-44 is: 7.37384
+Distance between 25-44 is: 6.46893
+Distance between 26-44 is: 4.08120
+Distance between 27-44 is: 2.07545
+Distance between 28-44 is: 7.42640
+Distance between 29-44 is: 5.22017
+Distance between 30-44 is: 7.19820
+Distance between 31-44 is: 8.80923
+Distance between 32-44 is: 7.59117
+Distance between 33-44 is: 8.51947
+Distance between 34-44 is: 15.92596
+Distance between 35-44 is: 15.31834
+Distance between 36-44 is: 14.40101
+Distance between 37-44 is: 11.33287
+Distance between 38-44 is: 14.33272
+Distance between 39-44 is: 13.67068
+Distance between 40-44 is: 8.20117
+Distance between 41-44 is: 9.45465
+Distance between 42-44 is: 8.18173
+Distance between 43-44 is: 4.67713
+Distance between 0-45 is: 14.23940
+Distance between 1-45 is: 13.35684
+Distance between 2-45 is: 12.15663
+Distance between 3-45 is: 10.34188
+Distance between 4-45 is: 11.79306
+Distance between 5-45 is: 12.68796
+Distance between 6-45 is: 12.87860
+Distance between 7-45 is: 14.59790
+Distance between 8-45 is: 11.33170
+Distance between 9-45 is: 10.14464
+Distance between 10-45 is: 16.11754
+Distance between 11-45 is: 15.35479
+Distance between 12-45 is: 12.51595
+Distance between 13-45 is: 14.98579
+Distance between 14-45 is: 15.88834
+Distance between 15-45 is: 16.94136
+Distance between 16-45 is: 7.45117
+Distance between 17-45 is: 6.49610
+Distance between 18-45 is: 4.11545
+Distance between 19-45 is: 2.08065
+Distance between 20-45 is: 4.11770
+Distance between 21-45 is: 6.48474
+Distance between 22-45 is: 12.63870
+Distance between 23-45 is: 14.24565
+Distance between 24-45 is: 14.56061
+Distance between 25-45 is: 13.33253
+Distance between 26-45 is: 11.61638
+Distance between 27-45 is: 11.23463
+Distance between 28-45 is: 15.88296
+Distance between 29-45 is: 15.12108
+Distance between 30-45 is: 15.24581
+Distance between 31-45 is: 10.97190
+Distance between 32-45 is: 11.12109
+Distance between 33-45 is: 13.68053
+Distance between 34-45 is: 17.85249
+Distance between 35-45 is: 16.06270
+Distance between 36-45 is: 14.83533
+Distance between 37-45 is: 16.69696
+Distance between 38-45 is: 18.81753
+Distance between 39-45 is: 17.15367
+Distance between 40-45 is: 15.68112
+Distance between 41-45 is: 16.17375
+Distance between 42-45 is: 14.14371
+Distance between 43-45 is: 11.11456
+Distance between 44-45 is: 10.41888
+Distance between 0-46 is: 11.34987
+Distance between 1-46 is: 11.31235
+Distance between 2-46 is: 10.94408
+Distance between 3-46 is: 8.98106
+Distance between 4-46 is: 9.36828
+Distance between 5-46 is: 9.46806
+Distance between 6-46 is: 9.00337
+Distance between 7-46 is: 13.47716
+Distance between 8-46 is: 11.15063
+Distance between 9-46 is: 10.17986
+Distance between 10-46 is: 14.46977
+Distance between 11-46 is: 14.96888
+Distance between 12-46 is: 13.05676
+Distance between 13-46 is: 15.25754
+Distance between 14-46 is: 16.80185
+Distance between 15-46 is: 16.99103
+Distance between 16-46 is: 6.50299
+Distance between 17-46 is: 4.09882
+Distance between 18-46 is: 2.08082
+Distance between 19-46 is: 4.11191
+Distance between 20-46 is: 6.47244
+Distance between 21-46 is: 7.36144
+Distance between 22-46 is: 10.60420
+Distance between 23-46 is: 12.69531
+Distance between 24-46 is: 13.12446
+Distance between 25-46 is: 11.58870
+Distance between 26-46 is: 9.25051
+Distance between 27-46 is: 8.65114
+Distance between 28-46 is: 13.11713
+Distance between 29-46 is: 11.85968
+Distance between 30-46 is: 13.38661
+Distance between 31-46 is: 10.26847
+Distance between 32-46 is: 8.55236
+Distance between 33-46 is: 11.42902
+Distance between 34-46 is: 18.57783
+Distance between 35-46 is: 17.43202
+Distance between 36-46 is: 15.91956
+Distance between 37-46 is: 16.26703
+Distance between 38-46 is: 18.74778
+Distance between 39-46 is: 17.63815
+Distance between 40-46 is: 14.38371
+Distance between 41-46 is: 15.03989
+Distance between 42-46 is: 12.57433
+Distance between 43-46 is: 8.42482
+Distance between 44-46 is: 7.22343
+Distance between 45-46 is: 4.74913
+Distance between 0-47 is: 6.93128
+Distance between 1-47 is: 7.43903
+Distance between 2-47 is: 7.31461
+Distance between 3-47 is: 5.33745
+Distance between 4-47 is: 4.96866
+Distance between 5-47 is: 4.82219
+Distance between 6-47 is: 4.70274
+Distance between 7-47 is: 9.57638
+Distance between 8-47 is: 8.55312
+Distance between 9-47 is: 8.34548
+Distance between 10-47 is: 10.17711
+Distance between 11-47 is: 11.48473
+Distance between 12-47 is: 10.68874
+Distance between 13-47 is: 12.36216
+Distance between 14-47 is: 14.27057
+Distance between 15-47 is: 13.98060
+Distance between 16-47 is: 4.13426
+Distance between 17-47 is: 2.07752
+Distance between 18-47 is: 4.07829
+Distance between 19-47 is: 6.46670
+Distance between 20-47 is: 7.37529
+Distance between 21-47 is: 6.47854
+Distance between 22-47 is: 7.57718
+Distance between 23-47 is: 10.12426
+Distance between 24-47 is: 11.33689
+Distance between 25-47 is: 10.46408
+Distance between 26-47 is: 8.02379
+Distance between 27-47 is: 6.21522
+Distance between 28-47 is: 8.55423
+Distance between 29-47 is: 7.70501
+Distance between 30-47 is: 9.52624
+Distance between 31-47 is: 7.03019
+Distance between 32-47 is: 4.56550
+Distance between 33-47 is: 7.04787
+Distance between 34-47 is: 15.76399
+Distance between 35-47 is: 15.32030
+Distance between 36-47 is: 13.57719
+Distance between 37-47 is: 13.07509
+Distance between 38-47 is: 15.48718
+Distance between 39-47 is: 15.05903
+Distance between 40-47 is: 11.54584
+Distance between 41-47 is: 13.38808
+Distance between 42-47 is: 12.04553
+Distance between 43-47 is: 8.02583
+Distance between 44-47 is: 4.35846
+Distance between 45-47 is: 8.17787
+Distance between 46-47 is: 4.66566
+Distance between 0-48 is: 13.91058
+Distance between 1-48 is: 12.40672
+Distance between 2-48 is: 10.35631
+Distance between 3-48 is: 8.89842
+Distance between 4-48 is: 11.18958
+Distance between 5-48 is: 12.80224
+Distance between 6-48 is: 13.78363
+Distance between 7-48 is: 12.31329
+Distance between 8-48 is: 8.90930
+Distance between 9-48 is: 8.17516
+Distance between 10-48 is: 14.17608
+Distance between 11-48 is: 12.33200
+Distance between 12-48 is: 9.18578
+Distance between 13-48 is: 11.55218
+Distance between 14-48 is: 11.86843
+Distance between 15-48 is: 13.74173
+Distance between 16-48 is: 6.51354
+Distance between 17-48 is: 7.38019
+Distance between 18-48 is: 6.47283
+Distance between 19-48 is: 4.11618
+Distance between 20-48 is: 2.08067
+Distance between 21-48 is: 4.09950
+Distance between 22-48 is: 12.25916
+Distance between 23-48 is: 13.57347
+Distance between 24-48 is: 14.37889
+Distance between 25-48 is: 13.99047
+Distance between 26-48 is: 12.74893
+Distance between 27-48 is: 11.84436
+Distance between 28-48 is: 15.18639
+Distance between 29-48 is: 15.26572
+Distance between 30-48 is: 13.94541
+Distance between 31-48 is: 8.78542
+Distance between 32-48 is: 10.95943
+Distance between 33-48 is: 12.65271
+Distance between 34-48 is: 13.85774
+Distance between 35-48 is: 11.83806
+Distance between 36-48 is: 10.71557
+Distance between 37-48 is: 14.00580
+Distance between 38-48 is: 15.53327
+Distance between 39-48 is: 13.78488
+Distance between 40-48 is: 14.45826
+Distance between 41-48 is: 15.76845
+Distance between 42-48 is: 15.12195
+Distance between 43-48 is: 13.01606
+Distance between 44-48 is: 11.43429
+Distance between 45-48 is: 4.75373
+Distance between 46-48 is: 8.20314
+Distance between 47-48 is: 9.45554
+Distance between 0-49 is: 10.58519
+Distance between 1-49 is: 8.97074
+Distance between 2-49 is: 6.34637
+Distance between 3-49 is: 5.15805
+Distance between 4-49 is: 7.86320
+Distance between 5-49 is: 9.85429
+Distance between 6-49 is: 11.43589
+Distance between 7-49 is: 7.80419
+Distance between 8-49 is: 5.23489
+Distance between 9-49 is: 5.66280
+Distance between 10-49 is: 9.71543
+Distance between 11-49 is: 7.68506
+Distance between 12-49 is: 5.22499
+Distance between 13-49 is: 7.24689
+Distance between 14-49 is: 7.82834
+Distance between 15-49 is: 9.71372
+Distance between 16-49 is: 4.11860
+Distance between 17-49 is: 6.46919
+Distance between 18-49 is: 7.36238
+Distance between 19-49 is: 6.47040
+Distance between 20-49 is: 4.08850
+Distance between 21-49 is: 2.08187
+Distance between 22-49 is: 9.71486
+Distance between 23-49 is: 11.15586
+Distance between 24-49 is: 12.72205
+Distance between 25-49 is: 13.03607
+Distance between 26-49 is: 11.85717
+Distance between 27-49 is: 10.16772
+Distance between 28-49 is: 11.44594
+Distance between 29-49 is: 12.28902
+Distance between 30-49 is: 10.24757
+Distance between 31-49 is: 4.56031
+Distance between 32-49 is: 8.22896
+Distance between 33-49 is: 8.87622
+Distance between 34-49 is: 9.71568
+Distance between 35-49 is: 8.36477
+Distance between 36-49 is: 6.70889
+Distance between 37-49 is: 10.06199
+Distance between 38-49 is: 11.32791
+Distance between 39-49 is: 10.21561
+Distance between 40-49 is: 11.58428
+Distance between 41-49 is: 14.15346
+Distance between 42-49 is: 14.64977
+Distance between 43-49 is: 12.73761
+Distance between 44-49 is: 9.85176
+Distance between 45-49 is: 8.18791
+Distance between 46-49 is: 9.44284
+Distance between 47-49 is: 8.21646
+Distance between 48-49 is: 4.69114
+
+Bond angles (in degrees):
+Angle for 2-1-0 is: 112.35800
+Angle for 3-2-1 is: 115.86063
+Angle for 4-3-2 is: 110.33484
+Angle for 5-4-3 is: 114.41222
+Angle for 6-5-0 is: 123.10768
+Angle for 6-5-4 is: 122.76553
+Angle for 7-2-1 is: 106.86805
+Angle for 8-2-1 is: 111.43729
+Angle for 9-8-2 is: 124.18454
+Angle for 10-7-2 is: 123.48315
+Angle for 11-7-2 is: 118.09840
+Angle for 12-8-2 is: 116.84176
+Angle for 13-11-7 is: 120.93334
+Angle for 13-12-8 is: 120.87233
+Angle for 14-13-11 is: 106.51791
+Angle for 14-13-12 is: 106.97473
+Angle for 15-13-11 is: 108.81426
+Angle for 15-13-12 is: 109.53366
+Angle for 16-3-2 is: 117.45389
+Angle for 17-16-3 is: 122.81629
+Angle for 18-17-16 is: 120.84415
+Angle for 19-18-17 is: 120.50329
+Angle for 20-19-18 is: 119.30833
+Angle for 21-16-3 is: 119.06312
+Angle for 21-20-19 is: 120.08096
+Angle for 22-1-0 is: 111.27455
+Angle for 23-22-1 is: 118.89809
+Angle for 24-23-22 is: 121.37632
+Angle for 25-24-23 is: 119.94973
+Angle for 26-25-24 is: 119.35611
+Angle for 27-22-1 is: 122.95783
+Angle for 27-26-25 is: 120.43569
+Angle for 28-5-0 is: 30.68013
+Angle for 28-5-4 is: 99.83774
+Angle for 29-28-0 is: 35.59591
+Angle for 29-28-5 is: 66.37356
+Angle for 30-1-0 is: 105.76446
+Angle for 30-22-1 is: 30.75047
+Angle for 31-3-2 is: 103.55620
+Angle for 31-16-3 is: 30.67166
+Angle for 32-4-3 is: 110.24193
+Angle for 33-4-3 is: 108.54398
+Angle for 33-32-4 is: 36.07737
+Angle for 34-14-13 is: 110.02414
+Angle for 35-14-13 is: 109.83834
+Angle for 35-34-14 is: 35.33689
+Angle for 36-14-13 is: 109.70123
+Angle for 36-34-14 is: 35.52629
+Angle for 36-35-14 is: 35.51303
+Angle for 36-35-34 is: 59.92154
+Angle for 37-15-13 is: 110.67677
+Angle for 38-15-13 is: 110.29076
+Angle for 38-37-15 is: 35.77691
+Angle for 39-15-13 is: 110.04606
+Angle for 39-37-15 is: 35.88819
+Angle for 39-38-15 is: 35.35873
+Angle for 39-38-37 is: 59.75291
+Angle for 40-23-22 is: 119.36549
+Angle for 41-24-23 is: 119.81604
+Angle for 42-25-24 is: 120.32668
+Angle for 43-26-25 is: 120.10914
+Angle for 44-27-22 is: 120.27885
+Angle for 44-27-26 is: 118.83581
+Angle for 45-19-18 is: 120.35772
+Angle for 46-18-17 is: 119.31871
+Angle for 47-17-16 is: 120.67596
+Angle for 48-20-19 is: 120.25304
+Angle for 49-21-16 is: 119.56624
+Angle for 49-21-20 is: 119.07894
+
+Out-of-plane angles (in degrees):
+
+OOP angle for 0-2-1-22 is: -43.75
+OOP angle for 0-2-1-30 is: 57.93
+OOP angle for 0-4-5-6 is: -2.77
+OOP angle for 0-4-5-28 is: -25.87
+OOP angle for 0-5-28-29 is: 23.25
+OOP angle for 0-6-5-4 is: 2.77
+OOP angle for 0-6-5-28 is: 30.64
+OOP angle for 0-22-1-2 is: 43.75
+OOP angle for 0-22-1-30 is: -58.58
+OOP angle for 0-28-5-4 is: 25.87
+OOP angle for 0-28-5-6 is: -30.64
+OOP angle for 0-29-28-5 is: -23.25
+OOP angle for 0-30-1-2 is: -57.93
+OOP angle for 0-30-1-22 is: 58.58
+OOP angle for 1-3-2-7 is: 53.90
+OOP angle for 1-3-2-8 is: -47.84
+OOP angle for 1-5-0-28 is: -52.44
+OOP angle for 1-5-0-29 is: 47.65
+OOP angle for 1-7-2-3 is: -53.90
+OOP angle for 1-7-2-8 is: 53.27
+OOP angle for 1-8-2-3 is: 47.84
+OOP angle for 1-8-2-7 is: -53.27
+OOP angle for 1-23-22-27 is: 4.00
+OOP angle for 1-23-22-30 is: 7.71
+OOP angle for 1-27-22-23 is: -4.00
+OOP angle for 1-27-22-30 is: -18.86
+OOP angle for 1-28-0-5 is: 52.44
+OOP angle for 1-28-0-29 is: -56.08
+OOP angle for 1-29-0-5 is: -47.65
+OOP angle for 1-29-0-28 is: 56.08
+OOP angle for 1-30-22-23 is: -7.71
+OOP angle for 1-30-22-27 is: 18.86
+OOP angle for 2-0-1-22 is: 40.91
+OOP angle for 2-0-1-30 is: -58.90
+OOP angle for 2-4-3-16 is: -42.84
+OOP angle for 2-4-3-31 is: 60.39
+OOP angle for 2-9-8-12 is: 6.82
+OOP angle for 2-10-7-11 is: -5.19
+OOP angle for 2-11-7-10 is: 5.19
+OOP angle for 2-12-8-9 is: -6.82
+OOP angle for 2-16-3-4 is: 42.84
+OOP angle for 2-16-3-31 is: -54.08
+OOP angle for 2-22-1-0 is: -40.91
+OOP angle for 2-22-1-30 is: 53.58
+OOP angle for 2-30-1-0 is: 58.90
+OOP angle for 2-30-1-22 is: -53.58
+OOP angle for 2-31-3-4 is: -60.39
+OOP angle for 2-31-3-16 is: 54.08
+OOP angle for 3-1-2-7 is: -55.44
+OOP angle for 3-1-2-8 is: 49.78
+OOP angle for 3-5-4-32 is: -48.84
+OOP angle for 3-5-4-33 is: 52.37
+OOP angle for 3-7-2-1 is: 55.44
+OOP angle for 3-7-2-8 is: -62.59
+OOP angle for 3-8-2-1 is: -49.78
+OOP angle for 3-8-2-7 is: 62.59
+OOP angle for 3-17-16-21 is: 4.78
+OOP angle for 3-17-16-31 is: 27.06
+OOP angle for 3-21-16-17 is: -4.78
+OOP angle for 3-21-16-31 is: -14.64
+OOP angle for 3-31-16-17 is: -27.06
+OOP angle for 3-31-16-21 is: 14.64
+OOP angle for 3-32-4-5 is: 48.84
+OOP angle for 3-32-4-33 is: -55.60
+OOP angle for 3-33-4-5 is: -52.37
+OOP angle for 3-33-4-32 is: 55.60
+OOP angle for 4-0-5-6 is: 2.78
+OOP angle for 4-0-5-28 is: 57.41
+OOP angle for 4-2-3-16 is: 44.97
+OOP angle for 4-2-3-31 is: -58.80
+OOP angle for 4-6-5-0 is: -2.78
+OOP angle for 4-6-5-28 is: -33.32
+OOP angle for 4-16-3-2 is: -44.97
+OOP angle for 4-16-3-31 is: 56.06
+OOP angle for 4-28-5-0 is: -57.41
+OOP angle for 4-28-5-6 is: 33.32
+OOP angle for 4-31-3-2 is: 58.80
+OOP angle for 4-31-3-16 is: -56.06
+OOP angle for 5-0-28-29 is: -38.41
+OOP angle for 5-1-0-28 is: 53.39
+OOP angle for 5-1-0-29 is: -48.09
+OOP angle for 5-3-4-32 is: 49.19
+OOP angle for 5-3-4-33 is: -53.42
+OOP angle for 5-28-0-1 is: -53.39
+OOP angle for 5-28-0-29 is: 59.45
+OOP angle for 5-29-0-1 is: 48.09
+OOP angle for 5-29-0-28 is: -59.45
+OOP angle for 5-29-28-0 is: 38.41
+OOP angle for 5-32-4-3 is: -49.19
+OOP angle for 5-32-4-33 is: 58.80
+OOP angle for 5-33-4-3 is: 53.42
+OOP angle for 5-33-4-32 is: -58.80
+OOP angle for 6-0-5-4 is: -2.55
+OOP angle for 6-0-5-28 is: -52.09
+OOP angle for 6-4-5-0 is: 2.55
+OOP angle for 6-4-5-28 is: 26.13
+OOP angle for 6-28-5-0 is: 52.09
+OOP angle for 6-28-5-4 is: -26.13
+OOP angle for 7-1-2-3 is: 61.14
+OOP angle for 7-1-2-8 is: -52.25
+OOP angle for 7-3-2-1 is: -61.14
+OOP angle for 7-3-2-8 is: 58.24
+OOP angle for 7-8-2-1 is: 52.25
+OOP angle for 7-8-2-3 is: -58.24
+OOP angle for 8-1-2-3 is: -52.17
+OOP angle for 8-1-2-7 is: 50.27
+OOP angle for 8-3-2-1 is: 52.17
+OOP angle for 8-3-2-7 is: -56.71
+OOP angle for 8-7-2-1 is: -50.27
+OOP angle for 8-7-2-3 is: 56.71
+OOP angle for 9-2-8-12 is: -6.72
+OOP angle for 9-12-8-2 is: 6.72
+OOP angle for 10-2-7-11 is: 5.19
+OOP angle for 10-11-7-2 is: -5.19
+OOP angle for 11-2-7-10 is: -5.49
+OOP angle for 11-10-7-2 is: 5.49
+OOP angle for 11-12-13-14 is: 56.93
+OOP angle for 11-12-13-15 is: -53.55
+OOP angle for 11-14-13-12 is: -56.93
+OOP angle for 11-14-13-15 is: 56.25
+OOP angle for 11-15-13-12 is: 53.55
+OOP angle for 11-15-13-14 is: -56.25
+OOP angle for 12-2-8-9 is: 7.25
+OOP angle for 12-9-8-2 is: -7.25
+OOP angle for 12-11-13-14 is: -56.72
+OOP angle for 12-11-13-15 is: 53.21
+OOP angle for 12-14-13-11 is: 56.72
+OOP angle for 12-14-13-15 is: -55.00
+OOP angle for 12-15-13-11 is: -53.21
+OOP angle for 12-15-13-14 is: 55.00
+OOP angle for 13-34-14-35 is: 53.89
+OOP angle for 13-34-14-36 is: -54.21
+OOP angle for 13-35-14-34 is: -53.89
+OOP angle for 13-35-14-36 is: 54.39
+OOP angle for 13-36-14-34 is: 54.21
+OOP angle for 13-36-14-35 is: -54.39
+OOP angle for 13-37-15-38 is: -53.28
+OOP angle for 13-37-15-39 is: 53.63
+OOP angle for 13-38-15-37 is: 53.28
+OOP angle for 13-38-15-39 is: -53.43
+OOP angle for 13-39-15-37 is: -53.63
+OOP angle for 13-39-15-38 is: 53.43
+OOP angle for 14-11-13-12 is: 59.31
+OOP angle for 14-11-13-15 is: -53.52
+OOP angle for 14-12-13-11 is: -59.31
+OOP angle for 14-12-13-15 is: 52.72
+OOP angle for 14-15-13-11 is: 53.52
+OOP angle for 14-15-13-12 is: -52.72
+OOP angle for 14-34-35-36 is: -19.86
+OOP angle for 14-34-36-35 is: 19.85
+OOP angle for 14-35-34-36 is: 19.85
+OOP angle for 14-35-36-34 is: -19.85
+OOP angle for 14-36-34-35 is: -19.85
+OOP angle for 14-36-35-34 is: 19.86
+OOP angle for 15-11-13-12 is: -54.43
+OOP angle for 15-11-13-14 is: 52.55
+OOP angle for 15-12-13-11 is: 54.43
+OOP angle for 15-12-13-14 is: -51.63
+OOP angle for 15-14-13-11 is: -52.55
+OOP angle for 15-14-13-12 is: 51.63
+OOP angle for 15-37-38-39 is: 20.35
+OOP angle for 15-37-39-38 is: -20.35
+OOP angle for 15-38-37-39 is: -20.31
+OOP angle for 15-38-39-37 is: 20.35
+OOP angle for 15-39-37-38 is: 20.31
+OOP angle for 15-39-38-37 is: -20.35
+OOP angle for 16-2-3-4 is: -41.97
+OOP angle for 16-2-3-31 is: 53.71
+OOP angle for 16-4-3-2 is: 41.97
+OOP angle for 16-4-3-31 is: -57.06
+OOP angle for 16-18-17-47 is: -1.51
+OOP angle for 16-20-21-49 is: 0.17
+OOP angle for 16-31-3-2 is: -53.71
+OOP angle for 16-31-3-4 is: 57.06
+OOP angle for 16-47-17-18 is: 1.51
+OOP angle for 16-49-21-20 is: -0.17
+OOP angle for 17-3-16-21 is: -4.83
+OOP angle for 17-3-16-31 is: -32.87
+OOP angle for 17-19-18-46 is: -0.55
+OOP angle for 17-21-16-3 is: 4.83
+OOP angle for 17-21-16-31 is: 19.57
+OOP angle for 17-31-16-3 is: 32.87
+OOP angle for 17-31-16-21 is: -19.57
+OOP angle for 17-46-18-19 is: 0.55
+OOP angle for 18-16-17-47 is: 1.54
+OOP angle for 18-20-19-45 is: -0.70
+OOP angle for 18-45-19-20 is: 0.70
+OOP angle for 18-47-17-16 is: -1.54
+OOP angle for 19-17-18-46 is: 0.55
+OOP angle for 19-21-20-48 is: -0.38
+OOP angle for 19-46-18-17 is: -0.55
+OOP angle for 19-48-20-21 is: 0.38
+OOP angle for 20-16-21-49 is: -0.17
+OOP angle for 20-18-19-45 is: 0.70
+OOP angle for 20-45-19-18 is: -0.70
+OOP angle for 20-49-21-16 is: 0.17
+OOP angle for 21-3-16-17 is: 5.02
+OOP angle for 21-3-16-31 is: 29.66
+OOP angle for 21-17-16-3 is: -5.02
+OOP angle for 21-17-16-31 is: -33.35
+OOP angle for 21-19-20-48 is: 0.38
+OOP angle for 21-31-16-3 is: -29.66
+OOP angle for 21-31-16-17 is: 33.35
+OOP angle for 21-48-20-19 is: -0.38
+OOP angle for 22-0-1-2 is: -41.28
+OOP angle for 22-0-1-30 is: 59.16
+OOP angle for 22-2-1-0 is: 41.28
+OOP angle for 22-2-1-30 is: -53.24
+OOP angle for 22-24-23-40 is: -0.10
+OOP angle for 22-26-27-44 is: 0.51
+OOP angle for 22-30-1-0 is: -59.16
+OOP angle for 22-30-1-2 is: 53.24
+OOP angle for 22-40-23-24 is: 0.10
+OOP angle for 22-44-27-26 is: -0.51
+OOP angle for 23-1-22-27 is: -4.21
+OOP angle for 23-1-22-30 is: -15.21
+OOP angle for 23-25-24-41 is: -0.32
+OOP angle for 23-27-22-1 is: 4.21
+OOP angle for 23-27-22-30 is: 24.00
+OOP angle for 23-30-22-1 is: 15.21
+OOP angle for 23-30-22-27 is: -24.00
+OOP angle for 23-41-24-25 is: 0.32
+OOP angle for 24-22-23-40 is: 0.10
+OOP angle for 24-26-25-42 is: -0.57
+OOP angle for 24-40-23-22 is: -0.10
+OOP angle for 24-42-25-26 is: 0.57
+OOP angle for 25-23-24-41 is: 0.32
+OOP angle for 25-27-26-43 is: -0.26
+OOP angle for 25-41-24-23 is: -0.32
+OOP angle for 25-43-26-27 is: 0.26
+OOP angle for 26-22-27-44 is: -0.51
+OOP angle for 26-24-25-42 is: 0.57
+OOP angle for 26-42-25-24 is: -0.57
+OOP angle for 26-44-27-22 is: 0.51
+OOP angle for 27-1-22-23 is: 4.03
+OOP angle for 27-1-22-30 is: 18.52
+OOP angle for 27-23-22-1 is: -4.03
+OOP angle for 27-23-22-30 is: -11.79
+OOP angle for 27-25-26-43 is: 0.26
+OOP angle for 27-30-22-1 is: -18.52
+OOP angle for 27-30-22-23 is: 11.79
+OOP angle for 27-43-26-25 is: -0.26
+OOP angle for 28-0-5-4 is: -28.09
+OOP angle for 28-0-5-6 is: 28.72
+OOP angle for 28-1-0-5 is: -57.98
+OOP angle for 28-1-0-29 is: 56.97
+OOP angle for 28-4-5-0 is: 28.09
+OOP angle for 28-4-5-6 is: -31.06
+OOP angle for 28-5-0-1 is: 57.98
+OOP angle for 28-5-0-29 is: -59.77
+OOP angle for 28-6-5-0 is: -28.72
+OOP angle for 28-6-5-4 is: 31.06
+OOP angle for 28-29-0-1 is: -56.97
+OOP angle for 28-29-0-5 is: 59.77
+OOP angle for 29-0-28-5 is: 31.29
+OOP angle for 29-1-0-5 is: 50.66
+OOP angle for 29-1-0-28 is: -55.59
+OOP angle for 29-5-0-1 is: -50.66
+OOP angle for 29-5-0-28 is: 57.72
+OOP angle for 29-5-28-0 is: -31.29
+OOP angle for 29-28-0-1 is: 55.59
+OOP angle for 29-28-0-5 is: -57.72
+OOP angle for 30-0-1-2 is: 63.00
+OOP angle for 30-0-1-22 is: -62.46
+OOP angle for 30-1-22-23 is: 8.81
+OOP angle for 30-1-22-27 is: -11.16
+OOP angle for 30-2-1-0 is: -63.00
+OOP angle for 30-2-1-22 is: 62.00
+OOP angle for 30-22-1-0 is: 62.46
+OOP angle for 30-22-1-2 is: -62.00
+OOP angle for 30-23-22-1 is: -8.81
+OOP angle for 30-23-22-27 is: 13.38
+OOP angle for 30-27-22-1 is: 11.16
+OOP angle for 30-27-22-23 is: -13.38
+OOP angle for 31-2-3-4 is: 62.47
+OOP angle for 31-2-3-16 is: -62.01
+OOP angle for 31-3-16-17 is: 19.24
+OOP angle for 31-3-16-21 is: -16.79
+OOP angle for 31-4-3-2 is: -62.47
+OOP angle for 31-4-3-16 is: 60.50
+OOP angle for 31-16-3-2 is: 62.01
+OOP angle for 31-16-3-4 is: -60.50
+OOP angle for 31-17-16-3 is: -19.24
+OOP angle for 31-17-16-21 is: 22.24
+OOP angle for 31-21-16-3 is: 16.79
+OOP angle for 31-21-16-17 is: -22.24
+OOP angle for 32-3-4-5 is: -51.25
+OOP angle for 32-3-4-33 is: 55.87
+OOP angle for 32-5-4-3 is: 51.25
+OOP angle for 32-5-4-33 is: -57.82
+OOP angle for 32-33-4-3 is: -55.87
+OOP angle for 32-33-4-5 is: 57.82
+OOP angle for 33-3-4-5 is: 56.72
+OOP angle for 33-3-4-32 is: -56.77
+OOP angle for 33-5-4-3 is: -56.72
+OOP angle for 33-5-4-32 is: 59.60
+OOP angle for 33-32-4-3 is: 56.77
+OOP angle for 33-32-4-5 is: -59.60
+OOP angle for 34-13-14-35 is: -54.14
+OOP angle for 34-13-14-36 is: 54.58
+OOP angle for 34-14-35-36 is: 30.40
+OOP angle for 34-14-36-35 is: -30.47
+OOP angle for 34-35-14-13 is: 54.14
+OOP angle for 34-35-14-36 is: -55.64
+OOP angle for 34-35-36-14 is: 30.47
+OOP angle for 34-36-14-13 is: -54.58
+OOP angle for 34-36-14-35 is: 55.64
+OOP angle for 34-36-35-14 is: -30.40
+OOP angle for 35-13-14-34 is: 54.23
+OOP angle for 35-13-14-36 is: -54.74
+OOP angle for 35-14-34-36 is: -30.39
+OOP angle for 35-14-36-34 is: 30.46
+OOP angle for 35-34-14-13 is: -54.23
+OOP angle for 35-34-14-36 is: 55.62
+OOP angle for 35-34-36-14 is: -30.46
+OOP angle for 35-36-14-13 is: 54.74
+OOP angle for 35-36-14-34 is: -55.62
+OOP angle for 35-36-34-14 is: 30.39
+OOP angle for 36-13-14-34 is: -54.75
+OOP angle for 36-13-14-35 is: 54.81
+OOP angle for 36-14-34-35 is: 30.55
+OOP angle for 36-14-35-34 is: -30.54
+OOP angle for 36-34-14-13 is: 54.75
+OOP angle for 36-34-14-35 is: -55.81
+OOP angle for 36-34-35-14 is: 30.54
+OOP angle for 36-35-14-13 is: -54.81
+OOP angle for 36-35-14-34 is: 55.81
+OOP angle for 36-35-34-14 is: -30.55
+OOP angle for 37-13-15-38 is: 54.20
+OOP angle for 37-13-15-39 is: -54.55
+OOP angle for 37-15-38-39 is: -31.28
+OOP angle for 37-15-39-38 is: 31.33
+OOP angle for 37-38-15-13 is: -54.20
+OOP angle for 37-38-15-39 is: 57.25
+OOP angle for 37-38-39-15 is: -31.33
+OOP angle for 37-39-15-13 is: 54.55
+OOP angle for 37-39-15-38 is: -57.25
+OOP angle for 37-39-38-15 is: 31.28
+OOP angle for 38-13-15-37 is: -54.41
+OOP angle for 38-13-15-39 is: 53.80
+OOP angle for 38-15-37-39 is: 30.97
+OOP angle for 38-15-39-37 is: -30.80
+OOP angle for 38-37-15-13 is: 54.41
+OOP angle for 38-37-15-39 is: -56.65
+OOP angle for 38-37-39-15 is: 30.80
+OOP angle for 38-39-15-13 is: -53.80
+OOP angle for 38-39-15-37 is: 56.65
+OOP angle for 38-39-37-15 is: -30.97
+OOP angle for 39-13-15-37 is: 54.88
+OOP angle for 39-13-15-38 is: -53.92
+OOP angle for 39-15-37-38 is: -31.06
+OOP angle for 39-15-38-37 is: 30.85
+OOP angle for 39-37-15-13 is: -54.88
+OOP angle for 39-37-15-38 is: 56.76
+OOP angle for 39-37-38-15 is: -30.85
+OOP angle for 39-38-15-13 is: 53.92
+OOP angle for 39-38-15-37 is: -56.76
+OOP angle for 39-38-37-15 is: 31.06
+OOP angle for 40-22-23-24 is: -0.11
+OOP angle for 40-24-23-22 is: 0.11
+OOP angle for 41-23-24-25 is: -0.32
+OOP angle for 41-25-24-23 is: 0.32
+OOP angle for 42-24-25-26 is: -0.56
+OOP angle for 42-26-25-24 is: 0.56
+OOP angle for 43-25-26-27 is: -0.26
+OOP angle for 43-27-26-25 is: 0.26
+OOP angle for 44-22-27-26 is: 0.52
+OOP angle for 44-26-27-22 is: -0.52
+OOP angle for 45-18-19-20 is: -0.69
+OOP angle for 45-20-19-18 is: 0.69
+OOP angle for 46-17-18-19 is: -0.55
+OOP angle for 46-19-18-17 is: 0.55
+OOP angle for 47-16-17-18 is: -1.55
+OOP angle for 47-18-17-16 is: 1.55
+OOP angle for 48-19-20-21 is: -0.38
+OOP angle for 48-21-20-19 is: 0.38
+OOP angle for 49-16-21-20 is: 0.17
+OOP angle for 49-20-21-16 is: -0.17
+
+Torsion angles (in degrees):
+
+Dihedral angle for 3-2-1-0 is: 40.13745
+Dihedral angle for 4-3-2-1 is: 43.39604
+Dihedral angle for 5-4-3-2 is: 49.95273
+Dihedral angle for 6-5-4-3 is: 127.79251
+Dihedral angle for 7-2-1-0 is: 73.63791
+Dihedral angle for 8-2-1-0 is: 162.07921
+Dihedral angle for 9-8-2-1 is: 47.96007
+Dihedral angle for 10-7-2-1 is: 45.28509
+Dihedral angle for 11-7-2-1 is: 140.94214
+Dihedral angle for 12-8-2-1 is: 140.17036
+Dihedral angle for 13-11-7-2 is: 31.19364
+Dihedral angle for 13-12-8-2 is: 35.59867
+Dihedral angle for 14-13-11-7 is: 159.12925
+Dihedral angle for 14-13-12-8 is: 161.30070
+Dihedral angle for 15-13-11-7 is: 77.86909
+Dihedral angle for 15-13-12-8 is: 74.99317
+Dihedral angle for 16-3-2-1 is: 87.69499
+Dihedral angle for 17-16-3-2 is: 106.10599
+Dihedral angle for 18-17-16-3 is: 176.10010
+Dihedral angle for 19-18-17-16 is: 0.58968
+Dihedral angle for 20-19-18-17 is: 0.62936
+Dihedral angle for 21-16-3-2 is: 79.64377
+Dihedral angle for 21-20-19-18 is: 0.59876
+Dihedral angle for 23-22-1-0 is: 131.11589
+Dihedral angle for 24-23-22-1 is: 177.05274
+Dihedral angle for 25-24-23-22 is: 0.50957
+Dihedral angle for 26-25-24-23 is: 0.58338
+Dihedral angle for 27-22-1-0 is: 44.07468
+Dihedral angle for 27-26-25-24 is: 0.52450
+Dihedral angle for 28-5-4-3 is: 83.78659
+Dihedral angle for 29-28-5-0 is: 34.53652
+Dihedral angle for 29-28-5-4 is: 155.76376
+Dihedral angle for 30-22-1-0 is: 113.68139
+Dihedral angle for 31-3-2-1 is: 157.58430
+Dihedral angle for 31-16-3-2 is: 114.12298
+Dihedral angle for 32-4-3-2 is: 173.72986
+Dihedral angle for 33-4-3-2 is: 68.18380
+Dihedral angle for 33-32-4-3 is: 118.43000
+Dihedral angle for 34-14-13-11 is: 60.52517
+Dihedral angle for 34-14-13-12 is: 179.58853
+Dihedral angle for 35-14-13-11 is: 179.08487
+Dihedral angle for 35-14-13-12 is: 60.02150
+Dihedral angle for 35-34-14-13 is: 120.70075
+Dihedral angle for 36-14-13-11 is: 59.31900
+Dihedral angle for 36-14-13-12 is: 59.74437
+Dihedral angle for 36-34-14-13 is: 120.29869
+Dihedral angle for 36-35-14-13 is: 120.20410
+Dihedral angle for 36-35-34-14 is: 35.95998
+Dihedral angle for 37-15-13-11 is: 61.44687
+Dihedral angle for 37-15-13-12 is: 60.36620
+Dihedral angle for 38-15-13-11 is: 58.44660
+Dihedral angle for 38-15-13-12 is: 179.74032
+Dihedral angle for 38-37-15-13 is: 121.04725
+Dihedral angle for 39-15-13-11 is: 179.09208
+Dihedral angle for 39-15-13-12 is: 59.09485
+Dihedral angle for 39-37-15-13 is: 120.60569
+Dihedral angle for 39-38-15-13 is: 121.10067
+Dihedral angle for 39-38-37-15 is: 36.41196
+Dihedral angle for 40-23-22-1 is: 2.82447
+Dihedral angle for 41-24-23-22 is: 179.85701
+Dihedral angle for 42-25-24-23 is: 179.93228
+Dihedral angle for 43-26-25-24 is: 179.17327
+Dihedral angle for 44-27-22-1 is: 2.49364
+Dihedral angle for 44-27-26-25 is: 178.78032
+Dihedral angle for 45-19-18-17 is: 179.82834
+Dihedral angle for 46-18-17-16 is: 179.95667
+Dihedral angle for 47-17-16-3 is: 2.10138
+Dihedral angle for 48-20-19-18 is: 178.95645
+Dihedral angle for 49-21-16-3 is: 3.44250
+Dihedral angle for 49-21-20-19 is: 179.14938
+Center of mass:
+ [0.114953, 0.279179, -0.175491]
+
+
+Printing the moment of inertia tensor:
+Inertia tensor: 
+[[9964.45164, 630.37141, 669.49142],
+ [630.37141, 10924.07541, -1120.71260],
+ [669.49142, -1120.71260, 9100.19266]]
+
+Principal moments of inertia (amu * bohr^2): 
+[8141.39799, 10328.97636, 11518.34535]
+
+Principal moments of inertia (amu * Angstrom^2): 
+[2279.82363, 2892.40797, 3225.46521]
+
+Principal moments of inertia (g * cm^2): 
+[3.78574e-40, 4.80296e-40, 5.35601e-40]
+
+Rotational constants (cm^-1): 
+A: 0.0074
+B: 0.0058
+C: 0.0052
+
+Classifying the type of rotor for molecule...
+Molecule is an asymmetric top!
+
+===============================================================================
+                                      SCF                                      
+===============================================================================

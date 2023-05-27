@@ -10,8 +10,9 @@ use ndarray::prelude::*;
 
 use crate::molecule::wfn::{BasisSetTotal, CGTO, PGTO};
 
-#[derive(Eq, Hash, PartialEq, Clone, Copy, EnumIter)]
+#[derive(Eq, Hash, PartialEq, Clone, Copy, EnumIter,Default)]
 pub enum PseElementSym {
+    #[default]
     DUMMY,
     H,
     He,
@@ -134,7 +135,7 @@ pub enum PseElementSym {
 }
 
 #[derive(PartialEq)]
-pub enum L_char {
+pub enum L_CHAR {
     S,
     P,
     D,
@@ -162,7 +163,7 @@ pub struct BasisSetDef {
     pub element_sym: PseElementSym,
     pub alphas: Vec<f64>,
     pub cgto_coeffs: Vec<f64>,
-    pub L_and_no_prim_tup: Vec<(L_char, usize)>,
+    pub L_and_no_prim_tup: Vec<(L_CHAR, usize)>,
 }
 
 #[derive(Default)]
@@ -170,41 +171,6 @@ pub struct BasisSetTotalDef {
     pub name: String,
     pub basis_set_defs_dict: HashMap<PseElementSym, BasisSetDef>,
 }
-
-impl Default for PseElementSym {
-    fn default() -> Self {
-        PseElementSym::DUMMY
-    }
-}
-
-// impl BasisSetAtom {
-//     pub fn new(element_sym: PseElementSym) -> Self {
-//         Self {
-//             element_sym,
-//             cgto_list: Vec::new(),
-//         }
-//     }
-// }
-
-// impl BasisSetTotalDef {
-//     pub fn new() -> Self {
-//         Self {
-//             name: String::new(),
-//             basis_set_defs_dict: HashMap::new(),
-//         }
-//     }
-// }
-
-// impl BasisSetDef {
-//     pub fn new(element_sym: PseElementSym) -> Self {
-//         Self {
-//             element_sym,
-//             alphas: Vec::new(),
-//             cgto_coeffs: Vec::new(),
-//             L_and_no_prim_tup: Vec::new(),
-//         }
-//     }
-// }
 
 pub fn match_pse_symb(
     pse_hash_map: &HashMap<&str, PseElementSym>,
@@ -392,26 +358,26 @@ pub fn parse_basis_set_file_gaussian(basis_set_name: &str) -> BasisSetTotalDef {
                 continue;
             } else if line_split[0] == "SP" {
                 let no_prim1: usize = line_split[1].parse::<usize>().unwrap();
-                basis_set_def.L_and_no_prim_tup.push((L_char::SP, no_prim1));
+                basis_set_def.L_and_no_prim_tup.push((L_CHAR::SP, no_prim1));
             } else if line_split[0].len() > 2
                 && (line_split[0].starts_with("l=") || line_split[0].starts_with("L="))
             {
                 todo!("Add the values for L basis sets");
             } else {
                 let L_letter_val = match line_split[0] {
-                    "S" => L_char::S,
-                    "P" => L_char::P,
-                    "D" => L_char::D,
-                    "F" => L_char::F,
-                    "G" => L_char::G,
-                    "H" => L_char::H,
-                    "I" => L_char::I,
-                    "J" => L_char::J,
-                    "K" => L_char::K,
-                    "L" => L_char::L,
-                    "M" => L_char::M,
-                    "N" => L_char::N,
-                    "O" => L_char::O,
+                    "S" => L_CHAR::S,
+                    "P" => L_CHAR::P,
+                    "D" => L_CHAR::D,
+                    "F" => L_CHAR::F,
+                    "G" => L_CHAR::G,
+                    "H" => L_CHAR::H,
+                    "I" => L_CHAR::I,
+                    "J" => L_CHAR::J,
+                    "K" => L_CHAR::K,
+                    "L" => L_CHAR::L,
+                    "M" => L_CHAR::M,
+                    "N" => L_CHAR::N,
+                    "O" => L_CHAR::O,
                     _ => panic!("This letter is not supported!"),
                 };
                 // let L_val: usize = SPDF_HashMap.get(&L_val_char).unwrap().clone();
@@ -468,11 +434,11 @@ pub fn create_basis_set_total(
         // * Generate PGTOs and then CGTOs
         let mut alphas_offset = 0_usize;
         for (L_val, no_prim) in atom_basis_set.L_and_no_prim_tup.iter() {
-            if *L_val != L_char::SP {
+            if *L_val != L_CHAR::SP {
                 let list_ang_mom_vec: Vec<Array1<i32>> = match L_val {
-                    L_char::S => vec![array![0, 0, 0]],
-                    L_char::P => vec![array![1, 0, 0], array![0, 1, 0], array![0, 0, 1]],
-                    L_char::D => vec![
+                    L_CHAR::S => vec![array![0, 0, 0]],
+                    L_CHAR::P => vec![array![1, 0, 0], array![0, 1, 0], array![0, 0, 1]],
+                    L_CHAR::D => vec![
                         array![2, 0, 0],
                         array![0, 2, 0],
                         array![0, 0, 2],
@@ -480,7 +446,7 @@ pub fn create_basis_set_total(
                         array![1, 0, 1],
                         array![0, 1, 1],
                     ],
-                    L_char::F => vec![
+                    L_CHAR::F => vec![
                         array![3, 0, 0],
                         array![0, 3, 0],
                         array![0, 0, 3],
@@ -491,7 +457,7 @@ pub fn create_basis_set_total(
                         array![1, 0, 2],
                         array![0, 1, 2],
                     ],
-                    L_char::G => vec![
+                    L_CHAR::G => vec![
                         array![4, 0, 0],
                         array![0, 4, 0],
                         array![0, 0, 4],
@@ -587,24 +553,24 @@ pub fn translate_sym_to_Z_val(sym_to_Z: &HashMap<PseElementSym, i32>, sym: PseEl
     Z_val
 }
 
-pub fn translate_L_char_to_val(L_char: L_char) -> i32 {
-    match L_char {
-        L_char::S => 0,
-        L_char::SP => 1, //* This needs special care */
-        L_char::P => 1,
-        L_char::D => 2,
-        L_char::F => 3,
-        L_char::G => 4,
-        L_char::H => 5,
-        L_char::I => 6,
-        L_char::J => 7,
-        L_char::K => 8,
-        L_char::L => 9,
-        L_char::M => 10,
-        L_char::N => 11,
-        L_char::O => todo!(),
-    }
-}
+// pub fn translate_L_char_to_val(L_char: L_CHAR) -> i32 {
+//     match L_char {
+//         L_CHAR::S => 0,
+//         L_CHAR::SP => 1, //* This needs special care */
+//         L_CHAR::P => 1,
+//         L_CHAR::D => 2,
+//         L_CHAR::F => 3,
+//         L_CHAR::G => 4,
+//         L_CHAR::H => 5,
+//         L_CHAR::I => 6,
+//         L_CHAR::J => 7,
+//         L_CHAR::K => 8,
+//         L_CHAR::L => 9,
+//         L_CHAR::M => 10,
+//         L_CHAR::N => 11,
+//         L_CHAR::O => todo!(),
+//     }
+// }
 
 pub fn calc_center_charge(Z_vals: &[i32], geom_matr: &Array2<f64>) -> Array1<f64> {
     let mut center_charge: Array1<f64> = Array1::zeros(3);
