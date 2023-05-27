@@ -76,7 +76,7 @@ fn main() {
         let mut scf: SCF = SCF::new(mol);
         scf.geom_analysis_pre_calc();
         // scf.RHF_par(false, "sto-3g");
-        scf.MP2(false, "def2-SVP");
+        scf.MP2(false, "sto-3g");
     }
 
     // let args = Args::parse();

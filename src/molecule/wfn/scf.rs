@@ -1628,8 +1628,9 @@ impl SCF {
             Self::calc_2e_ints_par(self, false);
         }
 
-        const IS_NAIVE_MP2: bool = true;
+        const IS_NAIVE_MP2: bool = false;
         const IS_SMARTER_MP2: bool = false;
+        const IS_TEST: bool = true;
 
         let mut n = self.mol.wfn_total.basis_set_total.no_cgtos;
         n = calc_cmp_idx(n, n);
@@ -1660,11 +1661,10 @@ impl SCF {
                                                     * C_matr[[nu, j]]
                                                     * C_matr[[lambda, k]]
                                                     * C_matr[[sigma, l]]
-                                                    * self.mol.wfn_total.HF_Matrices.ERI_tensor[(
-                                                        mu, nu, lambda, sigma,
-                                                    )];
-                                                    // * self.mol.wfn_total.HF_Matrices.ERI_arr1
-                                                    //     [mu_nu_lambda_sigma];
+                                                    * self.mol.wfn_total.HF_Matrices.ERI_tensor
+                                                        [(mu, nu, lambda, sigma)];
+                                                // * self.mol.wfn_total.HF_Matrices.ERI_arr1
+                                                //     [mu_nu_lambda_sigma];
                                             }
                                         }
                                     }
@@ -1776,30 +1776,118 @@ impl SCF {
             // }
         }
 
+        if IS_TEST {
+            let mut tmp1_tensor = Array4::<f64>::zeros((no_cgtos, no_cgtos, no_cgtos, no_cgtos));
+            //* 1. for loop */
+            for mu in 0..no_cgtos {
+                for nu in 0..no_cgtos {
+                    for lambda in 0..no_cgtos {
+                        for sigma in 0..no_cgtos {
+                            for p in 0..no_cgtos {
+                                //* here N(MO) = N(AO) */
+                                tmp1_tensor[(p, nu, lambda, sigma)] +=
+                                    self.mol.wfn_total.HF_Matrices.ERI_tensor
+                                        [(mu, nu, lambda, sigma)]
+                                        * C_matr[(mu, p)];
+                            }
+                        }
+                    }
+                }
+            }
+
+            let mut tmp2_tensor = Array4::<f64>::zeros((no_cgtos, no_cgtos, no_cgtos, no_cgtos));
+            //* 2. for loop */
+            for p in 0..no_cgtos {
+                for nu in 0..no_cgtos {
+                    for lambda in 0..no_cgtos {
+                        for sigma in 0..no_cgtos {
+                            for q in 0..no_cgtos {
+                                //* here N(MO) = N(AO) */
+                                tmp2_tensor[(p, q, lambda, sigma)] +=
+                                    tmp1_tensor[(p, nu, lambda, sigma)] * C_matr[(nu, q)];
+                            }
+                        }
+                    }
+                }
+            }
+
+            let mut tmp3_tensor = Array4::<f64>::zeros((no_cgtos, no_cgtos, no_cgtos, no_cgtos));
+            //* 3. for loop */
+            for p in 0..no_cgtos {
+                for q in 0..no_cgtos {
+                    for lambda in 0..no_cgtos {
+                        for sigma in 0..no_cgtos {
+                            for r in 0..no_cgtos {
+                                //* here N(MO) = N(AO) */
+                                tmp3_tensor[(p, q, r, sigma)] +=
+                                    tmp2_tensor[(p, q, lambda, sigma)] * C_matr[(lambda, r)];
+                            }
+                        }
+                    }
+                }
+            }
+
+            let mut tmp4_tensor = Array4::<f64>::zeros((no_cgtos, no_cgtos, no_cgtos, no_cgtos));
+            //* 4. for loop */
+            for p in 0..no_cgtos {
+                for q in 0..no_cgtos {
+                    for r in 0..no_cgtos {
+                        for sigma in 0..no_cgtos {
+                            for s in 0..no_cgtos {
+                                //* here N(MO) = N(AO) */
+                                tmp4_tensor[(p, q, r, s)] +=
+                                    tmp3_tensor[(p, q, r, sigma)] * C_matr[(sigma, s)];
+                            }
+                        }
+                    }
+                }
+            }
+
+            let mut MP2_E = 0.0;
+            for i in 0..no_occ_orb {
+                for a in no_occ_orb..no_cgtos {
+                    for j in 0..no_occ_orb {
+                        for b in no_occ_orb..no_cgtos {
+                            // let iajb = calc_ijkl_idx(i + 1, a + 1, j + 1, b + 1);
+                            // let ibja = calc_ijkl_idx(i + 1, b + 1, j + 1, a + 1);
+                            MP2_E += tmp4_tensor[(i, a, j, b)]
+                                * (2.0 * tmp4_tensor[(i, a, j, b)] - tmp4_tensor[(i, b, j, a)])
+                                / (orb_energies[i] + orb_energies[j]
+                                    - orb_energies[a]
+                                    - orb_energies[b]);
+                        }
+                    }
+                }
+            }
+
+            println!("MP2 energy: {:>10.5}", MP2_E);
+            println!("New total energy: {:>10.5}", self.E_tot_final + MP2_E);
+        }
+
         if is_debug {
             println!("ERI_MO_MP2 tensor (ERI vals):");
             println!("{:>8.5}\n", &ERI_MO_MP2);
         }
 
         // * Calc MP2 energy
-        let mut MP2_E = 0.0;
-        for i in 0..no_occ_orb {
-            for a in no_occ_orb..no_cgtos {
-                for j in 0..no_occ_orb {
-                    for b in no_occ_orb..no_cgtos {
-                        let iajb = calc_ijkl_idx(i + 1, a + 1, j + 1, b + 1);
-                        let ibja = calc_ijkl_idx(i + 1, b + 1, j + 1, a + 1);
-                        MP2_E += ERI_MO_MP2[iajb] * (2.0 * ERI_MO_MP2[iajb] - ERI_MO_MP2[ibja])
-                            / (orb_energies[i] + orb_energies[j]
-                                - orb_energies[a]
-                                - orb_energies[b]);
-                    }
-                }
-            }
-        }
+        // let mut MP2_E = 0.0;
+        // for i in 0..no_occ_orb {
+        //     for a in no_occ_orb..no_cgtos {
+        //         for j in 0..no_occ_orb {
+        //             for b in no_occ_orb..no_cgtos {
+        //                 let iajb = calc_ijkl_idx(i + 1, a + 1, j + 1, b + 1);
+        //                 let ibja = calc_ijkl_idx(i + 1, b + 1, j + 1, a + 1);
+        //                 MP2_E += ERI_MO_MP2[iajb] * (2.0 * ERI_MO_MP2[iajb] - ERI_MO_MP2[ibja])
+        //                     / (orb_energies[i] + orb_energies[j]
+        //                         - orb_energies[a]
+        //                         - orb_energies[b]);
+        //             }
+        //         }
+        //     }
+        // }
 
-        println!("MP2 energy: {:>10.5}", MP2_E);
-        println!("New total energy: {:>10.5}", self.E_tot_final + MP2_E);
+        // println!("MP2 energy: {:>10.5}", MP2_E);
+        // println!("New total energy: {:>10.5}", self.E_tot_final + MP2_E);
     }
 
     pub fn calc_dipole_moment_vec(&mut self, is_debug: bool) {
