@@ -69,8 +69,8 @@ A number of common basis sets are added to code. Because the author has written
 a parser for the Gaussian basis set format, it is possible to add any basis set 
 to the code. As of now the following basis sets are implemented:
 
-STO-3G, STO-6G, 6-311G*+, 6-311G*, 
-def2-SVP, def2-TZVP and def2-QZVP. 
+STO-3G, STO-6G, 6-311G**, 6-311G*, 
+def2-SVP, def2-TZVP, def2-TZVPP and def2-QZVP.
 
 (Although this programme uses the McMurchie-Davidson algorithm to calculate the 
 integrals, which utilizies the evaluation of Cartesian Gaussians, which 

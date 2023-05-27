@@ -1624,13 +1624,14 @@ impl SCF {
         let orb_energies = self.orb_energies_final.to_owned();
         let C_matr = self.C_matr_final.to_owned();
 
-        let mut n = self.mol.wfn_total.basis_set_total.no_cgtos;
-        n = calc_cmp_idx(n, n);
-        let ERI_arr1_max_idx = calc_cmp_idx(n, n);
-        let mut ERI_MO_MP2 = Array1::<f64>::zeros(ERI_arr1_max_idx + 1);
+        // * LEGACY VERSION
+        // let mut n = self.mol.wfn_total.basis_set_total.no_cgtos;
+        // n = calc_cmp_idx(n, n);
+        // let ERI_arr1_max_idx = calc_cmp_idx(n, n);
+        // let mut ERI_MO_MP2 = Array1::<f64>::zeros(ERI_arr1_max_idx + 1);
 
         let mut tmp1_tensor = Array4::<f64>::zeros((no_cgtos, no_cgtos, no_cgtos, no_cgtos));
-        //* 1. for loop */
+        // //* 1. for loop */
         for mu in 0..no_cgtos {
             for nu in 0..no_cgtos {
                 for lambda in 0..no_cgtos {
@@ -1645,6 +1646,7 @@ impl SCF {
                 }
             }
         }
+
 
         let mut tmp2_tensor = Array4::<f64>::zeros((no_cgtos, no_cgtos, no_cgtos, no_cgtos));
         //* 2. for loop */
@@ -1661,6 +1663,7 @@ impl SCF {
                 }
             }
         }
+
 
         let mut tmp3_tensor = Array4::<f64>::zeros((no_cgtos, no_cgtos, no_cgtos, no_cgtos));
         //* 3. for loop */
@@ -1679,7 +1682,7 @@ impl SCF {
         }
 
         let mut MP2_fin_tensor = Array4::<f64>::zeros((no_cgtos, no_cgtos, no_cgtos, no_cgtos));
-        //* 4. for loop */
+        // //* 4. for loop */
         for p in 0..no_cgtos {
             for q in 0..no_cgtos {
                 for r in 0..no_cgtos {
@@ -1693,6 +1696,7 @@ impl SCF {
                 }
             }
         }
+
 
         // * Calc MP2 energy
         let mut MP2_E = 0.0;
@@ -1715,10 +1719,71 @@ impl SCF {
         println!("MP2 energy: {:>10.5}", MP2_E);
         println!("New total energy: {:>10.5}", self.E_tot_final + MP2_E);
 
-        if is_debug {
-            println!("ERI_MO_MP2 tensor (ERI vals):");
-            println!("{:>8.5}\n", &ERI_MO_MP2);
+    }
+
+    pub fn MP2_N5_par(&mut self, is_debug: bool, basis_set_name: &str) {
+        // * only rerun HF, if it has not been run before
+        if self.mol.wfn_total.HF_Matrices.ERI_arr1.is_empty() {
+            Self::RHF_par(self, is_debug, basis_set_name);
         }
+        println!("\nThis is the end of RHF");
+        println!("Starting parallel MP2...\n");
+        let no_cgtos = self.mol.wfn_total.basis_set_total.no_cgtos;
+        let no_occ_orb = self.mol.wfn_total.basis_set_total.no_occ_orb;
+
+        let orb_energies = self.orb_energies_final.to_owned();
+        let C_matr = self.C_matr_final.to_owned();
+
+
+        let mut tmp1_tensor = Array4::<f64>::zeros((no_cgtos, no_cgtos, no_cgtos, no_cgtos));
+        Zip::indexed(&mut tmp1_tensor).par_for_each(|(p, nu, lambda, sigma), eri_mo_val| {
+            for mu in 0..no_cgtos {
+                *eri_mo_val += self.mol.wfn_total.HF_Matrices.ERI_tensor[(mu, nu, lambda, sigma)]
+                    * C_matr[(mu, p)];
+            }
+        });
+
+        let mut tmp2_tensor = Array4::<f64>::zeros((no_cgtos, no_cgtos, no_cgtos, no_cgtos));
+        Zip::indexed(&mut tmp2_tensor).par_for_each(|(p, q, lambda, sigma), eri_mo_val| {
+            for nu in 0..no_cgtos {
+                *eri_mo_val += tmp1_tensor[(p, nu, lambda, sigma)] * C_matr[(nu, q)];
+            }
+        });
+
+        let mut tmp3_tensor = Array4::<f64>::zeros((no_cgtos, no_cgtos, no_cgtos, no_cgtos));
+        Zip::indexed(&mut tmp3_tensor).par_for_each(|(p, q, r, sigma), eri_mo_val| {
+            for lambda in 0..no_cgtos {
+                *eri_mo_val += tmp2_tensor[(p, q, lambda, sigma)] * C_matr[(lambda,r)];
+            }
+        });
+
+        let mut MP2_fin_tensor = Array4::<f64>::zeros((no_cgtos, no_cgtos, no_cgtos, no_cgtos));
+        Zip::indexed(&mut MP2_fin_tensor).par_for_each(|(p, q, r, s), eri_mo_val| {
+            for sigma in 0..no_cgtos {
+                *eri_mo_val += tmp3_tensor[(p, q, r, sigma)] * C_matr[(sigma,s)];
+            }
+        });
+
+        // * Calc MP2 energy
+        let mut MP2_E = 0.0;
+        for i in 0..no_occ_orb {
+            for a in no_occ_orb..no_cgtos {
+                for j in 0..no_occ_orb {
+                    for b in no_occ_orb..no_cgtos {
+                        // let iajb = calc_ijkl_idx(i + 1, a + 1, j + 1, b + 1);
+                        // let ibja = calc_ijkl_idx(i + 1, b + 1, j + 1, a + 1);
+                        MP2_E += MP2_fin_tensor[(i, a, j, b)]
+                            * (2.0 * MP2_fin_tensor[(i, a, j, b)] - MP2_fin_tensor[(i, b, j, a)])
+                            / (orb_energies[i] + orb_energies[j]
+                                - orb_energies[a]
+                                - orb_energies[b]);
+                    }
+                }
+            }
+        }
+
+        println!("MP2 energy: {:>10.5}", MP2_E);
+        println!("New total energy: {:>10.5}", self.E_tot_final + MP2_E);
     }
 
     pub fn calc_dipole_moment_vec(&mut self, is_debug: bool) {

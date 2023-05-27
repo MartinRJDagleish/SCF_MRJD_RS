@@ -197,9 +197,13 @@ pub fn parse_basis_set_file_gaussian(basis_set_name: &str) -> BasisSetTotalDef {
         // "def2-svp" => "inp/Project3_2/basis_sets/def2-svp.gbs",
         // "def2-tzvp" => "inp/Project3_2/basis_sets/def2-tzvp.gbs",
         "sto-3g" => "src/basis_sets/sto-3g.gbs",
+        "sto-6g" => "src/basis_sets/sto-6g.gbs",
         "6-311g" => "src/basis_sets/6-311g.gbs",
+        "6-311g*" => "src/basis_sets/6-311g_st.gbs",
+        "6-311g**" => "src/basis_sets/6-311g_st_st.gbs",
         "def2-svp" => "src/basis_sets/def2-svp.gbs",
         "def2-tzvp" => "src/basis_sets/def2-tzvp.gbs",
+        "def2-qzvp" => "src/basis_sets/def2-qzvp.gbs",
         _ => {
             panic!("Basis set not yet implemented!");
         }
