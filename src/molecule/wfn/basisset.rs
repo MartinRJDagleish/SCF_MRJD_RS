@@ -191,10 +191,15 @@ pub fn parse_basis_set_file_gaussian(basis_set_name: &str) -> BasisSetTotalDef {
     };
 
     let basis_set_file_path: &str = match basis_set_name.to_ascii_lowercase().as_str() {
-        "sto-3g" => "inp/Project3_2/basis_sets/sto-3g.gbs",
-        "6-311g" => "inp/Project3_2/basis_sets/6-311g.gbs",
-        "def2-svp" => "inp/Project3_2/basis_sets/def2-svp.gbs",
-        "def2-tzvp" => "inp/Project3_2/basis_sets/def2-tzvp.gbs",
+        // * LEGACY 
+        // "sto-3g" => "inp/Project3_2/basis_sets/sto-3g.gbs",
+        // "6-311g" => "inp/Project3_2/basis_sets/6-311g.gbs",
+        // "def2-svp" => "inp/Project3_2/basis_sets/def2-svp.gbs",
+        // "def2-tzvp" => "inp/Project3_2/basis_sets/def2-tzvp.gbs",
+        "sto-3g" => "src/basis_sets/sto-3g.gbs",
+        "6-311g" => "src/basis_sets/6-311g.gbs",
+        "def2-svp" => "src/basis_sets/def2-svp.gbs",
+        "def2-tzvp" => "src/basis_sets/def2-tzvp.gbs",
         _ => {
             panic!("Basis set not yet implemented!");
         }
