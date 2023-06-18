@@ -1,7 +1,7 @@
 // use super::Molecule;
 use ndarray::prelude::*;
 
-#[derive(Clone,  Debug)]
+#[derive(Clone, Debug)]
 pub struct Geometry {
     pub no_atoms: usize,
     pub geom_matr: Array2<f64>,
@@ -15,7 +15,7 @@ impl Geometry {
         //* Static array with indexing instead of HashMap for masses -> no file reading necessary
         // ! SOURCE: https://iupac.qmul.ac.uk/AtWt/ -> cleaned with OpenRefine
         // let mass_array = [
-        const MASS_ARRAY: [f64;119] = [
+        const MASS_ARRAY: [f64; 119] = [
             0.0,
             1.008,
             4.002602,
@@ -342,7 +342,7 @@ pub fn calc_r_ij_general(vec1: &Array1<f64>, vec2: &Array1<f64>) -> f64 {
     let mut r_ij: f64 = 0.0;
     for cart_coord in 0..3 {
         r_ij += (vec2[cart_coord] - vec1[cart_coord]).powi(2);
-    };
+    }
 
     r_ij.sqrt()
 }

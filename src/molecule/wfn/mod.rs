@@ -57,7 +57,6 @@ pub struct WfnTotal {
 //     }
 // }
 
-
 #[allow(non_snake_case)]
 impl PGTO {
     pub fn new(
@@ -137,7 +136,7 @@ impl BasisSetTotal {
             no_cgtos,
             no_occ_orb,
             center_charge,
-            dipole_moment_total
+            dipole_moment_total,
         }
     }
 

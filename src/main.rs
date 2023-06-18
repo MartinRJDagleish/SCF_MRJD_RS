@@ -1,8 +1,7 @@
 #![allow(non_snake_case)]
 
-use std::time::Instant;
-
 use crate::molecule::Molecule;
+use std::time::Instant;
 // use clap::Parser;
 
 /// Simple program to greet a person

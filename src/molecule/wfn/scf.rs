@@ -1647,7 +1647,6 @@ impl SCF {
             }
         }
 
-
         let mut tmp2_tensor = Array4::<f64>::zeros((no_cgtos, no_cgtos, no_cgtos, no_cgtos));
         //* 2. for loop */
         for p in 0..no_cgtos {
@@ -1663,7 +1662,6 @@ impl SCF {
                 }
             }
         }
-
 
         let mut tmp3_tensor = Array4::<f64>::zeros((no_cgtos, no_cgtos, no_cgtos, no_cgtos));
         //* 3. for loop */
@@ -1697,7 +1695,6 @@ impl SCF {
             }
         }
 
-
         // * Calc MP2 energy
         let mut MP2_E = 0.0;
         for i in 0..no_occ_orb {
@@ -1718,7 +1715,6 @@ impl SCF {
 
         println!("MP2 energy: {:>10.5}", MP2_E);
         println!("New total energy: {:>10.5}", self.E_tot_final + MP2_E);
-
     }
 
     pub fn MP2_N5_par(&mut self, is_debug: bool, basis_set_name: &str) {
@@ -1733,7 +1729,6 @@ impl SCF {
 
         let orb_energies = self.orb_energies_final.to_owned();
         let C_matr = self.C_matr_final.to_owned();
-
 
         let mut tmp1_tensor = Array4::<f64>::zeros((no_cgtos, no_cgtos, no_cgtos, no_cgtos));
         Zip::indexed(&mut tmp1_tensor).par_for_each(|(p, nu, lambda, sigma), eri_mo_val| {
@@ -1753,14 +1748,14 @@ impl SCF {
         let mut tmp3_tensor = Array4::<f64>::zeros((no_cgtos, no_cgtos, no_cgtos, no_cgtos));
         Zip::indexed(&mut tmp3_tensor).par_for_each(|(p, q, r, sigma), eri_mo_val| {
             for lambda in 0..no_cgtos {
-                *eri_mo_val += tmp2_tensor[(p, q, lambda, sigma)] * C_matr[(lambda,r)];
+                *eri_mo_val += tmp2_tensor[(p, q, lambda, sigma)] * C_matr[(lambda, r)];
             }
         });
 
         let mut MP2_fin_tensor = Array4::<f64>::zeros((no_cgtos, no_cgtos, no_cgtos, no_cgtos));
         Zip::indexed(&mut MP2_fin_tensor).par_for_each(|(p, q, r, s), eri_mo_val| {
             for sigma in 0..no_cgtos {
-                *eri_mo_val += tmp3_tensor[(p, q, r, sigma)] * C_matr[(sigma,s)];
+                *eri_mo_val += tmp3_tensor[(p, q, r, sigma)] * C_matr[(sigma, s)];
             }
         });
 

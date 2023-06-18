@@ -10,7 +10,7 @@ use ndarray::prelude::*;
 
 use crate::molecule::wfn::{BasisSetTotal, CGTO, PGTO};
 
-#[derive(Eq, Hash, PartialEq, Clone, Copy, EnumIter,Default)]
+#[derive(Eq, Hash, PartialEq, Clone, Copy, EnumIter, Default)]
 pub enum PseElementSym {
     #[default]
     DUMMY,
@@ -191,7 +191,7 @@ pub fn parse_basis_set_file_gaussian(basis_set_name: &str) -> BasisSetTotalDef {
     };
 
     let basis_set_file_path: &str = match basis_set_name.to_ascii_lowercase().as_str() {
-        // * LEGACY 
+        // * LEGACY
         // "sto-3g" => "inp/Project3_2/basis_sets/sto-3g.gbs",
         // "6-311g" => "inp/Project3_2/basis_sets/6-311g.gbs",
         // "def2-svp" => "inp/Project3_2/basis_sets/def2-svp.gbs",
