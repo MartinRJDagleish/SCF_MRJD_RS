@@ -74,9 +74,9 @@ fn main() {
         use crate::molecule::wfn::scf::*;
         let mut scf: SCF = SCF::new(mol);
         scf.geom_analysis_pre_calc();
-        // scf.RHF_par(false, "sto-3g");
+        scf.RHF_par(true, "sto-3g");
         // scf.MP2_N5_ser(false, "def2-TZVP");
-        scf.MP2_N5_par(false, "sto-3g");
+        // scf.MP2_N5_par(false, "sto-3g");
     }
 
     // let args = Args::parse();

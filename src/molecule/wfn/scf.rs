@@ -1696,14 +1696,14 @@ impl SCF {
         }
 
         // * Calc MP2 energy
-        let mut MP2_E = 0.0;
+        let mut E_MP2 = 0.0;
         for i in 0..no_occ_orb {
             for a in no_occ_orb..no_cgtos {
                 for j in 0..no_occ_orb {
                     for b in no_occ_orb..no_cgtos {
                         // let iajb = calc_ijkl_idx(i + 1, a + 1, j + 1, b + 1);
                         // let ibja = calc_ijkl_idx(i + 1, b + 1, j + 1, a + 1);
-                        MP2_E += MP2_fin_tensor[(i, a, j, b)]
+                        E_MP2 += MP2_fin_tensor[(i, a, j, b)]
                             * (2.0 * MP2_fin_tensor[(i, a, j, b)] - MP2_fin_tensor[(i, b, j, a)])
                             / (orb_energies[i] + orb_energies[j]
                                 - orb_energies[a]
@@ -1713,8 +1713,8 @@ impl SCF {
             }
         }
 
-        println!("MP2 energy: {:>10.5}", MP2_E);
-        println!("New total energy: {:>10.5}", self.E_tot_final + MP2_E);
+        println!("MP2 energy: {:>10.5}", E_MP2);
+        println!("New total energy: {:>10.5}", self.E_tot_final + E_MP2);
     }
 
     pub fn MP2_N5_par(&mut self, is_debug: bool, basis_set_name: &str) {
@@ -1760,14 +1760,14 @@ impl SCF {
         });
 
         // * Calc MP2 energy
-        let mut MP2_E = 0.0;
+        let mut E_MP2 = 0.0;
         for i in 0..no_occ_orb {
             for a in no_occ_orb..no_cgtos {
                 for j in 0..no_occ_orb {
                     for b in no_occ_orb..no_cgtos {
                         // let iajb = calc_ijkl_idx(i + 1, a + 1, j + 1, b + 1);
                         // let ibja = calc_ijkl_idx(i + 1, b + 1, j + 1, a + 1);
-                        MP2_E += MP2_fin_tensor[(i, a, j, b)]
+                        E_MP2 += MP2_fin_tensor[(i, a, j, b)]
                             * (2.0 * MP2_fin_tensor[(i, a, j, b)] - MP2_fin_tensor[(i, b, j, a)])
                             / (orb_energies[i] + orb_energies[j]
                                 - orb_energies[a]
@@ -1777,8 +1777,8 @@ impl SCF {
             }
         }
 
-        println!("MP2 energy: {:>10.5}", MP2_E);
-        println!("New total energy: {:>10.5}", self.E_tot_final + MP2_E);
+        println!("MP2 energy: {:>10.5}", E_MP2);
+        println!("New total energy: {:>10.5}", self.E_tot_final + E_MP2);
     }
 
     pub fn calc_dipole_moment_vec(&mut self, is_debug: bool) {
