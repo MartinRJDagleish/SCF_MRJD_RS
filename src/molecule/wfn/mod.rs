@@ -500,6 +500,49 @@ impl WfnTotal {
     }
 }
 
+// pub struct Cache<T>
+// where
+//     T: Fn(i32) -> i32,
+// {
+//     calculation: T,
+//     internal: HashMap<i32, i32>,
+// }
+
+// impl<T> Cache<T>
+// where
+//     T: Fn(i32) -> i32,
+// {
+//     pub fn new(calculation: T) -> Cache<T> {
+//         Cache {
+//             calculation,
+//             internal: HashMap::new(),
+//         }
+//     }
+
+//     pub fn value(&mut self, n: i32) -> i32 {
+//         if let Some(&result) = self.internal.get(&n) {
+//             return result;
+//         }
+
+//         let result = (self.calculation)(n);
+//         self.internal.insert(n, result);
+//         result
+//     }
+// }
+
+// pub fn double_factorial(n: i32) -> i32 {
+//     let mut cache = Cache::new(|n| {
+//         match n {
+//             -1 => 1,
+//             0 => 1,
+//             1 => 1,
+//             _ => n * double_factorial(n - 2),
+//         }
+//     });
+
+//     cache.value(n)
+// }
+
 pub fn double_factorial(n: i32) -> i32 {
     match n {
         -1 => 1,

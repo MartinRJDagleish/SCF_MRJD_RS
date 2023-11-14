@@ -87,12 +87,12 @@ impl SCF {
             println!("\nOut-of-plane angles (in degrees):\n");
 
             for i in 0..no_atoms {
-                for j in 0..no_atoms {
-                    for k in 0..no_atoms {
+                for k in 0..no_atoms {
+                    let bond_dist_ik: f64 = self.mol.geom_obj.calc_r_ij(i, k);
+                    for j in 0..no_atoms {
+                        let bond_dist_jk: f64 = self.mol.geom_obj.calc_r_ij(j, k);
                         for l in 0..no_atoms {
-                            let bond_dist_jk: f64 = self.mol.geom_obj.calc_r_ij(j, k);
                             let bond_dist_kl: f64 = self.mol.geom_obj.calc_r_ij(k, l);
-                            let bond_dist_ik: f64 = self.mol.geom_obj.calc_r_ij(i, k);
                             if i != j
                                 && i != k
                                 && i != l
@@ -226,8 +226,6 @@ impl SCF {
         } else {
             println!("Molecule is an asymmetric top!");
         }
-
-        println!("");
     }
 
     pub fn RHF_par(&mut self, is_debug: bool, basis_set_name: &str) {
@@ -292,9 +290,9 @@ impl SCF {
         let mut orb_energy_arr = Array1::<f64>::zeros(no_cgtos);
 
         //* mutable floats for SCF */
-        let mut E_scf = 0.0_f64;
+        let mut E_scf;
         let mut E_scf_old = 0.0_f64;
-        let mut E_tot = 0.0_f64;
+        let mut E_tot;
 
         //* Give initial F_matr the H_core  */
         F_matr.assign(&self.mol.wfn_total.HF_Matrices.H_core_matr);
@@ -1906,24 +1904,3 @@ pub fn calc_ijkl_idx(i: usize, j: usize, k: usize, l: usize) -> usize {
 pub fn calc_cmp_idx(idx1: usize, idx2: usize) -> usize {
     (idx1 * (idx1 + 1)) / 2 + idx2
 }
-
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-
-//     #[test]
-//     fn test_calc_ijkl_idx() {
-//         assert_eq!(calc_ijkl_idx(0, 1, 2, 3), 0);
-//         assert_eq!(calc_ijkl_idx(1, 0, 3, 2), 0);
-//         assert_eq!(calc_ijkl_idx(2, 3, 0, 1), 0);
-//         assert_eq!(calc_ijkl_idx(3, 2, 1, 0), 0);
-//         assert_eq!(calc_ijkl_idx(0, 2, 1, 3), 1);
-//         assert_eq!(calc_ijkl_idx(1, 3, 0, 2), 1);
-//         assert_eq!(calc_ijkl_idx(2, 0, 3, 1), 1);
-//         assert_eq!(calc_ijkl_idx(3, 1, 2, 0), 1);
-//         assert_eq!(calc_ijkl_idx(0, 3, 2, 1), 2);
-//         assert_eq!(calc_ijkl_idx(1, 2, 3, 0), 2);
-//         assert_eq!(calc_ijkl_idx(2, 1, 0, 3), 2);
-//         assert_eq!(calc_ijkl_idx(3, 0, 1, 2), 2);
-//     }
-// }

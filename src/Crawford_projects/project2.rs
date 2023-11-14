@@ -57,7 +57,7 @@ pub fn run_project2(mut mol: Molecule) {
         * (2.0 * PI * 100.0 * physical_constants::SPEED_OF_LIGHT_IN_VACUUM).recip(); //* recip is ^-1, but "faster"
     let harm_vib_freqs: Array1<f64> = mol
         .calc_hess_eigenvals()
-        .mapv(|x| conv_hess_to_waveno * x.sqrt());
+        .mapv(|freq| conv_hess_to_waveno * freq.sqrt());
     println!(
         "Harmonic vibrational frequencies:\n{:1.2}\n",
         harm_vib_freqs

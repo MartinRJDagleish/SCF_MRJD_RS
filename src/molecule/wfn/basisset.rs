@@ -204,6 +204,8 @@ pub fn parse_basis_set_file_gaussian(basis_set_name: &str) -> BasisSetTotalDef {
         "def2-svp" => "src/basis_sets/def2-svp.gbs",
         "def2-tzvp" => "src/basis_sets/def2-tzvp.gbs",
         "def2-qzvp" => "src/basis_sets/def2-qzvp.gbs",
+        "cc-pvdz" => "src/basis_sets/cc-pVDZ.gbs",
+        "cc-pvtz" => "src/basis_sets/cc-pVTZ.gbs",
         _ => {
             panic!("Basis set not yet implemented!");
         }

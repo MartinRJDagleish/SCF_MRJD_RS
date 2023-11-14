@@ -46,7 +46,7 @@ impl Molecule {
     }
 
     pub fn update_no_occ_orb_rhf(&mut self) {
-        let mut no_occ_orb: usize = 0;
+        let mut no_occ_orb: usize = 0; // no_elec here actually
         self.geom_obj.Z_vals.iter().for_each(|Z_val| {
             no_occ_orb += *Z_val as usize;
         });
@@ -108,7 +108,7 @@ impl Molecule {
             .map(|l| l.expect("Failed to read line!"));
 
         //* Read no of atoms first for array size
-        let no_atoms = geom_file_lines.next().unwrap().parse().unwrap();
+        let no_atoms: usize = geom_file_lines.next().unwrap().parse().unwrap();
 
         let mut Z_vals: Vec<i32> = Vec::new();
         let mut geom_matr: Array2<f64> = Array2::zeros((no_atoms, 3));
@@ -145,7 +145,7 @@ impl Molecule {
                 geom_matr[(atom_idx, cart_coord)] = line_split.next().unwrap().parse().unwrap();
             }
         }
-        const AA_TO_BOHR: f64 = 1.0e-10 * 1.0 / physical_constants::BOHR_RADIUS;
+        const AA_TO_BOHR: f64 = 1.0e-10 / physical_constants::BOHR_RADIUS;
         geom_matr.par_mapv_inplace(|x| x * AA_TO_BOHR);
 
         println!("\n...End of geometry input.\n");
