@@ -7,7 +7,7 @@
 ARCHIVE! 
 ---
 
-This repo is going to be archived, as this was my first successful HF code, which I have now improved and started from scratch, see the new repo [here](github.com/MartinRJDagleish/MolElec-RS)
+This repo is going to be archived, as this was my first successful HF code, which I have now improved and started from scratch, see the new repo [here](https://www.github.com/MartinRJDagleish/MolElec-RS)
 
 ---
 
