@@ -4,6 +4,14 @@
 [![](https://www.aschey.tech/tokei/github/MartinRJDagleish/SCF_MRJD_RS?category=comments)](https://github.com/MartinRJDagleish/SCF_MRJD_RS) 
 [![](https://www.aschey.tech/tokei/github/MartinRJDagleish/SCF_MRJD_RS?category=files)](https://github.com/MartinRJDagleish/SCF_MRJD_RS) 
 
+ARCHIVE! 
+---
+
+This repo is going to be archived, as this was my first successful HF code, which I have now improved and started from scratch, see the new repo [here](github.com/MartinRJDagleish/MolElec-RS)
+
+---
+
+
 # SCF_MRJD_RS
 <details>
 <summary> Background info about the project </summary>
